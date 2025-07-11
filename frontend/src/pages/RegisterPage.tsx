@@ -12,8 +12,12 @@ import {
 } from "react-native";
 import DropDownPicker from "react-native-dropdown-picker";
 import Ionicons from "react-native-vector-icons/Ionicons";
+import { useRouter } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const RegisterPage: React.FC = () => {
+  const router = useRouter();
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -35,14 +39,16 @@ const RegisterPage: React.FC = () => {
     }
 
     try {
-      const response = await fetch("http://192.168.1.49:5000/api/register", {
+      const response = await fetch("http://192.168.1.49:5000/api/users/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, email, password, role }),
       });
 
       if (response.ok) {
+        await AsyncStorage.setItem("parentName", name);
         setMessage("Successfully registered!");
+        router.push("/babyDetails");
       } else {
         const data = await response.json();
         throw new Error(data.message || "Registration failed");
