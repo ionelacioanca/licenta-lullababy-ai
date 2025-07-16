@@ -8,7 +8,7 @@ export default function Index() {
   useEffect(() => {
     // Delay tiny bit so layout e montat
     const timeout = setTimeout(() => {
-      router.replace("/register");
+      router.replace("/open");
     }, 10);
 
     return () => clearTimeout(timeout);

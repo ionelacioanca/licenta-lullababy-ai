@@ -12,7 +12,7 @@ babyRouter.get("/baby/:id", async (req, res) => {
     }
 });
 
-babyRouter.post("/baby", async (req, res) => {
+babyRouter.post("/babyDetails", async (req, res) => {
     try {
         const baby = await babyController.createBaby(req.body);
         res.status(201).json({ message: "Baby created successfully", baby });
