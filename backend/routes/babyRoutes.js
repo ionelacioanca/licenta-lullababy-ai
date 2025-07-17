@@ -48,4 +48,17 @@ babyRouter.delete("/baby/:id", async (req, res) => {
     }
 });
 
+babyRouter.get("/baby/parent/:parentId", async (req, res) => {
+  try {
+    const babies = await babyController.getBabiesByParentId(req.params.parentId);
+    if (!babies || babies.length === 0) {
+      return res.status(404).json({ message: "No babies found for this parent." });
+    }
+    res.status(200).json(babies);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+
 export default babyRouter;

@@ -39,14 +39,17 @@ const RegisterPage: React.FC = () => {
     }
 
     try {
-      const response = await fetch("http://192.168.1.49:5000/api/users/register", {
+      const response = await fetch("http://192.168.1.53:5000/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, email, password, role }),
       });
 
       if (response.ok) {
+        const data = await response.json();
         await AsyncStorage.setItem("parentName", name);
+        await AsyncStorage.setItem("parentId", data.parentId);
+        console.log("the id of the user:", data.parentId);
         setMessage("Successfully registered!");
         router.push("/babyDetails");
       } else {

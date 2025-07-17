@@ -8,6 +8,7 @@ import {
   Alert,
   ScrollView,
   Linking,
+  ActivityIndicator,
 } from "react-native";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { useRouter } from "expo-router";
@@ -20,12 +21,28 @@ const LoginPage: React.FC = () => {
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [checking, setChecking] = useState(true); // verificare token
 
   useEffect(() => {
     const checkLoggedIn = async () => {
       const token = await AsyncStorage.getItem("token");
       if (token) {
-        router.replace("/dashboard");
+        try {
+          const res = await fetch("http://192.168.1.53:5000/api/babies/verify-token", {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (res.ok) {
+            router.replace("/dashboard");
+          } else {
+            await AsyncStorage.removeItem("token");
+            setChecking(false);
+          }
+        } catch {
+          await AsyncStorage.removeItem("token");
+          setChecking(false);
+        }
+      } else {
+        setChecking(false);
       }
     };
     checkLoggedIn();
@@ -33,6 +50,24 @@ const LoginPage: React.FC = () => {
 
   const isValidEmail = (email: string) =>
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+  // funcție separată pentru salvarea datelor în AsyncStorage
+  const saveUserData = async (data: any) => {
+  try {
+    await AsyncStorage.setItem("token", data.token);
+    await AsyncStorage.setItem("parentName", data.name || "User");
+
+    if (data.parentId) {
+      await AsyncStorage.setItem("parentId", data.parentId);
+      console.log("Saved parentId:", data.parentId);
+    } else {
+      console.warn("No parentId received from API");
+    }
+  } catch (e) {
+    console.error("Error saving user data:", e);
+  }
+};
+
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -48,7 +83,7 @@ const LoginPage: React.FC = () => {
     setLoading(true);
 
     try {
-      const response = await fetch("http://192.168.1.49:5000/api/users/login", {
+      const response = await fetch("http://192.168.1.53:5000/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -57,10 +92,12 @@ const LoginPage: React.FC = () => {
       const data = await response.json();
 
       if (response.ok) {
-        await AsyncStorage.setItem("token", data.token);
-        await AsyncStorage.setItem("parentName", data.name || "User");
+        await saveUserData(data);
         setMessage("Login successful!");
-        router.push("/dashboard");
+        router.replace("/dashboard");
+        console.log("Login response data:", data);
+
+        return;
       } else {
         throw new Error(data.message || "Login failed");
       }
@@ -72,8 +109,19 @@ const LoginPage: React.FC = () => {
     }
   };
 
+  if (checking) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#A2E884" />
+      </View>
+    );
+  }
+
   return (
-    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+    <ScrollView
+      contentContainerStyle={styles.container}
+      keyboardShouldPersistTaps="handled"
+    >
       <Text style={styles.subheader}>Welcome Back</Text>
       <Text style={styles.subtitle}>Log in with your email and password</Text>
 
@@ -96,7 +144,12 @@ const LoginPage: React.FC = () => {
       </View>
 
       <View style={styles.inputContainer}>
-        <Ionicons name="lock-closed-outline" size={20} color="#777" style={styles.icon} />
+        <Ionicons
+          name="lock-closed-outline"
+          size={20}
+          color="#777"
+          style={styles.icon}
+        />
         <TextInput
           placeholder="Password"
           placeholderTextColor="#777777"
@@ -130,10 +183,14 @@ const LoginPage: React.FC = () => {
         <TouchableOpacity style={styles.circleButton}>
           <Ionicons name="logo-apple" size={24} color="#fff" />
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.circleButton, { backgroundColor: "#1877F2" }]}>
+        <TouchableOpacity
+          style={[styles.circleButton, { backgroundColor: "#1877F2" }]}
+        >
           <Ionicons name="logo-facebook" size={24} color="#fff" />
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.circleButton, { backgroundColor: "#DB4437" }]}>
+        <TouchableOpacity
+          style={[styles.circleButton, { backgroundColor: "#DB4437" }]}
+        >
           <Ionicons name="logo-google" size={24} color="#fff" />
         </TouchableOpacity>
       </View>
@@ -149,6 +206,12 @@ const styles = StyleSheet.create({
     paddingTop: 70,
     backgroundColor: "#FFF8F0",
     flexGrow: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#FFF8F0",
   },
   subheader: {
     fontSize: 22,
