@@ -105,8 +105,15 @@ const BabyDetailsPage: React.FC = () => {
       return;
     }
 
+    const parentId = await AsyncStorage.getItem("parentId");
+      if (!parentId) {
+        console.log("Error", "Parent ID not found, please log in again.");
+        return;
+    }
+
     try {
-      const response = await fetch("http://192.168.1.49:5000/api/babies/babyDetails", {
+      console.log("👉 Trimitem parentId:", parentId);
+      const response = await fetch("http://192.168.1.53:5000/api/babyDetails", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -119,10 +126,12 @@ const BabyDetailsPage: React.FC = () => {
           birthType: birthTypeValue,
           gestationalWeeks: Number(gestationalWeeks),
           knownAllergies,
+          parentId,
         }),
       });
 
       if (response.ok) {
+        await AsyncStorage.setItem("babyName", name);
         Alert.alert("Success", "Baby details saved!");
         router.push("/dashboard");
       } else {

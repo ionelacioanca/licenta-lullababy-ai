@@ -3,8 +3,9 @@ import babyService from '../services/babyService.js';
 class babyController {
 
     static async createBaby(babyModel) {
-        await babyService.createBaby(babyModel);
-    }
+    const baby = await babyService.createBaby(babyModel);
+    return baby;
+}
 
     static async getAllBabies() {
         const babies = await babyService.getAllBabies();
@@ -34,7 +35,14 @@ class babyController {
         }
         return deletedBaby;
     }
+
+    static async getBabiesByParentId(parentId) {
+        const babies = await babyService.getBabiesByParentId(parentId);
+        if (!babies || babies.length === 0) {
+            throw new Error('No babies found for this parent.');
+        }
+        return babies;
+    }
 }
 
 export default babyController;
-

@@ -6,7 +6,7 @@ class BabyService {
         return baby.save();
     }
 
-    static async getAllBabys() {
+    static async getAllBabies() {
         return BabyModel.find();
     }
 
@@ -20,6 +20,10 @@ class BabyService {
 
     static deleteBaby(babyId) {
         return BabyModel.findByIdAndDelete(babyId);
+    }
+
+    static async getBabiesByParentId(parentId) {
+        return BabyModel.find({ parentId: parentId });
     }
 }
 
