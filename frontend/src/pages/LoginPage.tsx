@@ -28,17 +28,22 @@ const LoginPage: React.FC = () => {
       const token = await AsyncStorage.getItem("token");
       if (token) {
         try {
-          const res = await fetch("http://192.168.1.53:5000/api/babies/verify-token", {
+          const res = await fetch("http://192.168.1.50:5000/api/verify-token", {
             headers: { Authorization: `Bearer ${token}` },
           });
           if (res.ok) {
             router.replace("/dashboard");
           } else {
             await AsyncStorage.removeItem("token");
+            await AsyncStorage.removeItem("parentId");
+            await AsyncStorage.removeItem("parentName");
             setChecking(false);
           }
-        } catch {
+        } catch (error) {
+          console.error("Token verification error:", error);
           await AsyncStorage.removeItem("token");
+          await AsyncStorage.removeItem("parentId");
+          await AsyncStorage.removeItem("parentName");
           setChecking(false);
         }
       } else {
@@ -53,20 +58,21 @@ const LoginPage: React.FC = () => {
 
   // funcție separată pentru salvarea datelor în AsyncStorage
   const saveUserData = async (data: any) => {
-  try {
-    await AsyncStorage.setItem("token", data.token);
-    await AsyncStorage.setItem("parentName", data.name || "User");
+    try {
+      await AsyncStorage.setItem("token", data.token);
+      await AsyncStorage.setItem("parentName", data.name || "User");
 
-    if (data.parentId) {
-      await AsyncStorage.setItem("parentId", data.parentId);
-      console.log("Saved parentId:", data.parentId);
-    } else {
-      console.warn("No parentId received from API");
+      if (data.parentId) {
+        await AsyncStorage.setItem("parentId", data.parentId.toString());
+        console.log("Saved parentId:", data.parentId);
+      } else {
+        console.warn("No parentId received from API");
+      }
+    } catch (e) {
+      console.error("Error saving user data:", e);
+      throw e; // Re-throw to handle in calling function
     }
-  } catch (e) {
-    console.error("Error saving user data:", e);
-  }
-};
+  };
 
 
   const handleLogin = async () => {
@@ -83,27 +89,47 @@ const LoginPage: React.FC = () => {
     setLoading(true);
 
     try {
-      const response = await fetch("http://192.168.1.53:5000/api/login", {
+      console.log("Attempting login with email:", email);
+      
+      const response = await fetch("http://192.168.1.50:5000/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
 
+      console.log("Response status:", response.status);
+      console.log("Response ok:", response.ok);
+
       const data = await response.json();
+      console.log("Login response data:", JSON.stringify(data, null, 2));
 
       if (response.ok) {
+        console.log("Login successful, checking data...");
+        
+        if (!data.token) {
+          throw new Error("No token received from server");
+        }
+        if (!data.parentId) {
+          throw new Error("No parentId received from server");
+        }
+
         await saveUserData(data);
         setMessage("Login successful!");
-        router.replace("/dashboard");
-        console.log("Login response data:", data);
-
-        return;
+        
+        // Navigate to dashboard after a brief delay to ensure storage is complete
+        setTimeout(() => {
+          router.replace("/dashboard");
+        }, 100);
       } else {
-        throw new Error(data.message || "Login failed");
+        const errorMsg = data.message || data.error || "Login failed";
+        console.error("Login failed with message:", errorMsg);
+        throw new Error(errorMsg);
       }
     } catch (err: any) {
+      console.error("Login error:", err);
+      console.error("Error details:", JSON.stringify(err, null, 2));
       setMessage("Error: " + err.message);
-      Alert.alert("Login Error", err.message);
+      Alert.alert("Login Error", err.message || "An unexpected error occurred");
     } finally {
       setLoading(false);
     }
