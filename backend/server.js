@@ -25,8 +25,11 @@ app.use('/users', userRouter);
 
 async function main() {
     await connectDB(); 
-    app.listen(PORT, () => {
+    app.listen(PORT, '0.0.0.0', () => {
         console.log(`Server running on port ${PORT}`);
+        console.log(`Server accessible at:`);
+        console.log(`  - http://localhost:${PORT}`);
+        console.log(`  - http://192.168.1.50:${PORT} (WiFi)`);
     });
 }
 

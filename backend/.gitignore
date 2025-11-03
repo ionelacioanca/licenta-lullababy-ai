@@ -1,6 +1,8 @@
 # Ignore node_modules folder
 node_modules/
 
+.expo/
+
 # Ignore environment variable files
 .env
 
