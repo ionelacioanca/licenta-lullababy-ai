@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { View, ScrollView, StyleSheet } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router";
 import Header from "./Header";
 import Footer from "./Footer";
 import BabyMonitorStream from "../components/BabyMonitorStream";
 
 const DashboardPage: React.FC = () => {
+  const router = useRouter();
   const [babyName, setBabyName] = useState("");
   const [childInitial, setChildInitial] = useState("?");
 
@@ -66,7 +68,7 @@ const DashboardPage: React.FC = () => {
       <Header
         childInitial={childInitial}
         babyName={babyName}
-        onEditProfile={() => {}}
+        onEditProfile={() => router.push("/babiesList")}
         onMessages={() => {}}
         onSettings={() => {}}
         unreadMessages={3}
@@ -75,7 +77,6 @@ const DashboardPage: React.FC = () => {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <BabyMonitorStream 
           babyName={babyName}
-          streamUrl=""  // Add your stream URL here when ready
         />
         
         {/* Add more dashboard content here */}

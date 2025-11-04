@@ -1,63 +1,123 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   Modal,
-  Dimensions,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { Video, ResizeMode } from "expo-av";
+import { CameraView, CameraType, useCameraPermissions } from "expo-camera";
+import * as MediaLibrary from "expo-media-library";
 
 type BabyMonitorStreamProps = {
-  streamUrl?: string;
   babyName?: string;
+  useDeviceCamera?: boolean;
 };
 
 const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
-  streamUrl = "",
   babyName = "Baby",
 }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(true);
-  const [isMuted, setIsMuted] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-
-  const videoRef = React.useRef<Video>(null);
+  const [facing, setFacing] = useState<CameraType>("front");
+  const [permission, requestPermission] = useCameraPermissions();
+  
+  const cameraRef = useRef<CameraView>(null);
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
   };
 
-  const togglePlayPause = async () => {
-    if (videoRef.current) {
-      if (isPlaying) {
-        await videoRef.current.pauseAsync();
-      } else {
-        await videoRef.current.playAsync();
+  const toggleCameraFacing = () => {
+    setFacing((current) => (current === "back" ? "front" : "back"));
+  };
+
+  const takePicture = async () => {
+    if (cameraRef.current) {
+      try {
+        console.log("Taking picture...");
+        
+        // Take the picture
+        const photo = await cameraRef.current.takePictureAsync({
+          quality: 1,
+          base64: false,
+          exif: false,
+        });
+        
+        console.log("Photo taken:", photo);
+        
+        if (photo && photo.uri) {
+          // Request permission to save to media library
+          const { status } = await MediaLibrary.requestPermissionsAsync();
+          
+          if (status === "granted") {
+            // Save to gallery
+            const asset = await MediaLibrary.createAssetAsync(photo.uri);
+            console.log("Photo saved to gallery:", asset);
+            
+            Alert.alert(
+              "📸 Photo Saved!",
+              "The baby monitor screenshot has been saved to your gallery.",
+              [{ text: "OK" }]
+            );
+          } else {
+            // Permission denied, but still show the URI
+            Alert.alert(
+              "Photo Captured!",
+              `Picture taken but not saved to gallery.\n\nTemporary path: ${photo.uri}`,
+              [{ text: "OK" }]
+            );
+          }
+        }
+      } catch (error: any) {
+        console.error("Error taking picture:", error);
+        Alert.alert("Error", `Failed to take picture: ${error.message || "Unknown error"}`);
       }
-      setIsPlaying(!isPlaying);
+    } else {
+      console.warn("Camera ref is not available");
+      Alert.alert("Error", "Camera is not ready yet");
     }
   };
 
-  const toggleMute = async () => {
-    if (videoRef.current) {
-      await videoRef.current.setIsMutedAsync(!isMuted);
-      setIsMuted(!isMuted);
-    }
-  };
+  // Check permissions
+  if (!permission) {
+    return (
+      <View style={styles.normalContainer}>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading camera...</Text>
+        </View>
+      </View>
+    );
+  }
 
-  const renderVideoPlayer = (isFullscreenMode: boolean) => {
+  if (!permission.granted) {
+    return (
+      <View style={styles.normalContainer}>
+        <View style={styles.permissionContainer}>
+          <Ionicons name="camera-outline" size={60} color="#ccc" />
+          <Text style={styles.permissionText}>Camera Permission Required</Text>
+          <Text style={styles.permissionSubtext}>
+            Allow access to use the baby monitor
+          </Text>
+          <TouchableOpacity style={styles.permissionButton} onPress={requestPermission}>
+            <Text style={styles.permissionButtonText}>Grant Permission</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
+  const renderCamera = (isFullscreenMode: boolean) => {
     const containerStyle = isFullscreenMode
       ? styles.fullscreenContainer
       : styles.normalContainer;
 
     return (
       <View style={containerStyle}>
-        {/* Video Header */}
-        <View style={styles.videoHeader}>
+        {/* Camera Header */}
+        <View style={styles.cameraHeader}>
           <View style={styles.headerLeft}>
             <View style={styles.liveIndicator}>
               <View style={styles.liveDot} />
@@ -72,59 +132,24 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
           )}
         </View>
 
-        {/* Video Stream */}
-        <View style={styles.videoWrapper}>
-          {streamUrl ? (
-            <>
-              <Video
-                ref={videoRef}
-                source={{ uri: streamUrl }}
-                style={styles.video}
-                resizeMode={ResizeMode.CONTAIN}
-                shouldPlay={isPlaying}
-                isLooping
-                isMuted={isMuted}
-                onLoadStart={() => setIsLoading(true)}
-                onLoad={() => setIsLoading(false)}
-                onError={(error: any) => {
-                  console.error("Video error:", error);
-                  setIsLoading(false);
-                }}
-              />
-              {isLoading && (
-                <View style={styles.loadingOverlay}>
-                  <ActivityIndicator size="large" color="#A2E884" />
-                  <Text style={styles.loadingText}>Connecting to stream...</Text>
-                </View>
-              )}
-            </>
-          ) : (
-            <View style={styles.noStreamContainer}>
-              <Ionicons name="videocam-off-outline" size={60} color="#ccc" />
-              <Text style={styles.noStreamText}>No stream available</Text>
-              <Text style={styles.noStreamSubtext}>
-                Connect your camera to start monitoring
-              </Text>
-            </View>
-          )}
-        </View>
+        {/* Camera View */}
+        <CameraView
+          ref={cameraRef}
+          style={styles.camera}
+          facing={facing}
+        />
 
-        {/* Video Controls */}
+        {/* Camera Controls */}
         <View style={styles.controlsContainer}>
-          <TouchableOpacity onPress={togglePlayPause} style={styles.controlButton}>
-            <Ionicons
-              name={isPlaying ? "pause" : "play"}
-              size={24}
-              color="#fff"
-            />
+          <TouchableOpacity
+            onPress={toggleCameraFacing}
+            style={styles.controlButton}
+          >
+            <Ionicons name="camera-reverse" size={24} color="#fff" />
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={toggleMute} style={styles.controlButton}>
-            <Ionicons
-              name={isMuted ? "volume-mute" : "volume-high"}
-              size={24}
-              color="#fff"
-            />
+          <TouchableOpacity onPress={takePicture} style={styles.controlButton}>
+            <Ionicons name="camera" size={24} color="#fff" />
           </TouchableOpacity>
 
           {!isFullscreenMode && (
@@ -135,10 +160,6 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
               <Ionicons name="expand" size={24} color="#fff" />
             </TouchableOpacity>
           )}
-
-          <TouchableOpacity style={styles.controlButton}>
-            <Ionicons name="camera" size={24} color="#fff" />
-          </TouchableOpacity>
         </View>
       </View>
     );
@@ -147,7 +168,7 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
   return (
     <>
       {/* Normal View */}
-      {renderVideoPlayer(false)}
+      {renderCamera(false)}
 
       {/* Fullscreen Modal */}
       <Modal
@@ -157,7 +178,7 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
         supportedOrientations={["portrait", "landscape"]}
       >
         <View style={styles.fullscreenWrapper}>
-          {renderVideoPlayer(true)}
+          {renderCamera(true)}
         </View>
       </Modal>
     </>
@@ -182,7 +203,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#000",
   },
-  videoHeader: {
+  camera: {
+    flex: 1,
+  },
+  cameraHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
@@ -237,38 +261,7 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
   },
-  loadingOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
-  },
-  loadingText: {
-    color: "#fff",
-    marginTop: 12,
-    fontSize: 14,
-  },
-  noStreamContainer: {
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 24,
-  },
-  noStreamText: {
-    color: "#ccc",
-    fontSize: 18,
-    fontWeight: "600",
-    marginTop: 16,
-  },
-  noStreamSubtext: {
-    color: "#888",
-    fontSize: 14,
-    marginTop: 8,
-    textAlign: "center",
-  },
+
   controlsContainer: {
     flexDirection: "row",
     justifyContent: "space-around",
@@ -289,6 +282,46 @@ const styles = StyleSheet.create({
     height: 50,
     justifyContent: "center",
     alignItems: "center",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    color: "#fff",
+    fontSize: 16,
+  },
+  permissionContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+  },
+  permissionText: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "600",
+    marginTop: 16,
+    textAlign: "center",
+  },
+  permissionSubtext: {
+    color: "#ccc",
+    fontSize: 14,
+    marginTop: 8,
+    textAlign: "center",
+  },
+  permissionButton: {
+    backgroundColor: "#A2E884",
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 25,
+    marginTop: 20,
+  },
+  permissionButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
   },
 });
 

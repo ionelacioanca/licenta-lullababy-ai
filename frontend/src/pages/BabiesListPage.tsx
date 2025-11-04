@@ -1,0 +1,325 @@
+import React, { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  ActivityIndicator,
+  Image,
+} from "react-native";
+import { useRouter } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Ionicons } from "@expo/vector-icons";
+
+interface Baby {
+  _id: string;
+  name: string;
+  sex: string;
+  birthDate: string;
+  birthWeight?: number;
+  birthLength?: number;
+  birthType?: string;
+  gestationalWeeks?: number;
+  knownAllergies?: string;
+}
+
+interface BabyWithAvatar extends Baby {
+  avatarColor?: string;
+  avatarImage?: string | null;
+}
+
+const BabiesListPage: React.FC = () => {
+  const router = useRouter();
+  const [babies, setBabies] = useState<BabyWithAvatar[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    loadBabies();
+  }, [refreshKey]);
+
+  // Reload when component mounts or becomes visible
+  useEffect(() => {
+    const handleFocus = () => {
+      setRefreshKey(prev => prev + 1);
+    };
+    
+    // Reload immediately when page loads
+    handleFocus();
+  }, []);
+
+  const loadBabies = async () => {
+    try {
+      const parentId = await AsyncStorage.getItem("parentId");
+      const token = await AsyncStorage.getItem("token");
+
+      if (!parentId) {
+        console.warn("No parentId found");
+        setLoading(false);
+        return;
+      }
+
+      const response = await fetch(
+        `http://192.168.1.50:5000/api/baby/parent/${parentId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch babies data");
+      }
+
+      const data = await response.json();
+      if (data && Array.isArray(data)) {
+        // Load avatar settings for each baby
+        const babiesWithAvatars = await Promise.all(
+          data.map(async (baby: Baby) => {
+            const avatarColor = await AsyncStorage.getItem(`baby_avatar_${baby._id}`);
+            const avatarImage = await AsyncStorage.getItem(`baby_image_${baby._id}`);
+            return {
+              ...baby,
+              avatarColor: avatarColor || "#00CFFF",
+              avatarImage: avatarImage || null,
+            };
+          })
+        );
+        setBabies(babiesWithAvatars);
+        console.log("Babies loaded with avatars:", babiesWithAvatars);
+      }
+    } catch (error) {
+      console.error("Error loading babies:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const calculateAge = (birthDate: string) => {
+    const birth = new Date(birthDate);
+    const today = new Date();
+    
+    let years = today.getFullYear() - birth.getFullYear();
+    let months = today.getMonth() - birth.getMonth();
+    
+    if (months < 0) {
+      years--;
+      months += 12;
+    }
+    
+    return `${years} years and ${months} months old`;
+  };
+
+  const handleEditProfile = (baby: Baby) => {
+    // Store selected baby ID and navigate to profile page
+    AsyncStorage.setItem("selectedBabyId", baby._id);
+    router.push("/childProfile");
+  };
+
+  const handleAddChild = () => {
+    router.push("/babyDetails");
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#A2E884" />
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color="#333" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Child Profile</Text>
+        <TouchableOpacity onPress={handleAddChild} style={styles.addButton}>
+          <Ionicons name="person-add" size={24} color="#A2E884" />
+          <Text style={styles.addButtonText}>Add</Text>
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {babies.length > 0 ? (
+          babies.map((baby) => (
+            <View key={baby._id} style={styles.babyCard}>
+              {/* Baby Avatar and Info */}
+              <View style={styles.babyInfo}>
+                <View style={[styles.avatar, { backgroundColor: baby.avatarColor || "#00CFFF" }]}>
+                  {baby.avatarImage ? (
+                    <Image source={{ uri: baby.avatarImage }} style={styles.avatarImage} />
+                  ) : (
+                    <Text style={styles.avatarText}>
+                      {baby.name ? baby.name.charAt(0).toUpperCase() : "B"}
+                    </Text>
+                  )}
+                </View>
+                <View style={styles.babyDetails}>
+                  <Text style={styles.babyName}>{baby.name || "Baby"}</Text>
+                  <Text style={styles.babyAge}>
+                    {baby.birthDate ? calculateAge(baby.birthDate) : "Age unknown"}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Edit Profile Button */}
+              <TouchableOpacity
+                style={styles.editButton}
+                onPress={() => handleEditProfile(baby)}
+              >
+                <Text style={styles.editButtonText}>Edit profile</Text>
+              </TouchableOpacity>
+            </View>
+          ))
+        ) : (
+          <View style={styles.noChildrenContainer}>
+            <Ionicons name="person-add-outline" size={80} color="#ccc" />
+            <Text style={styles.noChildrenText}>No children profiles found</Text>
+            <TouchableOpacity style={styles.addChildButton} onPress={handleAddChild}>
+              <Text style={styles.addChildButtonText}>Add Child Profile</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </ScrollView>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#FFF8F0",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#FFF8F0",
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: "#FFF8F0",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E0E0E0",
+  },
+  backButton: {
+    padding: 8,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  addButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  addButtonText: {
+    fontSize: 16,
+    color: "#A2E884",
+    fontWeight: "600",
+  },
+  content: {
+    flex: 1,
+    padding: 16,
+  },
+  babyCard: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  babyInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  avatar: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "#00CFFF",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 16,
+    overflow: "hidden",
+  },
+  avatarImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+  },
+  avatarText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 36,
+  },
+  babyDetails: {
+    flex: 1,
+  },
+  babyName: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 4,
+  },
+  babyAge: {
+    fontSize: 16,
+    color: "#666",
+  },
+  editButton: {
+    alignSelf: "flex-start",
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: "transparent",
+  },
+  editButtonText: {
+    color: "#A2E884",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  noChildrenContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 40,
+    marginTop: 100,
+  },
+  noChildrenText: {
+    fontSize: 18,
+    color: "#999",
+    marginTop: 20,
+    marginBottom: 30,
+    textAlign: "center",
+  },
+  addChildButton: {
+    backgroundColor: "#A2E884",
+    paddingHorizontal: 32,
+    paddingVertical: 14,
+    borderRadius: 25,
+  },
+  addChildButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+});
+
+export default BabiesListPage;
