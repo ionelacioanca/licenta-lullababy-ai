@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { View } from "react-native";
+import { View, ScrollView, StyleSheet } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router";
 import Header from "./Header";
 import Footer from "./Footer";
+import BabyMonitorStream from "../components/BabyMonitorStream";
 
 const DashboardPage: React.FC = () => {
+  const router = useRouter();
   const [babyName, setBabyName] = useState("");
   const [childInitial, setChildInitial] = useState("?");
 
@@ -61,18 +64,37 @@ const DashboardPage: React.FC = () => {
 
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={styles.container}>
       <Header
         childInitial={childInitial}
         babyName={babyName}
-        onEditProfile={() => {}}
+        onEditProfile={() => router.push("/babiesList")}
         onMessages={() => {}}
         onSettings={() => {}}
         unreadMessages={3}
       />
+      
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <BabyMonitorStream 
+          babyName={babyName}
+        />
+        
+        {/* Add more dashboard content here */}
+      </ScrollView>
+      
       <Footer active="Home" onNavigate={() => {}} />
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#FFF8F0",
+  },
+  content: {
+    flex: 1,
+  },
+});
 
 export default DashboardPage;
