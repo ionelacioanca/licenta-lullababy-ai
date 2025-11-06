@@ -5,18 +5,24 @@ import { Ionicons } from "@expo/vector-icons"; // sau altă librărie de iconuri
 type HeaderProps = {
   childInitial: string;
   babyName: string;
+  avatarColor?: string;
+  avatarImage?: string | null;
   onEditProfile: () => void;
   onMessages: () => void;
   onSettings: () => void;
   unreadMessages?: number;
 };
 
-export default function Header({ childInitial,  babyName, onEditProfile, onMessages, onSettings, unreadMessages = 0 }: HeaderProps) {
+export default function Header({ childInitial,  babyName, avatarColor = "#00CFFF", avatarImage, onEditProfile, onMessages, onSettings, unreadMessages = 0 }: HeaderProps) {
   return (
     <View style={styles.container}>
         <View style={styles.leftContainer}>
-            <TouchableOpacity style={styles.avatar} onPress={onEditProfile}>
-                <Text style={styles.avatarText}>{childInitial}</Text>
+            <TouchableOpacity style={[styles.avatar, { backgroundColor: avatarColor }]} onPress={onEditProfile}>
+                {avatarImage ? (
+                  <Image source={{ uri: avatarImage }} style={styles.avatarImage} />
+                ) : (
+                  <Text style={styles.avatarText}>{childInitial}</Text>
+                )}
             </TouchableOpacity>
             <Text style={styles.nameText}>{babyName}</Text>
         </View>
@@ -55,9 +61,14 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#00CFFF",
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
+  },
+  avatarImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
   },
   avatarText: {
     color: "#fff",

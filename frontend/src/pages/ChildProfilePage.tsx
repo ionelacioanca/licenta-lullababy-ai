@@ -303,8 +303,8 @@ const ChildProfilePage: React.FC = () => {
 
       Alert.alert("Success", "Profile updated successfully");
       
-      // Navigate back to babies list to see the updates
-      router.push("/babiesList");
+      // Go back to babies list (which will reload via useFocusEffect)
+      router.back();
     } catch (error) {
       console.error("Error updating profile:", error);
       Alert.alert("Error", "Failed to update profile");
@@ -352,8 +352,8 @@ const ChildProfilePage: React.FC = () => {
                 throw new Error("Failed to delete baby profile");
               }
 
-              // Navigate back to babies list (it will reload and show updated list)
-              router.push("/babiesList");
+              // Go back to babies list (which will reload via useFocusEffect)
+              router.back();
             } catch (error) {
               console.error("Error deleting profile:", error);
               Alert.alert("Error", "Failed to delete profile");
@@ -540,10 +540,7 @@ const ChildProfilePage: React.FC = () => {
           <View style={styles.modalContent}>
             <TouchableOpacity
               style={styles.modalOption}
-              onPress={() => {
-                setShowAvatarModal(false);
-                handleTakePhoto();
-              }}
+              onPress={handleTakePhoto}
             >
               <Text style={styles.modalOptionText}>Take photo</Text>
             </TouchableOpacity>
@@ -552,10 +549,7 @@ const ChildProfilePage: React.FC = () => {
 
             <TouchableOpacity
               style={styles.modalOption}
-              onPress={() => {
-                setShowAvatarModal(false);
-                handleSelectFromLibrary();
-              }}
+              onPress={handleSelectFromLibrary}
             >
               <Text style={styles.modalOptionText}>Select photo from library</Text>
             </TouchableOpacity>

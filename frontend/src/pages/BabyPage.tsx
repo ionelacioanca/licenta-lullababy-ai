@@ -131,7 +131,17 @@ const BabyDetailsPage: React.FC = () => {
       });
 
       if (response.ok) {
+        const data = await response.json();
+        const newBabyId = data.baby?._id || data._id || data.id; // Get the new baby's ID from response
+        
         await AsyncStorage.setItem("babyName", name);
+        
+        // Set the newly created baby as the selected baby
+        if (newBabyId) {
+          await AsyncStorage.setItem("selectedBabyId", newBabyId);
+          console.log("New baby selected:", newBabyId);
+        }
+        
         Alert.alert("Success", "Baby details saved!");
         router.push("/dashboard");
       } else {
