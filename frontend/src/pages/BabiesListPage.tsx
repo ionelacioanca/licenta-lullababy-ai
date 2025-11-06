@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
   Image,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -33,21 +33,13 @@ const BabiesListPage: React.FC = () => {
   const router = useRouter();
   const [babies, setBabies] = useState<BabyWithAvatar[]>([]);
   const [loading, setLoading] = useState(true);
-  const [refreshKey, setRefreshKey] = useState(0);
 
-  useEffect(() => {
-    loadBabies();
-  }, [refreshKey]);
-
-  // Reload when component mounts or becomes visible
-  useEffect(() => {
-    const handleFocus = () => {
-      setRefreshKey(prev => prev + 1);
-    };
-    
-    // Reload immediately when page loads
-    handleFocus();
-  }, []);
+  // Reload babies data every time this screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      loadBabies();
+    }, [])
+  );
 
   const loadBabies = async () => {
     try {
@@ -113,6 +105,12 @@ const BabiesListPage: React.FC = () => {
     return `${years} years and ${months} months old`;
   };
 
+  const handleSelectBaby = async (baby: Baby) => {
+    // Store selected baby ID and navigate to dashboard
+    await AsyncStorage.setItem("selectedBabyId", baby._id);
+    router.push("/dashboard");
+  };
+
   const handleEditProfile = (baby: Baby) => {
     // Store selected baby ID and navigate to profile page
     AsyncStorage.setItem("selectedBabyId", baby._id);
@@ -138,7 +136,7 @@ const BabiesListPage: React.FC = () => {
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Child Profile</Text>
+        <Text style={styles.headerTitle}>My Babies</Text>
         <TouchableOpacity onPress={handleAddChild} style={styles.addButton}>
           <Ionicons name="person-add" size={24} color="#A2E884" />
           <Text style={styles.addButtonText}>Add</Text>
@@ -148,7 +146,12 @@ const BabiesListPage: React.FC = () => {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {babies.length > 0 ? (
           babies.map((baby) => (
-            <View key={baby._id} style={styles.babyCard}>
+            <TouchableOpacity 
+              key={baby._id} 
+              style={styles.babyCard}
+              onPress={() => handleSelectBaby(baby)}
+              activeOpacity={0.7}
+            >
               {/* Baby Avatar and Info */}
               <View style={styles.babyInfo}>
                 <View style={[styles.avatar, { backgroundColor: baby.avatarColor || "#00CFFF" }]}>
@@ -165,17 +168,20 @@ const BabiesListPage: React.FC = () => {
                   <Text style={styles.babyAge}>
                     {baby.birthDate ? calculateAge(baby.birthDate) : "Age unknown"}
                   </Text>
+                  
+                  {/* Edit Profile Button */}
+                  <TouchableOpacity
+                    style={styles.editButton}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleEditProfile(baby);
+                    }}
+                  >
+                    <Text style={styles.editButtonText}>Edit profile</Text>
+                  </TouchableOpacity>
                 </View>
               </View>
-
-              {/* Edit Profile Button */}
-              <TouchableOpacity
-                style={styles.editButton}
-                onPress={() => handleEditProfile(baby)}
-              >
-                <Text style={styles.editButtonText}>Edit profile</Text>
-              </TouchableOpacity>
-            </View>
+            </TouchableOpacity>
           ))
         ) : (
           <View style={styles.noChildrenContainer}>
@@ -285,10 +291,11 @@ const styles = StyleSheet.create({
   },
   editButton: {
     alignSelf: "flex-start",
-    paddingHorizontal: 24,
+    paddingHorizontal: 0,
     paddingVertical: 10,
     borderRadius: 20,
     backgroundColor: "transparent",
+    marginTop: 4,
   },
   editButtonText: {
     color: "#A2E884",
