@@ -5,6 +5,7 @@ import connectDB from './config/db.js';
 import dotenv from 'dotenv';
 import authRouter from './routes/userRoutes.js';
 import babyRouter from './routes/babyRoutes.js';
+import soundRouter from './routes/soundRoutes.js';
 import auth from './middleware/authMiddleware.js';
 import cors from 'cors';
 
@@ -17,6 +18,7 @@ const PORT = process.env.PORT || 5000;
 
 app.use('/api', authRouter);
 app.use('/api', babyRouter);
+app.use('/api/sounds', soundRouter);
 app.get('/api/private', auth, (req, res) => {
     res.json({ message: 'This is a private route' });
 });

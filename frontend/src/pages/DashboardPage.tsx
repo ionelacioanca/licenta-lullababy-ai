@@ -5,6 +5,9 @@ import { useRouter, useFocusEffect } from "expo-router";
 import Header from "./Header";
 import Footer from "./Footer";
 import BabyMonitorStream from "../components/BabyMonitorStream";
+import SoundPlayer from "../components/SoundPlayer";
+import SoundLibraryModal from "../components/SoundLibraryModal";
+import { Sound } from "../services/soundService";
 
 const DashboardPage: React.FC = () => {
   const router = useRouter();
@@ -13,6 +16,8 @@ const DashboardPage: React.FC = () => {
   const [avatarColor, setAvatarColor] = useState("#00CFFF");
   const [avatarImage, setAvatarImage] = useState<string | null>(null);
   const [babyId, setBabyId] = useState<string | null>(null);
+  const [isLibraryOpen, setIsLibraryOpen] = useState(false);
+  const [selectedSound, setSelectedSound] = useState<Sound | null>(null);
 
   const loadBabyForParent = async () => {
     const parentId = await AsyncStorage.getItem("parentId");
@@ -95,7 +100,9 @@ const DashboardPage: React.FC = () => {
     }, [])
   );
 
-
+  const handleSelectSound = (sound: Sound) => {
+    setSelectedSound(sound);
+  };
 
   return (
     <View style={styles.container}>
@@ -112,13 +119,23 @@ const DashboardPage: React.FC = () => {
       
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <BabyMonitorStream babyName={babyName} />
+        <SoundPlayer
+          onOpenLibrary={() => setIsLibraryOpen(true)}
+          selectedSound={selectedSound}
+        />
         {/* Add more dashboard content here */}
       </ScrollView>
+      
+      <SoundLibraryModal
+        visible={isLibraryOpen}
+        onClose={() => setIsLibraryOpen(false)}
+        onSelectSound={handleSelectSound}
+      />
       
       <Footer active="Home" onNavigate={() => {}} />
     </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
