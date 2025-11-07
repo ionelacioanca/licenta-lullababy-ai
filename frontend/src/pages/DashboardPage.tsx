@@ -26,7 +26,7 @@ const DashboardPage: React.FC = () => {
     const token = await AsyncStorage.getItem("token");
 
     try {
-      const response = await fetch(`http://192.168.1.50:5000/api/baby/parent/${parentId}`, {
+  const response = await fetch(`http://192.168.1.50:5000/api/baby/parent/${parentId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -111,10 +111,7 @@ const DashboardPage: React.FC = () => {
       />
       
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <BabyMonitorStream 
-          babyName={babyName}
-        />
-        
+        <BabyMonitorStream babyName={babyName} />
         {/* Add more dashboard content here */}
       </ScrollView>
       

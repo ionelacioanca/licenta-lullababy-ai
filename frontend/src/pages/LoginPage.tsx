@@ -91,7 +91,7 @@ const LoginPage: React.FC = () => {
     try {
       console.log("Attempting login with email:", email);
       
-      const response = await fetch("http://192.168.1.50:5000/api/login", {
+  const response = await fetch("http://192.168.1.50:5000/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),

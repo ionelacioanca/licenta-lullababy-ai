@@ -11,6 +11,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { CameraView, CameraType, useCameraPermissions } from "expo-camera";
 import * as MediaLibrary from "expo-media-library";
+import { Audio } from "expo-av";
 
 type BabyMonitorStreamProps = {
   babyName?: string;
@@ -23,8 +24,107 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [facing, setFacing] = useState<CameraType>("front");
   const [permission, requestPermission] = useCameraPermissions();
+  const [audioPermission, requestAudioPermission] = Audio.usePermissions();
+  const [isListening, setIsListening] = useState(false);
+  const [audioLevel, setAudioLevel] = useState(0);
   
   const cameraRef = useRef<CameraView>(null);
+  const recordingRef = useRef<Audio.Recording | null>(null);
+  const pollTimer = useRef<number | null>(null);
+
+  // Auto-start audio monitoring when permissions granted
+  useEffect(() => {
+    if (!audioPermission) return;
+    const ensureAudio = async () => {
+      if (!audioPermission.granted) {
+        if (audioPermission.canAskAgain) {
+          const res = await requestAudioPermission();
+          if (res.granted && !isListening) {
+            startListening();
+          }
+        }
+      } else {
+        if (!isListening) {
+          startListening();
+        }
+      }
+    };
+    ensureAudio();
+  }, [audioPermission]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      stopListening();
+    };
+  }, []);
+
+  const startListening = async () => {
+    try {
+      if (!audioPermission?.granted) {
+        const res = await requestAudioPermission();
+        if (!res.granted) return;
+      }
+
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+        shouldDuckAndroid: false,
+        playThroughEarpieceAndroid: false,
+        staysActiveInBackground: true,
+      });
+
+      const recording = new Audio.Recording();
+      const opts: any = { ...(Audio.RecordingOptionsPresets.HIGH_QUALITY as any) };
+      opts.isMeteringEnabled = true;
+      await recording.prepareToRecordAsync(opts);
+
+      await recording.startAsync();
+      recordingRef.current = recording;
+      setIsListening(true);
+
+      // Poll metering for audio level
+      if (pollTimer.current) clearInterval(pollTimer.current as any);
+      pollTimer.current = (setInterval(async () => {
+        try {
+          const status = await recording.getStatusAsync();
+          const dB = (status as any).metering ?? -160;
+          const normalized = Math.max(0, Math.min(1, 1 - Math.abs(dB) / 160));
+          setAudioLevel(normalized);
+        } catch (e) {
+          // ignore
+        }
+      }, 200) as unknown) as number;
+    } catch (e) {
+      console.warn("Failed to start microphone:", e);
+    }
+  };
+
+  const stopListening = async () => {
+    try {
+      if (pollTimer.current) {
+        clearInterval(pollTimer.current as any);
+        pollTimer.current = null;
+      }
+      if (recordingRef.current) {
+        const rec = recordingRef.current;
+        try {
+          await rec.stopAndUnloadAsync();
+        } catch {}
+        recordingRef.current = null;
+      }
+      setIsListening(false);
+      setAudioLevel(0);
+      await Audio.setAudioModeAsync({ allowsRecordingIOS: false, staysActiveInBackground: false });
+    } catch (e) {
+      // ignore
+    }
+  };
+
+  const toggleAudioMonitoring = () => {
+    if (isListening) stopListening();
+    else startListening();
+  };
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
@@ -139,6 +239,30 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
           facing={facing}
         />
 
+        {/* Audio Level Overlay - Top of video */}
+        <View style={styles.audioOverlay}>
+          <View style={styles.audioStatusRow}>
+            <Ionicons 
+              name={isListening ? "mic" : "mic-off"} 
+              size={16} 
+              color={isListening ? "#36c261" : "#999"} 
+            />
+            <Text style={[styles.audioStatusText, isListening && styles.audioStatusActive]}>
+              {isListening ? "Listening" : "Audio Off"}
+            </Text>
+          </View>
+          <View style={styles.audioMeterContainer}>
+            <View style={styles.audioMeterBg}>
+              <View 
+                style={[
+                  styles.audioMeterFill, 
+                  { width: `${Math.round(audioLevel * 100)}%` }
+                ]} 
+              />
+            </View>
+          </View>
+        </View>
+
         {/* Camera Controls */}
         <View style={styles.controlsContainer}>
           <TouchableOpacity
@@ -150,6 +274,13 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
 
           <TouchableOpacity onPress={takePicture} style={styles.controlButton}>
             <Ionicons name="camera" size={24} color="#fff" />
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            onPress={toggleAudioMonitoring} 
+            style={[styles.controlButton, isListening && styles.controlButtonActive]}
+          >
+            <Ionicons name={isListening ? "mic" : "mic-off"} size={24} color="#fff" />
           </TouchableOpacity>
 
           {!isFullscreenMode && (
@@ -282,6 +413,48 @@ const styles = StyleSheet.create({
     height: 50,
     justifyContent: "center",
     alignItems: "center",
+  },
+  controlButtonActive: {
+    backgroundColor: "#36c261",
+  },
+  audioOverlay: {
+    position: "absolute",
+    top: 50,
+    left: 12,
+    right: 12,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    borderRadius: 8,
+    padding: 10,
+    zIndex: 5,
+  },
+  audioStatusRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 8,
+  },
+  audioStatusText: {
+    color: "#999",
+    fontSize: 13,
+    fontWeight: "600",
+    marginLeft: 6,
+  },
+  audioStatusActive: {
+    color: "#36c261",
+  },
+  audioMeterContainer: {
+    width: "100%",
+  },
+  audioMeterBg: {
+    height: 6,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    borderRadius: 3,
+    overflow: "hidden",
+  },
+  audioMeterFill: {
+    height: 6,
+    backgroundColor: "#A2E884",
+    borderRadius: 3,
   },
   loadingContainer: {
     flex: 1,
