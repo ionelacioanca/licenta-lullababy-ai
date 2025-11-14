@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, ScrollView, StyleSheet } from "react-native";
+import { View, ScrollView, StyleSheet, TouchableOpacity } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter, useFocusEffect } from "expo-router";
 import Header from "./Header";
@@ -8,6 +8,7 @@ import BabyMonitorStream from "../components/BabyMonitorStream";
 import SoundPlayer from "../components/SoundPlayer";
 import SoundLibraryModal from "../components/SoundLibraryModal";
 import { Sound } from "../services/soundService";
+import ChatbotModal from "../components/ChatbotModal";
 
 const DashboardPage: React.FC = () => {
   const router = useRouter();
@@ -18,6 +19,7 @@ const DashboardPage: React.FC = () => {
   const [babyId, setBabyId] = useState<string | null>(null);
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
   const [selectedSound, setSelectedSound] = useState<Sound | null>(null);
+  const [chatOpen, setChatOpen] = useState(false);
 
   const loadBabyForParent = async () => {
     const parentId = await AsyncStorage.getItem("parentId");
@@ -31,7 +33,7 @@ const DashboardPage: React.FC = () => {
     const token = await AsyncStorage.getItem("token");
 
     try {
-  const response = await fetch(`http://192.168.1.50:5000/api/baby/parent/${parentId}`, {
+  const response = await fetch(`http://192.168.1.7:5000/api/baby/parent/${parentId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -132,6 +134,24 @@ const DashboardPage: React.FC = () => {
         onSelectSound={handleSelectSound}
       />
       
+      {/* Floating Chat Button */}
+      <TouchableOpacity
+        style={styles.chatButton}
+        activeOpacity={0.85}
+        onPress={() => setChatOpen(true)}
+      >
+        <View style={styles.chatButtonInner}>
+          {/* Simple chat icon dots */}
+          <View style={styles.dotRow}>
+            <View style={styles.dot} />
+            <View style={styles.dot} />
+            <View style={styles.dot} />
+          </View>
+        </View>
+      </TouchableOpacity>
+
+      <ChatbotModal visible={chatOpen} onClose={() => setChatOpen(false)} />
+
       <Footer active="Home" onNavigate={() => {}} />
     </View>
   );
@@ -144,6 +164,37 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  chatButton: {
+    position: 'absolute',
+    bottom: 90,
+    right: 24,
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    backgroundColor: '#0a7ea4',
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  chatButtonInner: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#0d93bf',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  dotRow: { flexDirection: 'row', gap: 6 },
+  dot: {
+    width: 8,
+    height: 8,
+    backgroundColor: 'white',
+    borderRadius: 4,
   },
 });
 

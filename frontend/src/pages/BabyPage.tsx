@@ -113,7 +113,7 @@ const BabyDetailsPage: React.FC = () => {
 
     try {
       console.log("👉 Trimitem parentId:", parentId);
-  const response = await fetch("http://192.168.1.50:5000/api/babyDetails", {
+  const response = await fetch("http://192.168.1.7:5000/api/babyDetails", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
