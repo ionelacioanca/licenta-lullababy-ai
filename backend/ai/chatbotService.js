@@ -98,18 +98,43 @@ Assistant:`;
 
 // Funcția principală apelată din controller
 async function getChatbotReply(message) {
-  const lang = detectLanguage(message); // en / ro
-  const knowledge = getKnowledge(message);
-  const prompt = buildPrompt(message, lang, knowledge);
+  try {
+    const lang = detectLanguage(message); // en / ro
+    const knowledge = getKnowledge(message);
+    const prompt = buildPrompt(message, lang, knowledge);
 
-  // apelăm Ollama HTTP API – ai nevoie de modelul 'babybuddy' creat
-  const response = await axios.post("http://localhost:11434/api/generate", {
-    model: "babybuddy", // ⬅️ Numele modelului tău Ollama
-    prompt,
-    stream: false,
-  });
+    console.log(`[Chatbot] Processing message (${lang}): "${message.substring(0, 50)}..."`);
+    const startTime = Date.now();
 
-  return response.data?.response || "";
+    // apelăm Ollama HTTP API – ai nevoie de modelul 'babybuddy' creat
+    const response = await axios.post("http://localhost:11434/api/generate", {
+      model: "babybuddy", // ⬅️ Numele modelului tău Ollama
+      prompt,
+      stream: false,
+      options: {
+        temperature: 0.7,
+        num_predict: 300, // Limit response length for faster generation
+        top_k: 40,
+        top_p: 0.9,
+      }
+    }, {
+      timeout: 50000, // 50 second timeout for Ollama
+    });
+
+    const elapsed = Date.now() - startTime;
+    console.log(`[Chatbot] Response received in ${elapsed}ms`);
+
+    return response.data?.response || "";
+  } catch (error) {
+    console.error("[Chatbot] Error:", error.message);
+    if (error.code === 'ECONNREFUSED') {
+      throw new Error("Ollama service is not running. Please start Ollama.");
+    }
+    if (error.code === 'ETIMEDOUT') {
+      throw new Error("Ollama is taking too long to respond. Try a shorter question.");
+    }
+    throw error;
+  }
 }
 
 export { getChatbotReply };

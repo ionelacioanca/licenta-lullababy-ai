@@ -11,7 +11,7 @@ export interface ChatMessage {
 
 export async function sendChatMessage(message: string): Promise<string> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15000); // 15s timeout
+  const timeout = setTimeout(() => controller.abort(), 60000); // 60s timeout
   try {
     const token = await AsyncStorage.getItem('token');
     const res = await fetch(`${API_BASE}/chatbot`, {
