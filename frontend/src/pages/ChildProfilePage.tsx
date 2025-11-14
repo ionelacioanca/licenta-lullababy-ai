@@ -93,7 +93,7 @@ const ChildProfilePage: React.FC = () => {
       }
 
       const response = await fetch(
-        `http://192.168.1.50:5000/api/baby/parent/${parentId}`,
+        `http://192.168.1.7:5000/api/baby/parent/${parentId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -269,7 +269,7 @@ const ChildProfilePage: React.FC = () => {
       };
 
       const response = await fetch(
-        `http://192.168.1.50:5000/api/baby/${selectedBabyId}`,
+        `http://192.168.1.7:5000/api/baby/${selectedBabyId}`,
         {
           method: "PUT",
           headers: {
@@ -338,7 +338,7 @@ const ChildProfilePage: React.FC = () => {
               await AsyncStorage.removeItem(`baby_image_${selectedBabyId}`);
 
               const response = await fetch(
-                `http://192.168.1.50:5000/api/baby/${selectedBabyId}`,
+                `http://192.168.1.7:5000/api/baby/${selectedBabyId}`,
                 {
                   method: "DELETE",
                   headers: {

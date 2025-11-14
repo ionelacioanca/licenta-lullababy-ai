@@ -5,6 +5,8 @@ import connectDB from './config/db.js';
 import dotenv from 'dotenv';
 import authRouter from './routes/userRoutes.js';
 import babyRouter from './routes/babyRoutes.js';
+import soundRouter from './routes/soundRoutes.js';
+import chatbotRoutes from './routes/chatbotRoutes.js';
 import auth from './middleware/authMiddleware.js';
 import cors from 'cors';
 
@@ -17,6 +19,9 @@ const PORT = process.env.PORT || 5000;
 
 app.use('/api', authRouter);
 app.use('/api', babyRouter);
+app.use('/api/sounds', soundRouter);
+app.use('/api', chatbotRoutes);
+console.log('Chatbot routes registered at /api');
 app.get('/api/private', auth, (req, res) => {
     res.json({ message: 'This is a private route' });
 });
@@ -29,7 +34,7 @@ async function main() {
         console.log(`Server running on port ${PORT}`);
         console.log(`Server accessible at:`);
         console.log(`  - http://localhost:${PORT}`);
-        console.log(`  - http://192.168.1.50:${PORT} (WiFi)`);
+    console.log(`  - http://192.168.1.7:${PORT} (WiFi)`);
     });
 }
 

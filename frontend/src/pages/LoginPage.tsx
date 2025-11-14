@@ -28,7 +28,7 @@ const LoginPage: React.FC = () => {
       const token = await AsyncStorage.getItem("token");
       if (token) {
         try {
-          const res = await fetch("http://192.168.1.50:5000/api/verify-token", {
+          const res = await fetch("http://192.168.1.7:5000/api/verify-token", {
             headers: { Authorization: `Bearer ${token}` },
           });
           if (res.ok) {
@@ -91,7 +91,7 @@ const LoginPage: React.FC = () => {
     try {
       console.log("Attempting login with email:", email);
       
-      const response = await fetch("http://192.168.1.50:5000/api/login", {
+  const response = await fetch("http://192.168.1.7:5000/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
