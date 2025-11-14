@@ -1,8 +1,8 @@
-// backend/controllers/chatController.js
+// backend/controllers/chatbotController.js
 
-const { getChatbotReply } = require("../ai/chatbotService"); // ⬅️ folosim serviciul de mai sus
+import { getChatbotReply } from '../ai/chatbotService.js';
 
-exports.chatWithBot = async (req, res, next) => {
+export const chatWithBot = async (req, res, next) => {
   try {
     const { message } = req.body; // ⬅️ mesajul trimis din aplicația mobilă
 

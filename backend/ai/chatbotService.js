@@ -1,8 +1,13 @@
 // backend/ai/chatbotService.js
 
-const axios = require("axios");
-const fs = require("fs");
-const path = require("path");
+import axios from 'axios';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// ES6 equivalent of __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Folderul cu fișierele tale .txt (crying, sleep, etc.)
 // __dirname = backend/ai → .. = backend → .. = root → /chatbot/knowledge
@@ -107,6 +112,4 @@ async function getChatbotReply(message) {
   return response.data?.response || "";
 }
 
-module.exports = {
-  getChatbotReply,
-};
+export { getChatbotReply };

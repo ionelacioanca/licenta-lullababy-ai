@@ -1,11 +1,11 @@
-// backend/routes/chatRoutes.js
+// backend/routes/chatbotRoutes.js
 
-const express = require("express");
+import express from 'express';
 const router = express.Router();
 
-const chatController = require("../controllers/chatController");
+import { chatWithBot } from '../controllers/chatbotController.js';
 
 // POST /api/chatbot  → trimite { message: "..." }
-router.post("/chatbot", chatController.chatWithBot); // ⬅️ endpoint pentru chatbot
+router.post("/chatbot", chatWithBot); // ⬅️ endpoint pentru chatbot
 
-module.exports = router;
+export default router;
