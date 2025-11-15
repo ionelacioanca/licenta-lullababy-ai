@@ -33,6 +33,14 @@ const babySchema = new mongoose.Schema({
     knownAllergies: {
         type: String
     },
+    avatarColor: {
+        type: String,
+        default: "#00CFFF"
+    },
+    avatarImage: {
+        type: String,
+        default: null
+    },
     parentId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User"

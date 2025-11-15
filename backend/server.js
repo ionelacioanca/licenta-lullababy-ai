@@ -15,6 +15,9 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
+// Serve uploaded files
+app.use('/uploads', express.static('uploads'));
+
 const PORT = process.env.PORT || 5000;
 
 app.use('/api', authRouter);

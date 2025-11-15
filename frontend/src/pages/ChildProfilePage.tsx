@@ -76,7 +76,14 @@ const ChildProfilePage: React.FC = () => {
       setEditedGestationalWeeks(baby.gestationalWeeks?.toString() || "");
       setEditedAllergies(baby.knownAllergies || "");
       setSelectedColor(baby.avatarColor || "#00CFFF");
-      setAvatarImage(baby.avatarImage || null);
+      
+      // Handle avatar image URL construction
+      const newAvatarImage = baby.avatarImage 
+        ? (baby.avatarImage.startsWith('http') ? baby.avatarImage : `http://192.168.1.7:5000${baby.avatarImage}`)
+        : null;
+      
+      console.log("Setting avatar image in useEffect:", newAvatarImage);
+      setAvatarImage(newAvatarImage);
     }
   }, [baby]);
 
@@ -114,11 +121,9 @@ const ChildProfilePage: React.FC = () => {
           setBaby(selectedBaby);
           console.log("Baby profile loaded:", selectedBaby);
           
-          // Load local avatar settings
-          const savedColor = await AsyncStorage.getItem(`baby_avatar_${selectedBabyId}`);
-          const savedImage = await AsyncStorage.getItem(`baby_image_${selectedBabyId}`);
-          if (savedColor) setSelectedColor(savedColor);
-          if (savedImage) setAvatarImage(savedImage);
+          // Load avatar data from backend
+          setSelectedColor(selectedBaby.avatarColor || "#00CFFF");
+          setAvatarImage(selectedBaby.avatarImage ? `http://192.168.1.7:5000${selectedBaby.avatarImage}` : null);
         } else {
           console.warn("Selected baby not found in data");
         }
@@ -145,6 +150,65 @@ const ChildProfilePage: React.FC = () => {
     return `${years} years and ${months} months old`;
   };
 
+  const uploadAvatarImage = async (imageUri: string) => {
+    try {
+      const selectedBabyId = await AsyncStorage.getItem("selectedBabyId");
+      const token = await AsyncStorage.getItem("token");
+      
+      if (!selectedBabyId) {
+        Alert.alert("Error", "Baby ID not found");
+        return;
+      }
+
+      // Create FormData for multipart/form-data upload
+      const formData = new FormData();
+      
+      // Extract filename from URI
+      const filename = imageUri.split('/').pop() || 'avatar.jpg';
+      const match = /\.(\w+)$/.exec(filename);
+      const type = match ? `image/${match[1]}` : 'image/jpeg';
+      
+      // @ts-ignore - React Native FormData accepts this format
+      formData.append('avatar', {
+        uri: imageUri,
+        name: filename,
+        type: type,
+      });
+      
+      formData.append('avatarColor', selectedColor);
+
+      const response = await fetch(
+        `http://192.168.1.7:5000/api/baby/${selectedBabyId}/avatar`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to upload avatar image");
+      }
+
+      const updatedBaby = await response.json();
+      console.log("Updated baby from server:", updatedBaby);
+      console.log("Avatar image path:", updatedBaby.avatarImage);
+      
+      const fullImageUrl = updatedBaby.avatarImage ? `http://192.168.1.7:5000${updatedBaby.avatarImage}` : null;
+      console.log("Full image URL:", fullImageUrl);
+      
+      setBaby(updatedBaby);
+      setAvatarImage(fullImageUrl);
+      
+      Alert.alert("Success", "Avatar updated successfully!");
+    } catch (error) {
+      console.error("Error uploading avatar:", error);
+      Alert.alert("Error", "Failed to upload avatar image");
+    }
+  };
+
   const handleTakePhoto = async () => {
     try {
       const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
@@ -163,14 +227,7 @@ const ChildProfilePage: React.FC = () => {
 
       if (!result.canceled && result.assets && result.assets[0]) {
         const imageUri = result.assets[0].uri;
-        setAvatarImage(imageUri);
-        
-        // Save image immediately to AsyncStorage
-        const selectedBabyId = await AsyncStorage.getItem("selectedBabyId");
-        if (selectedBabyId) {
-          await AsyncStorage.setItem(`baby_image_${selectedBabyId}`, imageUri);
-        }
-        
+        await uploadAvatarImage(imageUri);
         setShowAvatarModal(false);
       }
     } catch (error) {
@@ -197,14 +254,7 @@ const ChildProfilePage: React.FC = () => {
 
       if (!result.canceled && result.assets && result.assets[0]) {
         const imageUri = result.assets[0].uri;
-        setAvatarImage(imageUri);
-        
-        // Save image immediately to AsyncStorage
-        const selectedBabyId = await AsyncStorage.getItem("selectedBabyId");
-        if (selectedBabyId) {
-          await AsyncStorage.setItem(`baby_image_${selectedBabyId}`, imageUri);
-        }
-        
+        await uploadAvatarImage(imageUri);
         setShowAvatarModal(false);
       }
     } catch (error) {
@@ -214,24 +264,84 @@ const ChildProfilePage: React.FC = () => {
   };
 
   const handleRemovePhoto = async () => {
-    setAvatarImage(null);
-    
-    // Remove image immediately from AsyncStorage
-    const selectedBabyId = await AsyncStorage.getItem("selectedBabyId");
-    if (selectedBabyId) {
-      await AsyncStorage.removeItem(`baby_image_${selectedBabyId}`);
+    try {
+      const selectedBabyId = await AsyncStorage.getItem("selectedBabyId");
+      const token = await AsyncStorage.getItem("token");
+      
+      if (!selectedBabyId) return;
+      
+      // Update backend to remove avatar image
+      const formData = new FormData();
+      formData.append('avatarColor', selectedColor);
+      formData.append('removeImage', 'true');
+      
+      const response = await fetch(
+        `http://192.168.1.7:5000/api/baby/${selectedBabyId}/avatar`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        }
+      );
+      
+      if (response.ok) {
+        const updatedBaby = await response.json();
+        console.log("Baby after removing photo:", updatedBaby);
+        setBaby({
+          ...updatedBaby,
+          avatarImage: null
+        });
+        setAvatarImage(null);
+        Alert.alert("Success", "Photo removed successfully!");
+      } else {
+        throw new Error("Failed to remove photo");
+      }
+    } catch (error) {
+      console.error("Error removing photo:", error);
+      Alert.alert("Error", "Failed to remove photo");
     }
     
     setShowAvatarModal(false);
   };
 
   const handleSelectColor = async (color: string) => {
-    setSelectedColor(color);
-    
-    // Save color immediately to AsyncStorage
-    const selectedBabyId = await AsyncStorage.getItem("selectedBabyId");
-    if (selectedBabyId) {
-      await AsyncStorage.setItem(`baby_avatar_${selectedBabyId}`, color);
+    try {
+      const selectedBabyId = await AsyncStorage.getItem("selectedBabyId");
+      const token = await AsyncStorage.getItem("token");
+      
+      if (!selectedBabyId) return;
+      
+      // Update backend with new color and remove image
+      const formData = new FormData();
+      formData.append('avatarColor', color);
+      formData.append('removeImage', 'true'); // Remove image when selecting color
+      
+      const response = await fetch(
+        `http://192.168.1.7:5000/api/baby/${selectedBabyId}/avatar`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        }
+      );
+      
+      if (response.ok) {
+        const updatedBaby = await response.json();
+        console.log("Baby after updating color:", updatedBaby);
+        setSelectedColor(color);
+        setBaby({
+          ...updatedBaby,
+          avatarImage: null
+        });
+        setAvatarImage(null); // Remove the image to show color instead
+      }
+    } catch (error) {
+      console.error("Error updating color:", error);
+      Alert.alert("Error", "Failed to update color");
     }
     
     setShowAvatarModal(false);
@@ -408,7 +518,13 @@ const ChildProfilePage: React.FC = () => {
             onPress={() => setShowAvatarModal(true)}
           >
             {avatarImage ? (
-              <Image source={{ uri: avatarImage }} style={styles.avatarImage} />
+              <Image 
+                key={avatarImage}
+                source={{ uri: avatarImage }} 
+                style={styles.avatarImage}
+                onError={(e) => console.log("Image load error:", e.nativeEvent.error)}
+                onLoad={() => console.log("Image loaded successfully:", avatarImage)}
+              />
             ) : (
               <Text style={styles.avatarText}>
                 {editedName ? editedName.charAt(0).toUpperCase() : "B"}
@@ -416,7 +532,7 @@ const ChildProfilePage: React.FC = () => {
             )}
           </TouchableOpacity>
           <TouchableOpacity onPress={() => setShowAvatarModal(true)}>
-            <Text style={styles.addPhotoText}>Add photo</Text>
+            <Text style={styles.addPhotoText}>{avatarImage ? "Change photo" : "Add photo"}</Text>
           </TouchableOpacity>
         </View>
 
