@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { View, ScrollView, StyleSheet, TouchableOpacity } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter, useFocusEffect } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import Header from "./Header";
 import Footer from "./Footer";
 import BabyMonitorStream from "../components/BabyMonitorStream";
@@ -133,14 +134,7 @@ const DashboardPage: React.FC = () => {
         activeOpacity={0.85}
         onPress={() => setChatOpen(true)}
       >
-        <View style={styles.chatButtonInner}>
-          {/* Simple chat icon dots */}
-          <View style={styles.dotRow}>
-            <View style={styles.dot} />
-            <View style={styles.dot} />
-            <View style={styles.dot} />
-          </View>
-        </View>
+        <Ionicons name="chatbubbles" size={32} color="white" />
       </TouchableOpacity>
 
       <ChatbotModal visible={chatOpen} onClose={() => setChatOpen(false)} />
@@ -165,7 +159,7 @@ const styles = StyleSheet.create({
     width: 68,
     height: 68,
     borderRadius: 34,
-    backgroundColor: '#0a7ea4',
+    backgroundColor: '#A2E884',
     shadowColor: '#000',
     shadowOpacity: 0.25,
     shadowRadius: 6,
@@ -173,21 +167,6 @@ const styles = StyleSheet.create({
     elevation: 6,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  chatButtonInner: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#0d93bf',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  dotRow: { flexDirection: 'row', gap: 6 },
-  dot: {
-    width: 8,
-    height: 8,
-    backgroundColor: 'white',
-    borderRadius: 4,
   },
 });
 
