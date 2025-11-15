@@ -169,7 +169,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   userBubble: {
-    backgroundColor: '#A2E884',
+    backgroundColor: '#D4F1C5',
     marginLeft: 'auto',
   },
   botBubble: {
