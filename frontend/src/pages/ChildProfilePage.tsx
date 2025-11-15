@@ -313,9 +313,10 @@ const ChildProfilePage: React.FC = () => {
       
       if (!selectedBabyId) return;
       
-      // Update backend with new color
+      // Update backend with new color and remove image
       const formData = new FormData();
       formData.append('avatarColor', color);
+      formData.append('removeImage', 'true'); // Remove image when selecting color
       
       const response = await fetch(
         `http://192.168.1.7:5000/api/baby/${selectedBabyId}/avatar`,
@@ -332,16 +333,15 @@ const ChildProfilePage: React.FC = () => {
         const updatedBaby = await response.json();
         console.log("Baby after updating color:", updatedBaby);
         setSelectedColor(color);
-        setBaby(updatedBaby);
-        // Preserve existing avatar image if present
-        if (updatedBaby.avatarImage) {
-          setAvatarImage(updatedBaby.avatarImage.startsWith('http') 
-            ? updatedBaby.avatarImage 
-            : `http://192.168.1.7:5000${updatedBaby.avatarImage}`);
-        }
+        setBaby({
+          ...updatedBaby,
+          avatarImage: null
+        });
+        setAvatarImage(null); // Remove the image to show color instead
       }
     } catch (error) {
       console.error("Error updating color:", error);
+      Alert.alert("Error", "Failed to update color");
     }
     
     setShowAvatarModal(false);
