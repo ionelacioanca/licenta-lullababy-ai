@@ -144,7 +144,7 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({ visible, onClose }) 
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  container: { flex: 1, backgroundColor: '#FFFDF9' },
+  container: { flex: 1, backgroundColor: '#FFF8F0' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -152,9 +152,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 50,
     paddingBottom: 10,
-    backgroundColor: '#FFE9D6',
+    backgroundColor: '#FFF8F0',
     borderBottomWidth: 1,
-    borderBottomColor: '#F5D5BE',
+    borderBottomColor: '#E8E0D5',
   },
   headerTitle: { fontSize: 22 },
   closeBtn: { padding: 8 },
@@ -169,14 +169,14 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   userBubble: {
-    backgroundColor: '#0a7ea4',
+    backgroundColor: '#A2E884',
     marginLeft: 'auto',
   },
   botBubble: {
-    backgroundColor: '#FFD9B5',
+    backgroundColor: '#FFF3E0',
     marginRight: 'auto',
   },
-  bubbleText: { color: '#222' },
+  bubbleText: { color: '#333' },
   loadingRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, marginBottom: 8 },
   loadingText: { marginLeft: 8 },
   error: { color: 'red', paddingHorizontal: 16 },
@@ -185,10 +185,10 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     padding: 12,
     paddingBottom: Platform.OS === 'ios' ? 34 : 24,
-    backgroundColor: '#FFE9D6',
+    backgroundColor: '#FFF8F0',
     gap: 8,
     borderTopWidth: 1,
-    borderTopColor: '#F5D5BE',
+    borderTopColor: '#E8E0D5',
   },
   input: {
     flex: 1,
@@ -201,7 +201,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   sendBtn: {
-    backgroundColor: '#0a7ea4',
+    backgroundColor: '#A2E884',
     paddingHorizontal: 18,
     paddingVertical: 12,
     borderRadius: 24,
@@ -211,7 +211,7 @@ const styles = StyleSheet.create({
   sendBtnDisabled: { opacity: 0.4 },
   sendText: { color: 'white', fontWeight: '600' },
   suggestionsWrap: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 16, gap: 8, marginTop: 12 },
-  suggestion: { backgroundColor: '#FFE1C4', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 16 },
+  suggestion: { backgroundColor: '#E8F5E0', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 16 },
   suggestionText: { fontSize: 12 },
 });
 
