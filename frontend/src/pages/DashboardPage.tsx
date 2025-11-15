@@ -71,16 +71,9 @@ const DashboardPage: React.FC = () => {
           setBabyId(baby._id);
           console.log("Baby name set to:", baby.name);
           
-          // Load avatar color and image from AsyncStorage
-          const savedColor = await AsyncStorage.getItem(`baby_avatar_${baby._id}`);
-          if (savedColor) {
-            setAvatarColor(savedColor);
-          }
-          
-          const savedImage = await AsyncStorage.getItem(`baby_image_${baby._id}`);
-          if (savedImage) {
-            setAvatarImage(savedImage);
-          }
+          // Load avatar data from backend
+          setAvatarColor(baby.avatarColor || "#00CFFF");
+          setAvatarImage(baby.avatarImage ? `http://192.168.1.7:5000${baby.avatarImage}` : null);
         }
       } else {
         console.warn("No baby found for this parent");

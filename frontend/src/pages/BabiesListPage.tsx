@@ -68,18 +68,12 @@ const BabiesListPage: React.FC = () => {
 
       const data = await response.json();
       if (data && Array.isArray(data)) {
-        // Load avatar settings for each baby
-        const babiesWithAvatars = await Promise.all(
-          data.map(async (baby: Baby) => {
-            const avatarColor = await AsyncStorage.getItem(`baby_avatar_${baby._id}`);
-            const avatarImage = await AsyncStorage.getItem(`baby_image_${baby._id}`);
-            return {
-              ...baby,
-              avatarColor: avatarColor || "#00CFFF",
-              avatarImage: avatarImage || null,
-            };
-          })
-        );
+        // Avatar data now comes from backend
+        const babiesWithAvatars = data.map((baby: any) => ({
+          ...baby,
+          avatarColor: baby.avatarColor || "#00CFFF",
+          avatarImage: baby.avatarImage ? `http://192.168.1.7:5000${baby.avatarImage}` : null,
+        }));
         setBabies(babiesWithAvatars);
         console.log("Babies loaded with avatars:", babiesWithAvatars);
       }

@@ -60,5 +60,32 @@ babyRouter.get("/baby/parent/:parentId", async (req, res) => {
   }
 });
 
+// Update baby avatar (image and color)
+import upload from '../middleware/uploadMiddleware.js';
+
+babyRouter.post("/baby/:id/avatar", upload.single('avatar'), async (req, res) => {
+  try {
+    const avatarData = {};
+    
+    // If file was uploaded, store the path
+    if (req.file) {
+      avatarData.avatarImage = `/uploads/${req.file.filename}`;
+    } else if (req.body.removeImage === 'true') {
+      // Explicitly remove the image
+      avatarData.avatarImage = null;
+    }
+    
+    // If color was provided in the request body
+    if (req.body.avatarColor) {
+      avatarData.avatarColor = req.body.avatarColor;
+    }
+    
+    const updatedBaby = await babyController.updateBabyAvatar(req.params.id, avatarData);
+    res.status(200).json(updatedBaby);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
 
 export default babyRouter;

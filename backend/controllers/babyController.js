@@ -43,6 +43,14 @@ class babyController {
         }
         return babies;
     }
+
+    static async updateBabyAvatar(babyId, avatarData) {
+        const updatedBaby = await babyService.updateBaby(babyId, avatarData);
+        if (!updatedBaby) {
+            throw new Error('Baby not found');
+        }
+        return updatedBaby;
+    }
 }
 
 export default babyController;
