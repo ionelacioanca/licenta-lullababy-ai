@@ -80,25 +80,29 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({ visible, onClose }) 
   );
 
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ThemedView style={styles.container}>
-          <View style={styles.header}>
-            <ThemedText type="title" style={styles.headerTitle}>BabyCareBuddy</ThemedText>
-            <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <ThemedText style={styles.closeText}>×</ThemedText>
-            </TouchableOpacity>
-          </View>
+    <Modal visible={visible} animationType="slide" presentationStyle="fullScreen" onRequestClose={onClose}>
+      <ThemedView style={styles.container}>
+        <View style={styles.header}>
+          <ThemedText type="title" style={styles.headerTitle}>BabyCareBuddy</ThemedText>
+          <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
+            <ThemedText style={styles.closeText}>×</ThemedText>
+          </TouchableOpacity>
+        </View>
 
-            {messages.length === 1 && (
-              <View style={styles.suggestionsWrap}>
-                {INITIAL_SUGGESTIONS.map((s) => (
-                  <TouchableOpacity key={s} style={styles.suggestion} onPress={() => pickSuggestion(s)}>
-                    <ThemedText style={styles.suggestionText}>{s}</ThemedText>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
+        <KeyboardAvoidingView 
+          style={styles.flex} 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+        >
+          {messages.length === 1 && (
+            <View style={styles.suggestionsWrap}>
+              {INITIAL_SUGGESTIONS.map((s) => (
+                <TouchableOpacity key={s} style={styles.suggestion} onPress={() => pickSuggestion(s)}>
+                  <ThemedText style={styles.suggestionText}>{s}</ThemedText>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
 
           <FlatList
             ref={listRef}
@@ -107,6 +111,7 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({ visible, onClose }) 
             keyExtractor={(m) => m.id}
             contentContainerStyle={styles.listContent}
             style={styles.list}
+            keyboardShouldPersistTaps="handled"
           />
 
           {loading && (
@@ -125,13 +130,14 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({ visible, onClose }) 
               onChangeText={setInput}
               placeholderTextColor="#999"
               multiline
+              maxLength={500}
             />
             <TouchableOpacity style={[styles.sendBtn, !input.trim() && styles.sendBtnDisabled]} disabled={!input.trim() || loading} onPress={send}>
               <ThemedText style={styles.sendText}>{loading ? '...' : 'Send'}</ThemedText>
             </TouchableOpacity>
           </View>
-        </ThemedView>
-      </KeyboardAvoidingView>
+        </KeyboardAvoidingView>
+      </ThemedView>
     </Modal>
   );
 };
@@ -154,7 +160,7 @@ const styles = StyleSheet.create({
   closeBtn: { padding: 8 },
   closeText: { fontSize: 28, fontWeight: '600' },
   list: { flex: 1 },
-  listContent: { padding: 16, paddingBottom: 120 },
+  listContent: { padding: 16, paddingBottom: 20 },
   bubble: {
     maxWidth: '80%',
     paddingVertical: 10,
@@ -175,15 +181,14 @@ const styles = StyleSheet.create({
   loadingText: { marginLeft: 8 },
   error: { color: 'red', paddingHorizontal: 16 },
   inputRow: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
     flexDirection: 'row',
     alignItems: 'flex-end',
     padding: 12,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 24,
     backgroundColor: '#FFE9D6',
     gap: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#F5D5BE',
   },
   input: {
     flex: 1,
