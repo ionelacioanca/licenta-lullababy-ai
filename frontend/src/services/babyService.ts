@@ -13,7 +13,7 @@ const babyService = {
       parentId?: string; // dacă îl trimiți din frontend
     }
   ): Promise<void> => {
-  const response = await fetch("http://192.168.1.7:5000/api/babies/babyDetails", {
+  const response = await fetch("http://192.168.1.10:5000/api/babies/babyDetails", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(babyData),

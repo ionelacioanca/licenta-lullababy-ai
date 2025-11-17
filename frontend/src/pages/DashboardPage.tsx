@@ -34,7 +34,7 @@ const DashboardPage: React.FC = () => {
     const token = await AsyncStorage.getItem("token");
 
     try {
-  const response = await fetch(`http://192.168.1.7:5000/api/baby/parent/${parentId}`, {
+  const response = await fetch(`http://192.168.1.10:5000/api/baby/parent/${parentId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -74,7 +74,7 @@ const DashboardPage: React.FC = () => {
           
           // Load avatar data from backend
           setAvatarColor(baby.avatarColor || "#00CFFF");
-          setAvatarImage(baby.avatarImage ? `http://192.168.1.7:5000${baby.avatarImage}` : null);
+          setAvatarImage(baby.avatarImage ? `http://192.168.1.10:5000${baby.avatarImage}` : null);
         }
       } else {
         console.warn("No baby found for this parent");
