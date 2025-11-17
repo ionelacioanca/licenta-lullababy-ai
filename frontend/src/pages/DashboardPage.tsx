@@ -88,12 +88,13 @@ const DashboardPage: React.FC = () => {
           setAvatarImage(baby.avatarImage ? `http://192.168.1.10:5000${baby.avatarImage}` : null);
           
           // Store birth data
-          if (baby.weight) setBirthWeight(baby.weight);
-          if (baby.length) setBirthLength(baby.length);
+          console.log("Baby birth data - birthWeight:", baby.birthWeight, "birthLength:", baby.birthLength, "birthDate:", baby.birthDate);
+          if (baby.birthWeight) setBirthWeight(baby.birthWeight);
+          if (baby.birthLength) setBirthLength(baby.birthLength);
           if (baby.birthDate) setBirthDate(new Date(baby.birthDate));
           
           // Load growth records
-          loadGrowthData(baby._id, baby.weight, baby.length);
+          loadGrowthData(baby._id, baby.birthWeight, baby.birthLength);
         }
       } else {
         console.warn("No baby found for this parent");
@@ -117,16 +118,23 @@ const DashboardPage: React.FC = () => {
 
   const loadGrowthData = async (babyId: string, birthWeight?: number, birthLength?: number) => {
     try {
+      console.log("Loading growth data for baby:", babyId);
+      console.log("Birth weight:", birthWeight, "Birth length:", birthLength);
+      
       const records = await getGrowthRecords(babyId);
+      console.log("Growth records loaded:", records.length, "records");
       setGrowthRecords(records);
       
       // Get latest measurement for display
       const latest = await getLatestGrowthRecord(babyId);
+      console.log("Latest growth record:", latest);
+      
       if (latest) {
         setCurrentWeight(latest.weight.toString());
         setCurrentLength(latest.length.toString());
       } else if (birthWeight && birthLength) {
         // If no records yet, show birth measurements
+        console.log("No growth records, using birth measurements");
         setCurrentWeight(birthWeight.toString());
         setCurrentLength(birthLength.toString());
       }

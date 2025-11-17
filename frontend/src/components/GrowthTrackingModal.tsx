@@ -47,8 +47,26 @@ const GrowthTrackingModal: React.FC<GrowthTrackingModalProps> = ({
   const formatGrowthHistory = (): GrowthEntry[] => {
     const history: GrowthEntry[] = [];
 
-    // Add growth records
-    growthRecords.forEach((record, index) => {
+    // Add birth data as the first entry
+    if (birthWeight && birthLength && birthDate) {
+      history.push({
+        date: birthDate.toLocaleDateString('en-US', { 
+          month: 'short', 
+          day: 'numeric', 
+          year: 'numeric' 
+        }),
+        weight: `${birthWeight} kg`,
+        length: `${birthLength} cm`,
+        age: "Birth",
+      });
+    }
+
+    // Add growth records (sorted by date, oldest first)
+    const sortedRecords = [...growthRecords].sort((a, b) => 
+      new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
+
+    sortedRecords.forEach((record) => {
       const recordDate = new Date(record.date);
       const formattedDate = recordDate.toLocaleDateString('en-US', { 
         month: 'short', 
@@ -63,20 +81,6 @@ const GrowthTrackingModal: React.FC<GrowthTrackingModalProps> = ({
         age: record.age || calculateAge(recordDate),
       });
     });
-
-    // Add birth data as the last entry
-    if (birthWeight && birthLength && birthDate) {
-      history.push({
-        date: birthDate.toLocaleDateString('en-US', { 
-          month: 'short', 
-          day: 'numeric', 
-          year: 'numeric' 
-        }),
-        weight: `${birthWeight} kg`,
-        length: `${birthLength} cm`,
-        age: "Birth",
-      });
-    }
 
     return history;
   };
