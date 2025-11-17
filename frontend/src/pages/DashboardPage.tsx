@@ -12,6 +12,7 @@ import SleepHistoryModal from "../components/SleepHistoryModal";
 import GrowthTrackingModal from "../components/GrowthTrackingModal";
 import { Sound } from "../services/soundService";
 import ChatbotModal from "../components/ChatbotModal";
+import { getGrowthRecords, getLatestGrowthRecord, addGrowthRecord, GrowthRecord } from "../services/growthService";
 
 const DashboardPage: React.FC = () => {
   const router = useRouter();
@@ -25,8 +26,12 @@ const DashboardPage: React.FC = () => {
   const [chatOpen, setChatOpen] = useState(false);
   const [sleepHistoryOpen, setSleepHistoryOpen] = useState(false);
   const [growthTrackingOpen, setGrowthTrackingOpen] = useState(false);
-  const [currentWeight, setCurrentWeight] = useState("7.2");
-  const [currentLength, setCurrentLength] = useState("65");
+  const [currentWeight, setCurrentWeight] = useState("--");
+  const [currentLength, setCurrentLength] = useState("--");
+  const [growthRecords, setGrowthRecords] = useState<GrowthRecord[]>([]);
+  const [birthWeight, setBirthWeight] = useState<number | null>(null);
+  const [birthLength, setBirthLength] = useState<number | null>(null);
+  const [birthDate, setBirthDate] = useState<Date | null>(null);
 
   const loadBabyForParent = async () => {
     const parentId = await AsyncStorage.getItem("parentId");
@@ -81,6 +86,14 @@ const DashboardPage: React.FC = () => {
           // Load avatar data from backend
           setAvatarColor(baby.avatarColor || "#00CFFF");
           setAvatarImage(baby.avatarImage ? `http://192.168.1.10:5000${baby.avatarImage}` : null);
+          
+          // Store birth data
+          if (baby.weight) setBirthWeight(baby.weight);
+          if (baby.length) setBirthLength(baby.length);
+          if (baby.birthDate) setBirthDate(new Date(baby.birthDate));
+          
+          // Load growth records
+          loadGrowthData(baby._id, baby.weight, baby.length);
         }
       } else {
         console.warn("No baby found for this parent");
@@ -102,8 +115,44 @@ const DashboardPage: React.FC = () => {
     }, [])
   );
 
+  const loadGrowthData = async (babyId: string, birthWeight?: number, birthLength?: number) => {
+    try {
+      const records = await getGrowthRecords(babyId);
+      setGrowthRecords(records);
+      
+      // Get latest measurement for display
+      const latest = await getLatestGrowthRecord(babyId);
+      if (latest) {
+        setCurrentWeight(latest.weight.toString());
+        setCurrentLength(latest.length.toString());
+      } else if (birthWeight && birthLength) {
+        // If no records yet, show birth measurements
+        setCurrentWeight(birthWeight.toString());
+        setCurrentLength(birthLength.toString());
+      }
+    } catch (error) {
+      console.error("Error loading growth data:", error);
+    }
+  };
+
   const handleSelectSound = (sound: Sound) => {
     setSelectedSound(sound);
+  };
+  
+  const handleSaveGrowth = async (weight: string, length: string) => {
+    if (!babyId) return;
+    
+    try {
+      await addGrowthRecord(babyId, weight, length);
+      setCurrentWeight(weight);
+      setCurrentLength(length);
+      // Reload growth data
+      await loadGrowthData(babyId, birthWeight || undefined, birthLength || undefined);
+      setGrowthTrackingOpen(false);
+    } catch (error) {
+      console.error("Error saving growth record:", error);
+      alert("Failed to save growth record");
+    }
   };
 
   return (
@@ -237,11 +286,11 @@ const DashboardPage: React.FC = () => {
       <GrowthTrackingModal
         visible={growthTrackingOpen}
         onClose={() => setGrowthTrackingOpen(false)}
-        onSave={(weight, length) => {
-          setCurrentWeight(weight);
-          setCurrentLength(length);
-          setGrowthTrackingOpen(false);
-        }}
+        onSave={handleSaveGrowth}
+        growthRecords={growthRecords}
+        birthWeight={birthWeight}
+        birthLength={birthLength}
+        birthDate={birthDate}
       />
       
       {/* Floating Chat Button */}

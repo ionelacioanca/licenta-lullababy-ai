@@ -9,56 +9,90 @@ import {
   TextInput,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { GrowthRecord } from "../services/growthService";
 
 type GrowthEntry = {
   date: string;
   weight: string;
   length: string;
   age: string;
+  weightGain?: string;
+  lengthGain?: string;
 };
 
 type GrowthTrackingModalProps = {
   visible: boolean;
   onClose: () => void;
   onSave: (weight: string, length: string) => void;
+  growthRecords: GrowthRecord[];
+  birthWeight: number | null;
+  birthLength: number | null;
+  birthDate: Date | null;
 };
-
-// Mock data for growth history
-const growthHistory: GrowthEntry[] = [
-  {
-    date: "Nov 17, 2025",
-    weight: "7.2 kg",
-    length: "65 cm",
-    age: "3 months",
-  },
-  {
-    date: "Oct 17, 2025",
-    weight: "6.5 kg",
-    length: "62 cm",
-    age: "2 months",
-  },
-  {
-    date: "Sep 17, 2025",
-    weight: "5.8 kg",
-    length: "59 cm",
-    age: "1 month",
-  },
-  {
-    date: "Aug 17, 2025",
-    weight: "3.5 kg",
-    length: "50 cm",
-    age: "Birth",
-  },
-];
 
 const GrowthTrackingModal: React.FC<GrowthTrackingModalProps> = ({
   visible,
   onClose,
   onSave,
+  growthRecords,
+  birthWeight,
+  birthLength,
+  birthDate,
 }) => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [newWeight, setNewWeight] = useState("");
   const [newLength, setNewLength] = useState("");
+
+  // Convert growth records to display format
+  const formatGrowthHistory = (): GrowthEntry[] => {
+    const history: GrowthEntry[] = [];
+
+    // Add growth records
+    growthRecords.forEach((record, index) => {
+      const recordDate = new Date(record.date);
+      const formattedDate = recordDate.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric', 
+        year: 'numeric' 
+      });
+
+      history.push({
+        date: formattedDate,
+        weight: `${record.weight} kg`,
+        length: `${record.length} cm`,
+        age: record.age || calculateAge(recordDate),
+      });
+    });
+
+    // Add birth data as the last entry
+    if (birthWeight && birthLength && birthDate) {
+      history.push({
+        date: birthDate.toLocaleDateString('en-US', { 
+          month: 'short', 
+          day: 'numeric', 
+          year: 'numeric' 
+        }),
+        weight: `${birthWeight} kg`,
+        length: `${birthLength} cm`,
+        age: "Birth",
+      });
+    }
+
+    return history;
+  };
+
+  const calculateAge = (date: Date): string => {
+    if (!birthDate) return "";
+    
+    const ageInMs = date.getTime() - birthDate.getTime();
+    const ageInMonths = Math.floor(ageInMs / (1000 * 60 * 60 * 24 * 30));
+    
+    if (ageInMonths === 0) return "Birth";
+    if (ageInMonths === 1) return "1 month";
+    return `${ageInMonths} months`;
+  };
+
+  const growthHistory = formatGrowthHistory();
 
   const handleSave = () => {
     if (newWeight && newLength) {
