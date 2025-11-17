@@ -182,24 +182,24 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
 
   if (!currentSound) {
     return (
-      <View style={styles.card}>
-        <TouchableOpacity style={styles.emptyState} onPress={onOpenLibrary}>
+      <TouchableOpacity style={styles.card} activeOpacity={0.7} onPress={onOpenLibrary}>
+        <View style={styles.emptyState}>
           <Ionicons name="musical-notes-outline" size={48} color="#ccc" />
           <Text style={styles.emptyText}>No sound selected</Text>
           <Text style={styles.emptySubtext}>Tap to browse library</Text>
-        </TouchableOpacity>
-      </View>
+        </View>
+      </TouchableOpacity>
     );
   }
 
   return (
-    <View style={styles.card}>
+    <TouchableOpacity style={styles.card} activeOpacity={0.7} onPress={onOpenLibrary}>
       <View style={styles.header}>
         <View style={styles.titleRow}>
           <Ionicons name="musical-notes" size={18} color="#A2E884" />
           <Text style={styles.headerTitle}>Lullaby Player</Text>
         </View>
-        <View style={[styles.statusDot, { backgroundColor: isPlaying ? "#36c261" : "#bbb" }]} />
+        <Ionicons name="chevron-forward" size={20} color="#999" />
       </View>
 
       <View style={styles.content}>
@@ -224,14 +224,20 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
         <View style={styles.controls}>
           <TouchableOpacity
             style={styles.volumeBtn}
-            onPress={handleVolumeDown}
+            onPress={(e) => {
+              e.stopPropagation();
+              handleVolumeDown();
+            }}
           >
             <Ionicons name="volume-low" size={20} color="#666" />
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.playBtn, isPlaying && styles.playBtnActive]}
-            onPress={togglePlayPause}
+            onPress={(e) => {
+              e.stopPropagation();
+              togglePlayPause();
+            }}
             disabled={isLoading}
           >
             {isLoading ? (
@@ -247,14 +253,12 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
 
           <TouchableOpacity
             style={styles.volumeBtn}
-            onPress={handleVolumeUp}
+            onPress={(e) => {
+              e.stopPropagation();
+              handleVolumeUp();
+            }}
           >
             <Ionicons name="volume-high" size={20} color="#666" />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.libraryBtn} onPress={onOpenLibrary}>
-            <Ionicons name="library" size={20} color="#A2E884" />
-            <Text style={styles.libraryText}>Library</Text>
           </TouchableOpacity>
         </View>
 
@@ -268,7 +272,7 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
           <Text style={styles.volumeText}>{Math.round(volume * 100)}%</Text>
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 };
 
@@ -359,20 +363,6 @@ const styles = StyleSheet.create({
   },
   playBtnActive: {
     backgroundColor: "#36c261",
-  },
-  libraryBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: "#F6FFF2",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  libraryText: {
-    color: "#36c261",
-    fontSize: 14,
-    fontWeight: "600",
   },
   volumeIndicator: {
     flexDirection: "row",
