@@ -124,7 +124,7 @@ const DashboardPage: React.FC = () => {
         
         {/* Baby Sleep Activity */}
         <TouchableOpacity
-          style={styles.activityCard}
+          style={[styles.activityCard, styles.firstCard]}
           activeOpacity={0.7}
           onPress={() => setSleepHistoryOpen(true)}
         >
@@ -180,7 +180,7 @@ const DashboardPage: React.FC = () => {
 
         {/* Growth Tracking */}
         <TouchableOpacity
-          style={styles.activityCard}
+          style={[styles.activityCard, { marginTop: 20 }]}
           activeOpacity={0.7}
           onPress={() => setGrowthTrackingOpen(true)}
         >
@@ -295,6 +295,9 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 2 },
     elevation: 3,
+  },
+  firstCard: {
+    marginTop: 8,
   },
   activityHeader: {
     flexDirection: 'row',
