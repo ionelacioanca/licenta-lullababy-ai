@@ -9,6 +9,7 @@ import BabyMonitorStream from "../components/BabyMonitorStream";
 import SoundPlayer from "../components/SoundPlayer";
 import SoundLibraryModal from "../components/SoundLibraryModal";
 import SleepHistoryModal from "../components/SleepHistoryModal";
+import GrowthTrackingModal from "../components/GrowthTrackingModal";
 import { Sound } from "../services/soundService";
 import ChatbotModal from "../components/ChatbotModal";
 
@@ -23,6 +24,9 @@ const DashboardPage: React.FC = () => {
   const [selectedSound, setSelectedSound] = useState<Sound | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
   const [sleepHistoryOpen, setSleepHistoryOpen] = useState(false);
+  const [growthTrackingOpen, setGrowthTrackingOpen] = useState(false);
+  const [currentWeight, setCurrentWeight] = useState("7.2");
+  const [currentLength, setCurrentLength] = useState("65");
 
   const loadBabyForParent = async () => {
     const parentId = await AsyncStorage.getItem("parentId");
@@ -173,6 +177,50 @@ const DashboardPage: React.FC = () => {
           onOpenLibrary={() => setIsLibraryOpen(true)}
           selectedSound={selectedSound}
         />
+
+        {/* Growth Tracking */}
+        <TouchableOpacity
+          style={styles.activityCard}
+          activeOpacity={0.7}
+          onPress={() => setGrowthTrackingOpen(true)}
+        >
+          <View style={styles.activityHeader}>
+            <View style={styles.titleRow}>
+              <Ionicons name="fitness" size={18} color="#A2E884" />
+              <Text style={styles.headerTitle}>Growth Tracking</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#999" />
+          </View>
+
+          <View style={styles.activityContent}>
+            <View style={styles.activityRow}>
+              <View style={styles.activityItem}>
+                <View style={styles.measurementIcon}>
+                  <Ionicons name="scale-outline" size={20} color="white" />
+                </View>
+                <View style={styles.timelineContent}>
+                  <Text style={styles.timelineLabel}>Weight</Text>
+                  <Text style={styles.timelineTime}>{currentWeight} kg</Text>
+                </View>
+              </View>
+              <View style={styles.activityDivider} />
+              <View style={styles.activityItem}>
+                <View style={styles.measurementIcon}>
+                  <Ionicons name="resize-outline" size={20} color="white" />
+                </View>
+                <View style={styles.timelineContent}>
+                  <Text style={styles.timelineLabel}>Length</Text>
+                  <Text style={styles.timelineTime}>{currentLength} cm</Text>
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.lastUpdated}>
+              <Ionicons name="time-outline" size={14} color="#999" />
+              <Text style={styles.lastUpdatedText}>Last updated: Today</Text>
+            </View>
+          </View>
+        </TouchableOpacity>
       </ScrollView>
       
       <SoundLibraryModal
@@ -184,6 +232,16 @@ const DashboardPage: React.FC = () => {
       <SleepHistoryModal
         visible={sleepHistoryOpen}
         onClose={() => setSleepHistoryOpen(false)}
+      />
+
+      <GrowthTrackingModal
+        visible={growthTrackingOpen}
+        onClose={() => setGrowthTrackingOpen(false)}
+        onSave={(weight, length) => {
+          setCurrentWeight(weight);
+          setCurrentLength(length);
+          setGrowthTrackingOpen(false);
+        }}
       />
       
       {/* Floating Chat Button */}
@@ -329,6 +387,33 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     color: '#333',
+  },
+  measurementIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#A2E884',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#A2E884',
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  lastUpdated: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
+  },
+  lastUpdatedText: {
+    fontSize: 12,
+    color: '#999',
+    fontWeight: '500',
   },
 });
 
