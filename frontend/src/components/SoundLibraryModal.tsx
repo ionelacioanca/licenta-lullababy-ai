@@ -112,7 +112,12 @@ const SoundLibraryModal: React.FC<SoundLibraryModalProps> = ({
           <View style={styles.header}>
             <View style={styles.headerLeft}>
               <Ionicons name="musical-notes" size={24} color="#A2E884" />
-              <Text style={styles.headerTitle}>Sound Library</Text>
+              <View>
+                <Text style={styles.headerTitle}>Sound Library</Text>
+                <Text style={styles.headerSubtitle}>
+                  {isLoading ? "Loading..." : `${filteredSounds.length} sound${filteredSounds.length !== 1 ? "s" : ""} available`}
+                </Text>
+              </View>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
               <Ionicons name="close" size={28} color="#666" />
@@ -233,14 +238,6 @@ const SoundLibraryModal: React.FC<SoundLibraryModalProps> = ({
             )}
           </ScrollView>
         )}
-
-        {/* Footer Info */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            {filteredSounds.length} sound{filteredSounds.length !== 1 ? "s" : ""}{" "}
-            available
-          </Text>
-        </View>
         </View>
       </View>
     </Modal>
@@ -257,8 +254,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFF8F0",
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    maxHeight: "90%",
-    paddingBottom: 20,
+    height: "90%",
+    flexDirection: "column",
   },
   header: {
     flexDirection: "row",
@@ -278,6 +275,12 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: "700",
     color: "#333",
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#666",
+    marginTop: 2,
   },
   closeBtn: {
     padding: 4,
@@ -402,19 +405,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#bbb",
     marginTop: 4,
-  },
-  footer: {
-    backgroundColor: "#FFF8F0",
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    borderTopColor: "#E0E0E0",
-  },
-  footerText: {
-    fontSize: 14,
-    color: "#666",
-    textAlign: "center",
-    fontWeight: "500",
   },
 });
 
