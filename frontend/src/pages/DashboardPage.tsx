@@ -285,8 +285,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   activityCard: {
-    marginHorizontal: 20,
-    marginBottom: 16,
+    marginHorizontal: 16,
+    marginBottom: 12,
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 16,
