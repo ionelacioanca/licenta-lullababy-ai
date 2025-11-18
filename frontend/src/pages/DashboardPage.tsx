@@ -125,8 +125,13 @@ const DashboardPage: React.FC = () => {
 
   const loadUpcomingEvents = async (babyId: string) => {
     try {
-      const events = await getUpcomingEvents(babyId, 3);
-      setUpcomingEvents(events);
+      // Fetch more events to ensure we have 3 incomplete ones after filtering
+      const events = await getUpcomingEvents(babyId, 10);
+      // Filter out completed events from dashboard
+      const incompleteEvents = events.filter(event => !event.completed);
+      // Take only first 3 incomplete events
+      setUpcomingEvents(incompleteEvents.slice(0, 3));
+      console.log("Loaded upcoming events:", incompleteEvents.length, "incomplete out of", events.length, "total");
     } catch (error) {
       console.error("Error loading upcoming events:", error);
     }
