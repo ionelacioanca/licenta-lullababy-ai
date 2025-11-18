@@ -387,6 +387,7 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ visible, onClose, babyId,
               <ScrollView 
                 keyboardShouldPersistTaps="handled"
                 showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.scrollContent}
               >
                 <Text style={styles.formTitle}>
                   Add Event - {selectedDate.toLocaleDateString()}
@@ -680,6 +681,10 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     shadowOffset: { width: 0, height: -2 },
     elevation: 8,
+    maxHeight: '70%',
+  },
+  scrollContent: {
+    paddingBottom: 60,
   },
   formTitle: {
     fontSize: 16,
