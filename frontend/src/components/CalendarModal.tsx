@@ -260,14 +260,14 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ visible, onClose, babyId,
           key={day}
           style={[
             styles.dayCell, 
-            isToday && styles.todayCell,
+            isToday && !isSelected && styles.todayCell,
             isSelected && styles.selectedDayCell
           ]}
           onPress={() => handleDatePress(day)}
         >
           <Text style={[
             styles.dayText, 
-            isToday && styles.todayText,
+            isToday && !isSelected && styles.todayText,
             isSelected && styles.selectedDayText
           ]}>{day}</Text>
           {dayEvents.length > 0 && (
