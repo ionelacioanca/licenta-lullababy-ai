@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, ScrollView, StyleSheet, TouchableOpacity } from "react-native";
+import { View, ScrollView, StyleSheet, TouchableOpacity, Text } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -8,8 +8,11 @@ import Footer from "./Footer";
 import BabyMonitorStream from "../components/BabyMonitorStream";
 import SoundPlayer from "../components/SoundPlayer";
 import SoundLibraryModal from "../components/SoundLibraryModal";
+import SleepHistoryModal from "../components/SleepHistoryModal";
+import GrowthTrackingModal from "../components/GrowthTrackingModal";
 import { Sound } from "../services/soundService";
 import ChatbotModal from "../components/ChatbotModal";
+import { getGrowthRecords, getLatestGrowthRecord, addGrowthRecord, GrowthRecord } from "../services/growthService";
 
 const DashboardPage: React.FC = () => {
   const router = useRouter();
@@ -21,6 +24,14 @@ const DashboardPage: React.FC = () => {
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
   const [selectedSound, setSelectedSound] = useState<Sound | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
+  const [sleepHistoryOpen, setSleepHistoryOpen] = useState(false);
+  const [growthTrackingOpen, setGrowthTrackingOpen] = useState(false);
+  const [currentWeight, setCurrentWeight] = useState("--");
+  const [currentLength, setCurrentLength] = useState("--");
+  const [growthRecords, setGrowthRecords] = useState<GrowthRecord[]>([]);
+  const [birthWeight, setBirthWeight] = useState<number | null>(null);
+  const [birthLength, setBirthLength] = useState<number | null>(null);
+  const [birthDate, setBirthDate] = useState<Date | null>(null);
 
   const loadBabyForParent = async () => {
     const parentId = await AsyncStorage.getItem("parentId");
@@ -34,7 +45,7 @@ const DashboardPage: React.FC = () => {
     const token = await AsyncStorage.getItem("token");
 
     try {
-  const response = await fetch(`http://192.168.1.7:5000/api/baby/parent/${parentId}`, {
+  const response = await fetch(`http://192.168.1.10:5000/api/baby/parent/${parentId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -74,7 +85,16 @@ const DashboardPage: React.FC = () => {
           
           // Load avatar data from backend
           setAvatarColor(baby.avatarColor || "#00CFFF");
-          setAvatarImage(baby.avatarImage ? `http://192.168.1.7:5000${baby.avatarImage}` : null);
+          setAvatarImage(baby.avatarImage ? `http://192.168.1.10:5000${baby.avatarImage}` : null);
+          
+          // Store birth data
+          console.log("Baby birth data - birthWeight:", baby.birthWeight, "birthLength:", baby.birthLength, "birthDate:", baby.birthDate);
+          if (baby.birthWeight) setBirthWeight(baby.birthWeight);
+          if (baby.birthLength) setBirthLength(baby.birthLength);
+          if (baby.birthDate) setBirthDate(new Date(baby.birthDate));
+          
+          // Load growth records
+          loadGrowthData(baby._id, baby.birthWeight, baby.birthLength);
         }
       } else {
         console.warn("No baby found for this parent");
@@ -96,8 +116,51 @@ const DashboardPage: React.FC = () => {
     }, [])
   );
 
+  const loadGrowthData = async (babyId: string, birthWeight?: number, birthLength?: number) => {
+    try {
+      console.log("Loading growth data for baby:", babyId);
+      console.log("Birth weight:", birthWeight, "Birth length:", birthLength);
+      
+      const records = await getGrowthRecords(babyId);
+      console.log("Growth records loaded:", records.length, "records");
+      setGrowthRecords(records);
+      
+      // Get latest measurement for display
+      const latest = await getLatestGrowthRecord(babyId);
+      console.log("Latest growth record:", latest);
+      
+      if (latest) {
+        setCurrentWeight(latest.weight.toString());
+        setCurrentLength(latest.length.toString());
+      } else if (birthWeight && birthLength) {
+        // If no records yet, show birth measurements
+        console.log("No growth records, using birth measurements");
+        setCurrentWeight(birthWeight.toString());
+        setCurrentLength(birthLength.toString());
+      }
+    } catch (error) {
+      console.error("Error loading growth data:", error);
+    }
+  };
+
   const handleSelectSound = (sound: Sound) => {
     setSelectedSound(sound);
+  };
+  
+  const handleSaveGrowth = async (weight: string, length: string) => {
+    if (!babyId) return;
+    
+    try {
+      await addGrowthRecord(babyId, weight, length);
+      setCurrentWeight(weight);
+      setCurrentLength(length);
+      // Reload growth data
+      await loadGrowthData(babyId, birthWeight || undefined, birthLength || undefined);
+      setGrowthTrackingOpen(false);
+    } catch (error) {
+      console.error("Error saving growth record:", error);
+      alert("Failed to save growth record");
+    }
   };
 
   return (
@@ -115,17 +178,127 @@ const DashboardPage: React.FC = () => {
       
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <BabyMonitorStream babyName={babyName} />
+        
+        {/* Baby Sleep Activity */}
+        <TouchableOpacity
+          style={[styles.activityCard, styles.firstCard]}
+          activeOpacity={0.7}
+          onPress={() => setSleepHistoryOpen(true)}
+        >
+          <View style={styles.activityHeader}>
+            <View style={styles.titleRow}>
+              <Ionicons name="moon" size={18} color="#A2E884" />
+              <Text style={styles.headerTitle}>Sleep Activity</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#999" />
+          </View>
+          
+          <View style={styles.activityContent}>
+            <View style={styles.activityRow}>
+              <View style={styles.activityItem}>
+                <View style={styles.timelineDot}>
+                  <Ionicons name="bed-outline" size={16} color="white" />
+                </View>
+                <View style={styles.timelineContent}>
+                  <Text style={styles.timelineLabel}>Fell Asleep</Text>
+                  <Text style={styles.timelineTime}>14:30 PM</Text>
+                </View>
+              </View>
+              <View style={styles.activityDivider} />
+              <View style={styles.activityItem}>
+                <View style={styles.timelineDot}>
+                  <Ionicons name="sunny-outline" size={16} color="white" />
+                </View>
+                <View style={styles.timelineContent}>
+                  <Text style={styles.timelineLabel}>Woke Up</Text>
+                  <Text style={styles.timelineTime}>16:15 PM</Text>
+                </View>
+              </View>
+            </View>
+            
+            <View style={styles.activitySummary}>
+              <View style={styles.summaryItem}>
+                <Text style={styles.activityLabel}>Last Sleep</Text>
+                <Text style={styles.activityValue}>2h ago</Text>
+              </View>
+              <View style={styles.activityDivider} />
+              <View style={styles.summaryItem}>
+                <Text style={styles.activityLabel}>Duration</Text>
+                <Text style={styles.activityValue}>1h 45m</Text>
+              </View>
+            </View>
+          </View>
+        </TouchableOpacity>
+        
         <SoundPlayer
           onOpenLibrary={() => setIsLibraryOpen(true)}
           selectedSound={selectedSound}
         />
-        {/* Add more dashboard content here */}
+
+        {/* Growth Tracking */}
+        <TouchableOpacity
+          style={[styles.activityCard, { marginTop: 20 }]}
+          activeOpacity={0.7}
+          onPress={() => setGrowthTrackingOpen(true)}
+        >
+          <View style={styles.activityHeader}>
+            <View style={styles.titleRow}>
+              <Ionicons name="fitness" size={18} color="#A2E884" />
+              <Text style={styles.headerTitle}>Growth Tracking</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#999" />
+          </View>
+
+          <View style={styles.activityContent}>
+            <View style={styles.activityRow}>
+              <View style={styles.activityItem}>
+                <View style={styles.measurementIcon}>
+                  <Ionicons name="scale-outline" size={20} color="white" />
+                </View>
+                <View style={styles.timelineContent}>
+                  <Text style={styles.timelineLabel}>Weight</Text>
+                  <Text style={styles.timelineTime}>{currentWeight} kg</Text>
+                </View>
+              </View>
+              <View style={styles.activityDivider} />
+              <View style={styles.activityItem}>
+                <View style={styles.measurementIcon}>
+                  <Ionicons name="resize-outline" size={20} color="white" />
+                </View>
+                <View style={styles.timelineContent}>
+                  <Text style={styles.timelineLabel}>Length</Text>
+                  <Text style={styles.timelineTime}>{currentLength} cm</Text>
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.lastUpdated}>
+              <Ionicons name="time-outline" size={14} color="#999" />
+              <Text style={styles.lastUpdatedText}>Last updated: Today</Text>
+            </View>
+          </View>
+        </TouchableOpacity>
       </ScrollView>
       
       <SoundLibraryModal
         visible={isLibraryOpen}
         onClose={() => setIsLibraryOpen(false)}
         onSelectSound={handleSelectSound}
+      />
+
+      <SleepHistoryModal
+        visible={sleepHistoryOpen}
+        onClose={() => setSleepHistoryOpen(false)}
+      />
+
+      <GrowthTrackingModal
+        visible={growthTrackingOpen}
+        onClose={() => setGrowthTrackingOpen(false)}
+        onSave={handleSaveGrowth}
+        growthRecords={growthRecords}
+        birthWeight={birthWeight}
+        birthLength={birthLength}
+        birthDate={birthDate}
       />
       
       {/* Floating Chat Button */}
@@ -167,6 +340,140 @@ const styles = StyleSheet.create({
     elevation: 6,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  activityCard: {
+    marginHorizontal: 16,
+    marginBottom: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
+  },
+  firstCard: {
+    marginTop: 8,
+  },
+  activityHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  headerTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#A2E884',
+  },
+  activityContent: {
+    gap: 16,
+  },
+  activityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  activityItem: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  activityLabel: {
+    fontSize: 14,
+    color: '#999',
+    marginBottom: 4,
+    fontWeight: '500',
+  },
+  activityValue: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#333',
+  },
+  activityDivider: {
+    width: 1,
+    height: 50,
+    backgroundColor: '#E0E0E0',
+    marginHorizontal: 16,
+  },
+  activitySummary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
+  },
+  summaryItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  timelineDot: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#A2E884',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#A2E884',
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  timelineContent: {
+    alignItems: 'center',
+  },
+  timelineLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#999',
+    marginBottom: 4,
+  },
+  timelineTime: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#333',
+  },
+  measurementIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#A2E884',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#A2E884',
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  lastUpdated: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
+  },
+  lastUpdatedText: {
+    fontSize: 12,
+    color: '#999',
+    fontWeight: '500',
   },
 });
 

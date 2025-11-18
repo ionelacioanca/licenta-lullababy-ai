@@ -39,7 +39,7 @@ const RegisterPage: React.FC = () => {
     }
 
     try {
-  const response = await fetch("http://192.168.1.7:5000/api/register", {
+  const response = await fetch("http://192.168.1.10:5000/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, email, password, role }),

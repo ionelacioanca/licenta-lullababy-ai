@@ -47,6 +47,16 @@ const MicrophoneMonitor: React.FC<MicrophoneMonitorProps> = ({
 
   const startListening = async () => {
     try {
+      // First, ensure any existing recording is stopped
+      if (recordingRef.current) {
+        try {
+          await recordingRef.current.stopAndUnloadAsync();
+        } catch (e) {
+          console.log("Error stopping existing recording:", e);
+        }
+        recordingRef.current = null;
+      }
+
       if (!permissionResponse?.granted) {
         const res = await requestPermission();
         if (!res.granted) return;

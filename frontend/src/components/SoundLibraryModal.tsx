@@ -104,19 +104,25 @@ const SoundLibraryModal: React.FC<SoundLibraryModalProps> = ({
       visible={visible}
       animationType="slide"
       onRequestClose={onClose}
-      transparent={false}
+      transparent={true}
     >
-      <View style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <Ionicons name="library" size={24} color="#333" />
-            <Text style={styles.headerTitle}>Sound Library</Text>
+      <View style={styles.modalOverlay}>
+        <View style={styles.container}>
+          {/* Header */}
+          <View style={styles.header}>
+            <View style={styles.headerLeft}>
+              <Ionicons name="musical-notes" size={24} color="#A2E884" />
+              <View>
+                <Text style={styles.headerTitle}>Sound Library</Text>
+                <Text style={styles.headerSubtitle}>
+                  {isLoading ? "Loading..." : `${filteredSounds.length} sound${filteredSounds.length !== 1 ? "s" : ""} available`}
+                </Text>
+              </View>
+            </View>
+            <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
+              <Ionicons name="close" size={28} color="#666" />
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-            <Ionicons name="close" size={28} color="#333" />
-          </TouchableOpacity>
-        </View>
 
         {/* Search Bar */}
         <View style={styles.searchContainer}>
@@ -232,13 +238,6 @@ const SoundLibraryModal: React.FC<SoundLibraryModalProps> = ({
             )}
           </ScrollView>
         )}
-
-        {/* Footer Info */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            {filteredSounds.length} sound{filteredSounds.length !== 1 ? "s" : ""}{" "}
-            available
-          </Text>
         </View>
       </View>
     </Modal>
@@ -246,20 +245,26 @@ const SoundLibraryModal: React.FC<SoundLibraryModalProps> = ({
 };
 
 const styles = StyleSheet.create({
-  container: {
+  modalOverlay: {
     flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
+  },
+  container: {
     backgroundColor: "#FFF8F0",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    height: "90%",
+    flexDirection: "column",
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingTop: 50,
-    paddingBottom: 16,
-    backgroundColor: "#fff",
+    paddingHorizontal: 20,
+    paddingVertical: 20,
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: "#E0E0E0",
   },
   headerLeft: {
     flexDirection: "row",
@@ -267,9 +272,15 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: "700",
     color: "#333",
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#666",
+    marginTop: 2,
   },
   closeBtn: {
     padding: 4,
@@ -278,7 +289,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#fff",
-    marginHorizontal: 16,
+    marginHorizontal: 20,
     marginTop: 16,
     marginBottom: 12,
     paddingHorizontal: 16,
@@ -286,10 +297,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     gap: 10,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
   searchInput: {
     flex: 1,
@@ -301,7 +312,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   categoryScrollContent: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     gap: 8,
   },
   categoryChip: {
@@ -329,7 +340,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   soundListContent: {
-    padding: 16,
+    padding: 20,
     gap: 12,
   },
   soundCard: {
@@ -337,13 +348,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#fff",
     padding: 12,
-    borderRadius: 12,
+    borderRadius: 16,
     gap: 12,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
   soundThumbnail: {
     width: 60,
@@ -394,18 +405,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#bbb",
     marginTop: 4,
-  },
-  footer: {
-    backgroundColor: "#fff",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    borderTopColor: "#f0f0f0",
-  },
-  footerText: {
-    fontSize: 14,
-    color: "#666",
-    textAlign: "center",
   },
 });
 

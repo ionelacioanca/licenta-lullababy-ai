@@ -52,9 +52,9 @@ function getKnowledge(question) {
     }
   }
 
-  // dacă nu găsim nimic specific, trimitem tot (fișierele sunt scurte)
+  // dacă nu găsim nimic specific, folosim doar emotional_support pentru generalizări
   if (selectedFiles.size === 0) {
-    files.forEach((f) => selectedFiles.add(f));
+    selectedFiles.add("emotional_support.txt");
   }
 
   let context = "";
@@ -111,9 +111,10 @@ async function getChatbotReply(message) {
       model: "babybuddy", // ⬅️ Numele modelului tău Ollama
       prompt,
       stream: false,
+      keep_alive: "5m", // Keep model loaded for 5 minutes to speed up subsequent requests
       options: {
         temperature: 0.7,
-        num_predict: 300, // Limit response length for faster generation
+        num_predict: 200, // Reduced for faster responses
         top_k: 40,
         top_p: 0.9,
       }
