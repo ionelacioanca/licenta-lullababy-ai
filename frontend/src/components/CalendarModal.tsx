@@ -386,11 +386,6 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ visible, onClose, babyId,
             <Text style={styles.emptyText}>
               {selectedDate ? 'No events on this day' : 'No events this month'}
             </Text>
-            {selectedDate && (
-              <TouchableOpacity onPress={handleGenerateSchedules} style={styles.generateButton}>
-                <Text style={styles.generateButtonText}>Generate Schedules</Text>
-              </TouchableOpacity>
-            )}
           </View>
         )}
         
