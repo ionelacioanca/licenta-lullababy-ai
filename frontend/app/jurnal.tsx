@@ -24,7 +24,7 @@ import {
   JournalEntry,
   GalleryPhoto,
 } from "../src/services/journalService";
-import AddEntryModal from "../src/components/AddEntryModal";
+import AddEntryModal from "@/src/components/AddEntryModal";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -159,7 +159,7 @@ const JournalPage: React.FC = () => {
       loadGallery(babyId);
     }
     setShowAddModal(false);
-    setEditingEntry(null);
+    setEditingEntry(undefined);
   };
 
   const openLightbox = (photos: string[], startIndex: number = 0) => {
@@ -430,7 +430,7 @@ const JournalPage: React.FC = () => {
         style={styles.addButton}
         activeOpacity={0.85}
         onPress={() => {
-          setEditingEntry(null);
+          setEditingEntry(undefined);
           setShowAddModal(true);
         }}
       >
@@ -441,7 +441,7 @@ const JournalPage: React.FC = () => {
         visible={showAddModal}
         onClose={() => {
           setShowAddModal(false);
-          setEditingEntry(null);
+          setEditingEntry(undefined);
         }}
         onSave={handleEntrySaved}
         babyId={babyId || ""}
