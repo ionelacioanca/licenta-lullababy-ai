@@ -353,7 +353,7 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ visible, onClose, babyId,
                         onPress={() => handleEditEvent(event)}
                         style={styles.editButton}
                       >
-                        <Ionicons name="create-outline" size={16} color="#6B4FA0" />
+                        <Ionicons name="create-outline" size={16} color="#A2E884" />
                         <Text style={styles.editText}>Edit</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
@@ -760,7 +760,7 @@ const styles = StyleSheet.create({
   },
   editText: {
     fontSize: 14,
-    color: '#6B4FA0',
+    color: '#A2E884',
     fontWeight: '500',
   },
   deleteButton: {
