@@ -9,6 +9,7 @@ import soundRouter from './routes/soundRoutes.js';
 import chatbotRoutes from './routes/chatbotRoutes.js';
 import growthRouter from './routes/growthRoutes.js';
 import calendarRouter from './routes/calendarRoutes.js';
+import journalRouter from './routes/journalRoutes.js';
 import auth from './middleware/authMiddleware.js';
 import cors from 'cors';
 
@@ -28,9 +29,11 @@ app.use('/api/sounds', soundRouter);
 app.use('/api', chatbotRoutes);
 app.use('/api/growth', growthRouter);
 app.use('/api/calendar', calendarRouter);
+app.use('/api/journal', journalRouter);
 console.log('Chatbot routes registered at /api');
 console.log('Growth routes registered at /api/growth');
 console.log('Calendar routes registered at /api/calendar');
+console.log('Journal routes registered at /api/journal');
 app.get('/api/private', auth, (req, res) => {
     res.json({ message: 'This is a private route' });
 });

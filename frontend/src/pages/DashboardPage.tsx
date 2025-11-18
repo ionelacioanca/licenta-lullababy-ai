@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, ScrollView, StyleSheet, TouchableOpacity, Text, Alert } from "react-native";
+import { View, ScrollView, StyleSheet, TouchableOpacity, Text, Alert, Image } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -15,6 +15,7 @@ import { Sound } from "../services/soundService";
 import ChatbotModal from "../components/ChatbotModal";
 import { getGrowthRecords, getLatestGrowthRecord, addGrowthRecord, GrowthRecord } from "../services/growthService";
 import { getUpcomingEvents, CalendarEvent, generateVaccinationSchedule, generateMilestoneSchedule } from "../services/calendarService";
+import { getRecentEntries, JournalEntry } from "../services/journalService";
 
 const DashboardPage: React.FC = () => {
   const router = useRouter();
@@ -37,6 +38,7 @@ const DashboardPage: React.FC = () => {
   const [birthWeight, setBirthWeight] = useState<number | null>(null);
   const [birthLength, setBirthLength] = useState<number | null>(null);
   const [birthDate, setBirthDate] = useState<Date | null>(null);
+  const [recentMemories, setRecentMemories] = useState<JournalEntry[]>([]);
 
   const loadBabyForParent = async () => {
     const parentId = await AsyncStorage.getItem("parentId");
@@ -103,6 +105,9 @@ const DashboardPage: React.FC = () => {
           
           // Load upcoming calendar events
           loadUpcomingEvents(baby._id);
+          
+          // Load recent journal entries
+          loadRecentMemories(baby._id);
         }
       } else {
         console.warn("No baby found for this parent");
@@ -137,7 +142,17 @@ const DashboardPage: React.FC = () => {
       setUpcomingEvents(incompleteEvents.slice(0, 3));
       console.log("Loaded upcoming events:", incompleteEvents.length, "incomplete out of", events.length, "total");
     } catch (error) {
-      console.error("Error loading upcoming events:", error);
+      console.log("Error loading upcoming events:", error);
+    }
+  };
+
+  const loadRecentMemories = async (babyId: string) => {
+    try {
+      const entries = await getRecentEntries(babyId, 2);
+      setRecentMemories(entries);
+      console.log("Loaded recent memories:", entries.length);
+    } catch (error) {
+      console.error("Error loading recent memories:", error);
     }
   };
 
@@ -422,6 +437,72 @@ const DashboardPage: React.FC = () => {
                 <Ionicons name="medical" size={18} color="#A2E884" />
                 <Text style={styles.generateSchedulesText}>Generate Schedules</Text>
               </TouchableOpacity>
+            )}
+          </View>
+        </TouchableOpacity>
+
+        {/* Recent Memories */}
+        <TouchableOpacity
+          style={[styles.activityCard, { marginTop: 20 }]}
+          activeOpacity={0.7}
+          onPress={() => router.push("/jurnal")}
+        >
+          <View style={styles.activityHeader}>
+            <View style={styles.titleRow}>
+              <Ionicons name="book" size={18} color="#A2E884" />
+              <Text style={styles.headerTitle}>Recent Memories</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#999" />
+          </View>
+
+          <View style={styles.activityContent}>
+            {recentMemories.length > 0 ? (
+              recentMemories.map((memory, index) => {
+                const memoryDate = new Date(memory.date);
+                const MOOD_ICONS: Record<string, string> = {
+                  happy: "😄",
+                  okay: "🙂",
+                  neutral: "😐",
+                  crying: "😢",
+                  sick: "🤒",
+                };
+
+                return (
+                  <View key={memory._id}>
+                    {index > 0 && <View style={styles.eventDivider} />}
+                    <View style={styles.memoryRow}>
+                      <View style={styles.memoryIcon}>
+                        <Text style={styles.memoryMood}>{MOOD_ICONS[memory.mood]}</Text>
+                      </View>
+                      <View style={styles.memoryDetails}>
+                        {memory.title && (
+                          <Text style={styles.memoryTitle} numberOfLines={1}>
+                            {memory.title}
+                          </Text>
+                        )}
+                        <Text style={styles.memoryDescription} numberOfLines={2}>
+                          {memory.description}
+                        </Text>
+                        <Text style={styles.memoryDate}>
+                          {memoryDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        </Text>
+                      </View>
+                      {memory.photos.length > 0 && (
+                        <Image
+                          source={{ uri: `http://192.168.1.10:5000${memory.photos[0]}` }}
+                          style={styles.memoryThumbnail}
+                        />
+                      )}
+                    </View>
+                  </View>
+                );
+              })
+            ) : (
+              <View style={styles.noEventsContainer}>
+                <Ionicons name="book-outline" size={32} color="#CCC" />
+                <Text style={styles.noEventsText}>No memories yet</Text>
+                <Text style={styles.noEventsSubtext}>Tap to start capturing moments</Text>
+              </View>
             )}
           </View>
         </TouchableOpacity>
@@ -742,6 +823,47 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#A2E884',
+  },
+  memoryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  memoryIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F0F9F0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  memoryMood: {
+    fontSize: 20,
+  },
+  memoryDetails: {
+    flex: 1,
+  },
+  memoryTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 4,
+  },
+  memoryDescription: {
+    fontSize: 13,
+    color: '#666',
+    lineHeight: 18,
+    marginBottom: 4,
+  },
+  memoryDate: {
+    fontSize: 11,
+    color: '#999',
+    fontWeight: '500',
+  },
+  memoryThumbnail: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
   },
 });
 
