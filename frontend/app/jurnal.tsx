@@ -367,10 +367,11 @@ const JournalPage: React.FC = () => {
         {viewMode === "timeline" && (
           <>
             <View style={styles.searchBar}>
-              <Ionicons name="search" size={20} color="#999" />
+              <Ionicons name="search" size={20} color="#A2E884" />
               <TextInput
                 style={styles.searchInput}
                 placeholder="Search memories..."
+                placeholderTextColor="#A2E884"
                 value={searchQuery}
                 onChangeText={setSearchQuery}
               />
@@ -549,7 +550,7 @@ const styles = StyleSheet.create({
   toggleText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#999",
+    color: "#A2E884",
   },
   toggleTextActive: {
     color: "#FFF",
