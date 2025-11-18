@@ -16,6 +16,7 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import Header from "../src/pages/Header";
 import Footer from "../src/pages/Footer";
+import CalendarModal from "../src/components/CalendarModal";
 import {
   getJournalEntries,
   getJournalGallery,
@@ -60,8 +61,9 @@ const JournalPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [editingEntry, setEditingEntry] = useState<JournalEntry | null>(null);
+  const [editingEntry, setEditingEntry] = useState<JournalEntry | undefined>();
   const [expandedEntry, setExpandedEntry] = useState<string | null>(null);
+  const [calendarOpen, setCalendarOpen] = useState(false);
   
   // Lightbox state
   const [lightboxVisible, setLightboxVisible] = useState(false);
@@ -495,7 +497,7 @@ const JournalPage: React.FC = () => {
         active="Jurnal"
         onNavigate={(screen) => {
           if (screen === "Calendar") {
-            // Open calendar modal
+            setCalendarOpen(true);
           } else if (screen === "Home") {
             router.push("/dashboard");
           } else if (screen === "Raports") {
@@ -506,6 +508,13 @@ const JournalPage: React.FC = () => {
             router.push("/jurnal");
           }
         }}
+      />
+
+      <CalendarModal
+        visible={calendarOpen}
+        onClose={() => setCalendarOpen(false)}
+        babyId={babyId || ''}
+        onEventsUpdate={() => {}}
       />
     </View>
   );
