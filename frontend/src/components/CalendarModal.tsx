@@ -426,18 +426,42 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ visible, onClose, babyId,
           </View>
 
           {showAddForm && selectedDate && (
-            <KeyboardAvoidingView 
-              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-              style={styles.addForm}
-            >
-              <ScrollView 
-                keyboardShouldPersistTaps="handled"
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.scrollContent}
+            <>
+              <TouchableOpacity 
+                style={styles.formOverlay} 
+                activeOpacity={1} 
+                onPress={() => {
+                  setShowAddForm(false);
+                  setNewEventTitle('');
+                  setNewEventDescription('');
+                  setNewEventType('other');
+                }}
+              />
+              <KeyboardAvoidingView 
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                style={styles.addForm}
               >
-                <Text style={styles.formTitle}>
-                  Add Event - {selectedDate.toLocaleDateString()}
-                </Text>
+                <ScrollView 
+                  keyboardShouldPersistTaps="handled"
+                  showsVerticalScrollIndicator={false}
+                  contentContainerStyle={styles.scrollContent}
+                >
+                  <View style={styles.formHeader}>
+                    <Text style={styles.formTitle}>
+                      Add Event - {selectedDate.toLocaleDateString()}
+                    </Text>
+                    <TouchableOpacity 
+                      onPress={() => {
+                        setShowAddForm(false);
+                        setNewEventTitle('');
+                        setNewEventDescription('');
+                        setNewEventType('other');
+                      }}
+                      style={styles.formCloseButton}
+                    >
+                      <Ionicons name="close" size={24} color="#999" />
+                    </TouchableOpacity>
+                  </View>
                 <TextInput
                   style={styles.input}
                   placeholder="Event title"
@@ -489,21 +513,48 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ visible, onClose, babyId,
                 </View>
               </ScrollView>
             </KeyboardAvoidingView>
+            </>
           )}
 
           {showEditForm && editingEvent && (
-            <KeyboardAvoidingView 
-              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-              style={styles.addForm}
-            >
-              <ScrollView 
-                keyboardShouldPersistTaps="handled"
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.scrollContent}
+            <>
+              <TouchableOpacity 
+                style={styles.formOverlay} 
+                activeOpacity={1} 
+                onPress={() => {
+                  setShowEditForm(false);
+                  setEditingEvent(null);
+                  setNewEventTitle('');
+                  setNewEventDescription('');
+                  setNewEventType('other');
+                }}
+              />
+              <KeyboardAvoidingView 
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                style={styles.addForm}
               >
-                <Text style={styles.formTitle}>
-                  Edit Event
-                </Text>
+                <ScrollView 
+                  keyboardShouldPersistTaps="handled"
+                  showsVerticalScrollIndicator={false}
+                  contentContainerStyle={styles.scrollContent}
+                >
+                  <View style={styles.formHeader}>
+                    <Text style={styles.formTitle}>
+                      Edit Event
+                    </Text>
+                    <TouchableOpacity 
+                      onPress={() => {
+                        setShowEditForm(false);
+                        setEditingEvent(null);
+                        setNewEventTitle('');
+                        setNewEventDescription('');
+                        setNewEventType('other');
+                      }}
+                      style={styles.formCloseButton}
+                    >
+                      <Ionicons name="close" size={24} color="#999" />
+                    </TouchableOpacity>
+                  </View>
                 <TextInput
                   style={styles.input}
                   placeholder="Event title"
@@ -557,6 +608,7 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ visible, onClose, babyId,
                 </View>
               </ScrollView>
             </KeyboardAvoidingView>
+            </>
           )}
         </View>
       </View>
@@ -795,6 +847,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
+  formOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    zIndex: 10,
+  },
   addForm: {
     position: 'absolute',
     bottom: 0,
@@ -810,15 +871,25 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: -2 },
     elevation: 8,
     maxHeight: '70%',
+    zIndex: 11,
   },
   scrollContent: {
     paddingBottom: 60,
+  },
+  formHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
   },
   formTitle: {
     fontSize: 16,
     fontWeight: '600',
     color: '#333',
-    marginBottom: 12,
+    flex: 1,
+  },
+  formCloseButton: {
+    padding: 4,
   },
   input: {
     backgroundColor: '#F8F8F8',
