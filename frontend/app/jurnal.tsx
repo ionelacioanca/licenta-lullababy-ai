@@ -335,7 +335,7 @@ const JournalPage: React.FC = () => {
               <Ionicons
                 name="list"
                 size={20}
-                color={viewMode === "timeline" ? "#FFF" : "#999"}
+                color={viewMode === "timeline" ? "#FFF" : "#A2E884"}
               />
               <Text
                 style={[
@@ -353,7 +353,7 @@ const JournalPage: React.FC = () => {
               <Ionicons
                 name="images"
                 size={20}
-                color={viewMode === "gallery" ? "#FFF" : "#999"}
+                color={viewMode === "gallery" ? "#FFF" : "#A2E884"}
               />
               <Text
                 style={[styles.toggleText, viewMode === "gallery" && styles.toggleTextActive]}
