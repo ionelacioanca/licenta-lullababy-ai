@@ -137,7 +137,7 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ visible, onClose, babyId,
       setNewEventDescription('');
       setNewEventType('other');
       setShowAddForm(false);
-      setSelectedDate(null);
+      // Keep selectedDate to show events from the selected day
       loadEvents();
       onEventsUpdate?.();
     } catch (error) {
