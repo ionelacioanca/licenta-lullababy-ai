@@ -54,26 +54,9 @@ const GrowthTrackingModal: React.FC<GrowthTrackingModalProps> = ({
     
     const history: GrowthEntry[] = [];
 
-    // Add birth data as the first entry if we have at least weight or length
-    if (birthDate && (birthWeight || birthLength)) {
-      console.log("Adding birth entry to history");
-      history.push({
-        date: birthDate.toLocaleDateString('en-US', { 
-          month: 'short', 
-          day: 'numeric', 
-          year: 'numeric' 
-        }),
-        weight: birthWeight ? `${birthWeight} kg` : '--',
-        length: birthLength ? `${birthLength} cm` : '--',
-        age: "Birth",
-      });
-    } else {
-      console.log("Birth data missing - not adding birth entry. birthDate:", birthDate, "birthWeight:", birthWeight, "birthLength:", birthLength);
-    }
-
-    // Add growth records (sorted by date, oldest first)
+    // Add growth records (sorted by date, NEWEST first)
     const sortedRecords = [...growthRecords].sort((a, b) => 
-      new Date(a.date).getTime() - new Date(b.date).getTime()
+      new Date(b.date).getTime() - new Date(a.date).getTime()
     );
 
     sortedRecords.forEach((record) => {
@@ -91,6 +74,23 @@ const GrowthTrackingModal: React.FC<GrowthTrackingModalProps> = ({
         age: record.age || calculateAge(recordDate),
       });
     });
+
+    // Add birth data as the LAST entry (oldest) if we have at least weight or length
+    if (birthDate && (birthWeight || birthLength)) {
+      console.log("Adding birth entry to history");
+      history.push({
+        date: birthDate.toLocaleDateString('en-US', { 
+          month: 'short', 
+          day: 'numeric', 
+          year: 'numeric' 
+        }),
+        weight: birthWeight ? `${birthWeight} kg` : '--',
+        length: birthLength ? `${birthLength} cm` : '--',
+        age: "Birth",
+      });
+    } else {
+      console.log("Birth data missing - not adding birth entry. birthDate:", birthDate, "birthWeight:", birthWeight, "birthLength:", birthLength);
+    }
 
     return history;
   };
