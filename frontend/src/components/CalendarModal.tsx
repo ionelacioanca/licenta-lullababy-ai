@@ -249,14 +249,27 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ visible, onClose, babyId,
         date.getDate() === new Date().getDate() &&
         date.getMonth() === new Date().getMonth() &&
         date.getFullYear() === new Date().getFullYear();
+      
+      const isSelected = selectedDate &&
+        date.getDate() === selectedDate.getDate() &&
+        date.getMonth() === selectedDate.getMonth() &&
+        date.getFullYear() === selectedDate.getFullYear();
 
       days.push(
         <TouchableOpacity
           key={day}
-          style={[styles.dayCell, isToday && styles.todayCell]}
+          style={[
+            styles.dayCell, 
+            isToday && styles.todayCell,
+            isSelected && styles.selectedDayCell
+          ]}
           onPress={() => handleDatePress(day)}
         >
-          <Text style={[styles.dayText, isToday && styles.todayText]}>{day}</Text>
+          <Text style={[
+            styles.dayText, 
+            isToday && styles.todayText,
+            isSelected && styles.selectedDayText
+          ]}>{day}</Text>
           {dayEvents.length > 0 && (
             <View style={styles.eventDots}>
               {dayEvents.slice(0, 3).map((event) => (
@@ -722,6 +735,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#A2E884',
     borderRadius: 8,
   },
+  selectedDayCell: {
+    borderWidth: 2,
+    borderColor: '#A2E884',
+    borderRadius: 8,
+  },
   dayText: {
     fontSize: 14,
     fontWeight: '500',
@@ -729,6 +747,10 @@ const styles = StyleSheet.create({
   },
   todayText: {
     color: 'white',
+    fontWeight: '700',
+  },
+  selectedDayText: {
+    color: '#A2E884',
     fontWeight: '700',
   },
   eventDots: {
