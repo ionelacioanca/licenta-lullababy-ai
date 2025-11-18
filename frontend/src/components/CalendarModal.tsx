@@ -8,6 +8,8 @@ import {
   ScrollView,
   TextInput,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import {
@@ -378,60 +380,68 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ visible, onClose, babyId,
           </View>
 
           {showAddForm && selectedDate && (
-            <View style={styles.addForm}>
-              <Text style={styles.formTitle}>
-                Add Event - {selectedDate.toLocaleDateString()}
-              </Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Event title"
-                value={newEventTitle}
-                onChangeText={setNewEventTitle}
-                placeholderTextColor="#999"
-              />
-              <TextInput
-                style={[styles.input, styles.textArea]}
-                placeholder="Description (optional)"
-                value={newEventDescription}
-                onChangeText={setNewEventDescription}
-                multiline
-                numberOfLines={3}
-                placeholderTextColor="#999"
-              />
-              <View style={styles.typeSelector}>
-                {Object.keys(EVENT_TYPE_COLORS).map((type) => (
+            <KeyboardAvoidingView 
+              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+              style={styles.addForm}
+            >
+              <ScrollView 
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+              >
+                <Text style={styles.formTitle}>
+                  Add Event - {selectedDate.toLocaleDateString()}
+                </Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Event title"
+                  value={newEventTitle}
+                  onChangeText={setNewEventTitle}
+                  placeholderTextColor="#999"
+                />
+                <TextInput
+                  style={[styles.input, styles.textArea]}
+                  placeholder="Description (optional)"
+                  value={newEventDescription}
+                  onChangeText={setNewEventDescription}
+                  multiline
+                  numberOfLines={3}
+                  placeholderTextColor="#999"
+                />
+                <View style={styles.typeSelector}>
+                  {Object.keys(EVENT_TYPE_COLORS).map((type) => (
+                    <TouchableOpacity
+                      key={type}
+                      style={[
+                        styles.typeButton,
+                        newEventType === type && styles.typeButtonActive,
+                        { borderColor: EVENT_TYPE_COLORS[type as keyof typeof EVENT_TYPE_COLORS] },
+                      ]}
+                      onPress={() => setNewEventType(type as CalendarEvent['type'])}
+                    >
+                      <Text style={styles.typeButtonText}>{type}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                <View style={styles.formButtons}>
                   <TouchableOpacity
-                    key={type}
-                    style={[
-                      styles.typeButton,
-                      newEventType === type && styles.typeButtonActive,
-                      { borderColor: EVENT_TYPE_COLORS[type as keyof typeof EVENT_TYPE_COLORS] },
-                    ]}
-                    onPress={() => setNewEventType(type as CalendarEvent['type'])}
+                    style={[styles.formButton, styles.cancelButton]}
+                    onPress={() => {
+                      setShowAddForm(false);
+                      setNewEventTitle('');
+                      setNewEventDescription('');
+                    }}
                   >
-                    <Text style={styles.typeButtonText}>{type}</Text>
+                    <Text style={styles.cancelButtonText}>Cancel</Text>
                   </TouchableOpacity>
-                ))}
-              </View>
-              <View style={styles.formButtons}>
-                <TouchableOpacity
-                  style={[styles.formButton, styles.cancelButton]}
-                  onPress={() => {
-                    setShowAddForm(false);
-                    setNewEventTitle('');
-                    setNewEventDescription('');
-                  }}
-                >
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.formButton, styles.saveButton]}
-                  onPress={handleAddEvent}
-                >
-                  <Text style={styles.saveButtonText}>Add Event</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
+                  <TouchableOpacity
+                    style={[styles.formButton, styles.saveButton]}
+                    onPress={handleAddEvent}
+                  >
+                    <Text style={styles.saveButtonText}>Add Event</Text>
+                  </TouchableOpacity>
+                </View>
+              </ScrollView>
+            </KeyboardAvoidingView>
           )}
         </View>
       </View>
