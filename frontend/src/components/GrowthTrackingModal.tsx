@@ -45,20 +45,30 @@ const GrowthTrackingModal: React.FC<GrowthTrackingModalProps> = ({
 
   // Convert growth records to display format
   const formatGrowthHistory = (): GrowthEntry[] => {
+    console.log("Formatting growth history with:", {
+      birthWeight,
+      birthLength,
+      birthDate,
+      recordsCount: growthRecords.length
+    });
+    
     const history: GrowthEntry[] = [];
 
-    // Add birth data as the first entry
-    if (birthWeight && birthLength && birthDate) {
+    // Add birth data as the first entry if we have at least weight or length
+    if (birthDate && (birthWeight || birthLength)) {
+      console.log("Adding birth entry to history");
       history.push({
         date: birthDate.toLocaleDateString('en-US', { 
           month: 'short', 
           day: 'numeric', 
           year: 'numeric' 
         }),
-        weight: `${birthWeight} kg`,
-        length: `${birthLength} cm`,
+        weight: birthWeight ? `${birthWeight} kg` : '--',
+        length: birthLength ? `${birthLength} cm` : '--',
         age: "Birth",
       });
+    } else {
+      console.log("Birth data missing - not adding birth entry. birthDate:", birthDate, "birthWeight:", birthWeight, "birthLength:", birthLength);
     }
 
     // Add growth records (sorted by date, oldest first)
