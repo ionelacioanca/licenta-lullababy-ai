@@ -573,17 +573,19 @@ const styles = StyleSheet.create({
   tagFilters: {
     paddingHorizontal: 16,
     paddingVertical: 12,
-    maxHeight: 50,
+    maxHeight: 60,
   },
   filterTag: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
     borderRadius: 20,
     marginRight: 8,
     borderWidth: 1.5,
+    minWidth: 100,
+    alignItems: 'center',
   },
   filterTagText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "600",
     color: "#666",
   },
