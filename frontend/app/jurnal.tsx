@@ -531,7 +531,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 4,
     borderWidth: 1,
-    borderColor: "#F0F0F0",
+    borderColor: "#A2E884",
   },
   toggleButton: {
     flex: 1,
@@ -564,7 +564,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#E0E0E0",
+    borderColor: "#A2E884",
     gap: 10,
   },
   searchInput: {
