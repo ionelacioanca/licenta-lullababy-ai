@@ -527,12 +527,15 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ visible, onClose, babyId,
                       key={type}
                       style={[
                         styles.typeButton,
-                        newEventType === type && styles.typeButtonActive,
                         { borderColor: EVENT_TYPE_COLORS[type as keyof typeof EVENT_TYPE_COLORS] },
+                        newEventType === type && { backgroundColor: EVENT_TYPE_COLORS[type as keyof typeof EVENT_TYPE_COLORS] },
                       ]}
                       onPress={() => setNewEventType(type as CalendarEvent['type'])}
                     >
-                      <Text style={styles.typeButtonText}>{type}</Text>
+                      <Text style={[
+                        styles.typeButtonText,
+                        newEventType === type && styles.typeButtonTextActive
+                      ]}>{type}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -620,12 +623,15 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ visible, onClose, babyId,
                       key={type}
                       style={[
                         styles.typeButton,
-                        newEventType === type && styles.typeButtonActive,
                         { borderColor: EVENT_TYPE_COLORS[type as keyof typeof EVENT_TYPE_COLORS] },
+                        newEventType === type && { backgroundColor: EVENT_TYPE_COLORS[type as keyof typeof EVENT_TYPE_COLORS] },
                       ]}
                       onPress={() => setNewEventType(type as CalendarEvent['type'])}
                     >
-                      <Text style={styles.typeButtonText}>{type}</Text>
+                      <Text style={[
+                        styles.typeButtonText,
+                        newEventType === type && styles.typeButtonTextActive
+                      ]}>{type}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -1100,6 +1106,10 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#333',
     textTransform: 'capitalize',
+  },
+  typeButtonTextActive: {
+    color: 'white',
+    fontWeight: '600',
   },
   formButtons: {
     flexDirection: 'row',
