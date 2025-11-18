@@ -53,6 +53,7 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ visible, onClose, babyId,
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [showDayView, setShowDayView] = useState(false);
   const [newEventTitle, setNewEventTitle] = useState('');
   const [newEventDescription, setNewEventDescription] = useState('');
   const [newEventType, setNewEventType] = useState<CalendarEvent['type']>('other');
@@ -104,6 +105,12 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ visible, onClose, babyId,
   const handleDatePress = (day: number) => {
     const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
     setSelectedDate(date);
+  };
+
+  const handleOpenAddForm = () => {
+    if (!selectedDate) {
+      setSelectedDate(new Date());
+    }
     setShowAddForm(true);
   };
 
@@ -269,13 +276,13 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ visible, onClose, babyId,
   };
 
   const renderEventsList = () => {
-    const sortedEvents = [...events].sort(
-      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-    );
+    const eventsToShow = selectedDate 
+      ? getEventsForDate(selectedDate)
+      : [...events].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     return (
       <ScrollView style={styles.eventsList} showsVerticalScrollIndicator={false}>
-        {sortedEvents.map((event) => {
+        {eventsToShow.map((event) => {
           const eventDate = new Date(event.date);
           const isExpanded = expandedEvent === event._id;
 
@@ -371,14 +378,29 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ visible, onClose, babyId,
           );
         })}
 
-        {sortedEvents.length === 0 && (
+        {eventsToShow.length === 0 && (
           <View style={styles.emptyState}>
             <Ionicons name="calendar-outline" size={48} color="#CCC" />
-            <Text style={styles.emptyText}>No events this month</Text>
-            <TouchableOpacity onPress={handleGenerateSchedules} style={styles.generateButton}>
-              <Text style={styles.generateButtonText}>Generate Schedules</Text>
-            </TouchableOpacity>
+            <Text style={styles.emptyText}>
+              {selectedDate ? 'No events on this day' : 'No events this month'}
+            </Text>
+            {!selectedDate && (
+              <TouchableOpacity onPress={handleGenerateSchedules} style={styles.generateButton}>
+                <Text style={styles.generateButtonText}>Generate Schedules</Text>
+              </TouchableOpacity>
+            )}
           </View>
+        )}
+        
+        {selectedDate && (
+          <TouchableOpacity 
+            style={styles.addEventButtonInline}
+            onPress={handleOpenAddForm}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="add-circle" size={20} color="#A2E884" />
+            <Text style={styles.addEventButtonInlineText}>Add Event</Text>
+          </TouchableOpacity>
         )}
       </ScrollView>
     );
@@ -421,7 +443,18 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ visible, onClose, babyId,
           {renderCalendarGrid()}
 
           <View style={styles.eventsSection}>
-            <Text style={styles.sectionTitle}>Events</Text>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>
+                {selectedDate 
+                  ? selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                  : 'Events'}
+              </Text>
+              {selectedDate && (
+                <TouchableOpacity onPress={() => setSelectedDate(null)}>
+                  <Text style={styles.clearFilterText}>Show All</Text>
+                </TouchableOpacity>
+              )}
+            </View>
             {renderEventsList()}
           </View>
 
@@ -722,6 +755,17 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 12,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  clearFilterText: {
+    fontSize: 14,
+    color: '#A2E884',
+    fontWeight: '500',
+  },
   eventsList: {
     flex: 1,
   },
@@ -824,6 +868,119 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#FF6B6B',
     fontWeight: '500',
+  },
+  addEventButtonInline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+    gap: 8,
+    marginTop: 12,
+    marginBottom: 12,
+  },
+  addEventButtonInlineText: {
+    fontSize: 14,
+    color: '#A2E884',
+    fontWeight: '600',
+  },
+  dayViewContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'white',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '70%',
+    zIndex: 11,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: -2 },
+    elevation: 8,
+  },
+  dayViewHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 20,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  dayViewTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#333',
+    marginBottom: 4,
+  },
+  dayViewDate: {
+    fontSize: 14,
+    color: '#666',
+  },
+  dayEventsList: {
+    flex: 1,
+    padding: 20,
+  },
+  dayEventItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8F8F8',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+    gap: 12,
+  },
+  dayEventIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  dayEventInfo: {
+    flex: 1,
+  },
+  dayEventTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 2,
+  },
+  dayEventTime: {
+    fontSize: 13,
+    color: '#666',
+  },
+  dayEmptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+  },
+  dayEmptyText: {
+    fontSize: 14,
+    color: '#999',
+    marginTop: 12,
+  },
+  addEventButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#A2E884',
+    margin: 20,
+    marginTop: 0,
+    paddingVertical: 14,
+    borderRadius: 12,
+    gap: 8,
+    shadowColor: '#A2E884',
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
+  },
+  addEventButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: 'white',
   },
   emptyState: {
     alignItems: 'center',
