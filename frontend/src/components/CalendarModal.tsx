@@ -19,8 +19,6 @@ import {
   updateCalendarEvent,
   toggleEventCompleted,
   deleteCalendarEvent,
-  generateVaccinationSchedule,
-  generateMilestoneSchedule,
 } from '../services/calendarService';
 
 interface CalendarModalProps {
@@ -206,30 +204,6 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ visible, onClose, babyId,
     } catch (error) {
       Alert.alert('Error', 'Failed to update event');
     }
-  };
-
-  const handleGenerateSchedules = async () => {
-    Alert.alert(
-      'Generate Schedules',
-      'Generate vaccination and milestone schedules for your baby?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Generate',
-          onPress: async () => {
-            try {
-              await generateVaccinationSchedule(babyId);
-              await generateMilestoneSchedule(babyId);
-              Alert.alert('Success', 'Schedules generated successfully!');
-              loadEvents();
-              onEventsUpdate?.();
-            } catch (error) {
-              Alert.alert('Error', 'Failed to generate schedules');
-            }
-          },
-        },
-      ]
-    );
   };
 
   const renderCalendarGrid = () => {
@@ -425,9 +399,7 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ visible, onClose, babyId,
               <Ionicons name="close" size={28} color="#333" />
             </TouchableOpacity>
             <Text style={styles.title}>Calendar</Text>
-            <TouchableOpacity onPress={handleGenerateSchedules} style={styles.headerButton}>
-              <Ionicons name="add-circle-outline" size={28} color="#A2E884" />
-            </TouchableOpacity>
+            <View style={styles.headerButton} />
           </View>
 
           <View style={styles.monthHeader}>
