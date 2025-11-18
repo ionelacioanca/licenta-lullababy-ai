@@ -521,15 +521,17 @@ const styles = StyleSheet.create({
   topBar: {
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: "#FFF",
+    backgroundColor: "#FFF8F0",
     borderBottomWidth: 1,
     borderBottomColor: "#F0F0F0",
   },
   viewToggle: {
     flexDirection: "row",
-    backgroundColor: "#F5F5F5",
+    backgroundColor: "#FFF8F0",
     borderRadius: 12,
     padding: 4,
+    borderWidth: 1,
+    borderColor: "#F0F0F0",
   },
   toggleButton: {
     flex: 1,
