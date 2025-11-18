@@ -10,9 +10,11 @@ import SoundPlayer from "../components/SoundPlayer";
 import SoundLibraryModal from "../components/SoundLibraryModal";
 import SleepHistoryModal from "../components/SleepHistoryModal";
 import GrowthTrackingModal from "../components/GrowthTrackingModal";
+import CalendarModal from "../components/CalendarModal";
 import { Sound } from "../services/soundService";
 import ChatbotModal from "../components/ChatbotModal";
 import { getGrowthRecords, getLatestGrowthRecord, addGrowthRecord, GrowthRecord } from "../services/growthService";
+import { getUpcomingEvents, CalendarEvent } from "../services/calendarService";
 
 const DashboardPage: React.FC = () => {
   const router = useRouter();
@@ -26,6 +28,8 @@ const DashboardPage: React.FC = () => {
   const [chatOpen, setChatOpen] = useState(false);
   const [sleepHistoryOpen, setSleepHistoryOpen] = useState(false);
   const [growthTrackingOpen, setGrowthTrackingOpen] = useState(false);
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [upcomingEvents, setUpcomingEvents] = useState<CalendarEvent[]>([]);
   const [currentWeight, setCurrentWeight] = useState("--");
   const [currentLength, setCurrentLength] = useState("--");
   const [growthRecords, setGrowthRecords] = useState<GrowthRecord[]>([]);
@@ -95,6 +99,9 @@ const DashboardPage: React.FC = () => {
           
           // Load growth records
           loadGrowthData(baby._id, baby.birthWeight, baby.birthLength);
+          
+          // Load upcoming calendar events
+          loadUpcomingEvents(baby._id);
         }
       } else {
         console.warn("No baby found for this parent");
@@ -115,6 +122,15 @@ const DashboardPage: React.FC = () => {
       loadBabyForParent();
     }, [])
   );
+
+  const loadUpcomingEvents = async (babyId: string) => {
+    try {
+      const events = await getUpcomingEvents(babyId, 3);
+      setUpcomingEvents(events);
+    } catch (error) {
+      console.error("Error loading upcoming events:", error);
+    }
+  };
 
   const loadGrowthData = async (babyId: string, birthWeight?: number, birthLength?: number) => {
     try {
@@ -278,6 +294,65 @@ const DashboardPage: React.FC = () => {
             </View>
           </View>
         </TouchableOpacity>
+
+        {/* Calendar */}
+        <TouchableOpacity
+          style={[styles.activityCard, { marginTop: 20 }]}
+          activeOpacity={0.7}
+          onPress={() => setCalendarOpen(true)}
+        >
+          <View style={styles.activityHeader}>
+            <View style={styles.titleRow}>
+              <Ionicons name="calendar" size={18} color="#A2E884" />
+              <Text style={styles.headerTitle}>Upcoming Events</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#999" />
+          </View>
+
+          <View style={styles.activityContent}>
+            {upcomingEvents.length > 0 ? (
+              upcomingEvents.map((event, index) => {
+                const eventDate = new Date(event.date);
+                const eventTypeColors: Record<string, string> = {
+                  vaccination: '#FF6B6B',
+                  checkup: '#4ECDC4',
+                  milestone: '#FFD93D',
+                  medication: '#A2E884',
+                  appointment: '#6B4FA0',
+                  other: '#95A5A6',
+                };
+
+                return (
+                  <View key={event._id}>
+                    {index > 0 && <View style={styles.eventDivider} />}
+                    <View style={styles.eventRow}>
+                      <View style={[styles.eventTypeBadge, { backgroundColor: eventTypeColors[event.type] }]}>
+                        <Ionicons 
+                          name={event.type === 'vaccination' ? 'medical' : event.type === 'milestone' ? 'star' : 'calendar'} 
+                          size={14} 
+                          color="white" 
+                        />
+                      </View>
+                      <View style={styles.eventDetails}>
+                        <Text style={styles.eventTitle}>{event.title}</Text>
+                        <Text style={styles.eventDateText}>
+                          {eventDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          {event.time && ` at ${event.time}`}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                );
+              })
+            ) : (
+              <View style={styles.noEventsContainer}>
+                <Ionicons name="calendar-outline" size={32} color="#CCC" />
+                <Text style={styles.noEventsText}>No upcoming events</Text>
+                <Text style={styles.noEventsSubtext}>Tap to add or generate schedules</Text>
+              </View>
+            )}
+          </View>
+        </TouchableOpacity>
       </ScrollView>
       
       <SoundLibraryModal
@@ -300,6 +375,13 @@ const DashboardPage: React.FC = () => {
         birthLength={birthLength}
         birthDate={birthDate}
       />
+
+      <CalendarModal
+        visible={calendarOpen}
+        onClose={() => setCalendarOpen(false)}
+        babyId={babyId || ''}
+        onEventsUpdate={() => babyId && loadUpcomingEvents(babyId)}
+      />
       
       {/* Floating Chat Button */}
       <TouchableOpacity
@@ -312,7 +394,22 @@ const DashboardPage: React.FC = () => {
 
       <ChatbotModal visible={chatOpen} onClose={() => setChatOpen(false)} />
 
-      <Footer active="Home" onNavigate={() => {}} />
+      <Footer 
+        active="Home" 
+        onNavigate={(screen) => {
+          if (screen === 'Calendar') {
+            setCalendarOpen(true);
+          } else if (screen === 'Home') {
+            router.push('/dashboard');
+          } else if (screen === 'Raports') {
+            router.push('/raports');
+          } else if (screen === 'Tips') {
+            router.push('/tips');
+          } else if (screen === 'Jurnal') {
+            router.push('/jurnal');
+          }
+        }} 
+      />
     </View>
   );
 }
@@ -474,6 +571,51 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#999',
     fontWeight: '500',
+  },
+  eventDivider: {
+    height: 1,
+    backgroundColor: '#F0F0F0',
+    marginVertical: 12,
+  },
+  eventRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  eventTypeBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  eventDetails: {
+    flex: 1,
+  },
+  eventTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 2,
+  },
+  eventDateText: {
+    fontSize: 12,
+    color: '#666',
+  },
+  noEventsContainer: {
+    alignItems: 'center',
+    paddingVertical: 24,
+  },
+  noEventsText: {
+    fontSize: 14,
+    color: '#999',
+    fontWeight: '500',
+    marginTop: 8,
+  },
+  noEventsSubtext: {
+    fontSize: 12,
+    color: '#BBB',
+    marginTop: 4,
   },
 });
 
