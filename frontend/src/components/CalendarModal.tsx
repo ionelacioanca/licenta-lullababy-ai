@@ -52,7 +52,7 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ visible, onClose, babyId,
   const [currentDate, setCurrentDate] = useState(new Date());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const [showDayView, setShowDayView] = useState(false);
   const [newEventTitle, setNewEventTitle] = useState('');
   const [newEventDescription, setNewEventDescription] = useState('');
@@ -64,6 +64,8 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ visible, onClose, babyId,
   useEffect(() => {
     if (visible && babyId) {
       loadEvents();
+      // Reset to today when modal opens
+      setSelectedDate(new Date());
     }
   }, [visible, babyId, currentDate]);
 
@@ -384,7 +386,7 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ visible, onClose, babyId,
             <Text style={styles.emptyText}>
               {selectedDate ? 'No events on this day' : 'No events this month'}
             </Text>
-            {!selectedDate && (
+            {selectedDate && (
               <TouchableOpacity onPress={handleGenerateSchedules} style={styles.generateButton}>
                 <Text style={styles.generateButtonText}>Generate Schedules</Text>
               </TouchableOpacity>
@@ -451,7 +453,7 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ visible, onClose, babyId,
               </Text>
               {selectedDate && (
                 <TouchableOpacity onPress={() => setSelectedDate(null)}>
-                  <Text style={styles.clearFilterText}>Show All</Text>
+                  <Text style={styles.clearFilterText}>Show Month</Text>
                 </TouchableOpacity>
               )}
             </View>
