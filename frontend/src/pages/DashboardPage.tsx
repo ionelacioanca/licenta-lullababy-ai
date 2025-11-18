@@ -313,6 +313,10 @@ const DashboardPage: React.FC = () => {
             {upcomingEvents.length > 0 ? (
               upcomingEvents.map((event, index) => {
                 const eventDate = new Date(event.date);
+                const now = new Date();
+                const isPast = eventDate < now && !event.completed;
+                const isToday = eventDate.toDateString() === now.toDateString();
+                
                 const eventTypeColors: Record<string, string> = {
                   vaccination: '#FF6B6B',
                   checkup: '#4ECDC4',
@@ -325,8 +329,12 @@ const DashboardPage: React.FC = () => {
                 return (
                   <View key={event._id}>
                     {index > 0 && <View style={styles.eventDivider} />}
-                    <View style={styles.eventRow}>
-                      <View style={[styles.eventTypeBadge, { backgroundColor: eventTypeColors[event.type] }]}>
+                    <TouchableOpacity 
+                      style={[styles.eventRow, isPast && styles.pastEventRow]}
+                      onPress={() => setCalendarOpen(true)}
+                      activeOpacity={0.7}
+                    >
+                      <View style={[styles.eventTypeBadge, { backgroundColor: eventTypeColors[event.type], opacity: isPast ? 0.5 : 1 }]}>
                         <Ionicons 
                           name={event.type === 'vaccination' ? 'medical' : event.type === 'milestone' ? 'star' : 'calendar'} 
                           size={14} 
@@ -334,13 +342,32 @@ const DashboardPage: React.FC = () => {
                         />
                       </View>
                       <View style={styles.eventDetails}>
-                        <Text style={styles.eventTitle}>{event.title}</Text>
-                        <Text style={styles.eventDateText}>
+                        <View style={styles.eventTitleRow}>
+                          <Text style={[styles.eventTitle, isPast && styles.pastEventText]}>
+                            {event.title}
+                          </Text>
+                          {event.completed && (
+                            <View style={styles.completedBadge}>
+                              <Ionicons name="checkmark-circle" size={16} color="#A2E884" />
+                            </View>
+                          )}
+                          {isPast && !event.completed && (
+                            <View style={styles.overdueBadge}>
+                              <Text style={styles.overdueText}>Overdue</Text>
+                            </View>
+                          )}
+                          {isToday && !event.completed && (
+                            <View style={styles.todayBadge}>
+                              <Text style={styles.todayBadgeText}>Today</Text>
+                            </View>
+                          )}
+                        </View>
+                        <Text style={[styles.eventDateText, isPast && styles.pastEventText]}>
                           {eventDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                           {event.time && ` at ${event.time}`}
                         </Text>
                       </View>
-                    </View>
+                    </TouchableOpacity>
                   </View>
                 );
               })
@@ -582,6 +609,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
   },
+  pastEventRow: {
+    opacity: 0.6,
+  },
   eventTypeBadge: {
     width: 32,
     height: 32,
@@ -592,11 +622,44 @@ const styles = StyleSheet.create({
   eventDetails: {
     flex: 1,
   },
+  eventTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 2,
+  },
   eventTitle: {
     fontSize: 14,
     fontWeight: '600',
     color: '#333',
-    marginBottom: 2,
+  },
+  pastEventText: {
+    color: '#999',
+  },
+  completedBadge: {
+    marginLeft: 4,
+  },
+  overdueBadge: {
+    backgroundColor: '#FFE5E5',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  overdueText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#FF6B6B',
+  },
+  todayBadge: {
+    backgroundColor: '#E5F7E5',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  todayBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#4CAF50',
   },
   eventDateText: {
     fontSize: 12,
