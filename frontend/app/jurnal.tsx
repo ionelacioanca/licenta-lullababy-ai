@@ -576,16 +576,18 @@ const styles = StyleSheet.create({
   tagFilters: {
     paddingHorizontal: 16,
     paddingVertical: 12,
-    maxHeight: 60,
+    maxHeight: 70,
   },
   filterTag: {
     paddingHorizontal: 18,
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderRadius: 20,
     marginRight: 8,
     borderWidth: 1.5,
     minWidth: 100,
+    minHeight: 44,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   filterTagText: {
     fontSize: 13,
