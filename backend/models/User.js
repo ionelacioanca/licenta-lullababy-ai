@@ -25,6 +25,10 @@ const userSchema = new mongoose.Schema({
     },
     resetCodeExpiry: {
         type: Number
+    },
+    relatedParentId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
     }
 }, {timestamps: true});
 

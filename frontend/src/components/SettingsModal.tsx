@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
+import AccountSettingsModal from "./AccountSettingsModal";
 
 interface SettingsModalProps {
   visible: boolean;
@@ -18,6 +19,7 @@ interface SettingsModalProps {
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }) => {
   const router = useRouter();
+  const [accountSettingsOpen, setAccountSettingsOpen] = useState(false);
 
   const handleLogout = () => {
     Alert.alert(
@@ -70,7 +72,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }) => {
           </View>
 
           <View style={styles.content}>
-            <TouchableOpacity style={styles.settingItem}>
+            <TouchableOpacity
+              style={styles.settingItem}
+              onPress={() => setAccountSettingsOpen(true)}
+            >
               <View style={styles.settingIconContainer}>
                 <Ionicons name="person-outline" size={24} color="#666" />
               </View>
@@ -124,6 +129,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }) => {
           </View>
         </View>
       </View>
+
+      <AccountSettingsModal
+        visible={accountSettingsOpen}
+        onClose={() => setAccountSettingsOpen(false)}
+      />
     </Modal>
   );
 };
