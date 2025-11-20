@@ -28,8 +28,14 @@ const userSchema = new mongoose.Schema({
     }
 }, {timestamps: true});
 
-userSchema.pre("save", function (next) {
-    if (!this.isModified("password")) return next(); 
+userSchema.pre("save", async function (next) {
+    if (!this.isModified("password")) return next();
+    
+    // Check if password is already hashed (bcrypt hashes start with $2b$ or $2a$)
+    if (this.password.startsWith('$2b$') || this.password.startsWith('$2a$')) {
+        return next(); // Already hashed, skip
+    }
+    
     this.password = bcrypt.hashSync(this.password, 10);
     next();
 });

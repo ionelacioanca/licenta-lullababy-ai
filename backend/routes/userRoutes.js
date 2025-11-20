@@ -165,9 +165,8 @@ router.post('/reset-password', async (req, res) => {
       return res.status(400).json({ message: 'Invalid reset code' });
     }
 
-    // Hash new password
-    const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(newPassword, salt);
+    // Set plain password - the pre-save hook will hash it
+    user.password = newPassword;
     
     // Clear reset code fields
     user.resetCode = undefined;

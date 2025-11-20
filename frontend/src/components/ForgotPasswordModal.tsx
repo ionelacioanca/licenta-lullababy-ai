@@ -27,7 +27,25 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const API_URL = "http://192.168.1.10:5000/api/user";
+  const API_URL = "http://192.168.1.10:5000/api";
+
+  // Custom fetch with timeout
+  const fetchWithTimeout = async (url: string, options: RequestInit, timeout = 30000) => {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), timeout);
+
+    try {
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal,
+      });
+      clearTimeout(id);
+      return response;
+    } catch (error) {
+      clearTimeout(id);
+      throw error;
+    }
+  };
 
   const handleRequestCode = async () => {
     if (!email) {
@@ -43,25 +61,32 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
 
     setLoading(true);
     try {
-      const response = await fetch(`${API_URL}/forgot-password`, {
+      const response = await fetchWithTimeout(`${API_URL}/forgot-password`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ email }),
-      });
+      }, 30000);
+
+      if (!response.ok) {
+        const text = await response.text();
+        console.error("Server response:", text);
+        try {
+          const data = JSON.parse(text);
+          Alert.alert("Error", data.message || "Failed to send reset code");
+        } catch {
+          Alert.alert("Error", "Server error. Please try again later.");
+        }
+        return;
+      }
 
       const data = await response.json();
-
-      if (response.ok) {
-        Alert.alert("Success", "A 6-digit code has been sent to your email (check console in development)");
-        setStep("code");
-      } else {
-        Alert.alert("Error", data.message || "Failed to send reset code");
-      }
+      Alert.alert("Success", "A 6-digit code has been sent to your email (check console in development)");
+      setStep("code");
     } catch (error) {
       console.error("Request code error:", error);
-      Alert.alert("Error", "Network error. Please try again.");
+      Alert.alert("Error", "Network error. Please check your connection and try again.");
     } finally {
       setLoading(false);
     }
@@ -75,24 +100,31 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
 
     setLoading(true);
     try {
-      const response = await fetch(`${API_URL}/verify-reset-code`, {
+      const response = await fetchWithTimeout(`${API_URL}/verify-reset-code`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ email, code }),
-      });
+      }, 30000);
+
+      if (!response.ok) {
+        const text = await response.text();
+        console.error("Server response:", text);
+        try {
+          const data = JSON.parse(text);
+          Alert.alert("Error", data.message || "Invalid code");
+        } catch {
+          Alert.alert("Error", "Server error. Please try again later.");
+        }
+        return;
+      }
 
       const data = await response.json();
-
-      if (response.ok) {
-        setStep("password");
-      } else {
-        Alert.alert("Error", data.message || "Invalid code");
-      }
+      setStep("password");
     } catch (error) {
       console.error("Verify code error:", error);
-      Alert.alert("Error", "Network error. Please try again.");
+      Alert.alert("Error", "Network error. Please check your connection and try again.");
     } finally {
       setLoading(false);
     }
@@ -116,31 +148,38 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
 
     setLoading(true);
     try {
-      const response = await fetch(`${API_URL}/reset-password`, {
+      const response = await fetchWithTimeout(`${API_URL}/reset-password`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ email, code, newPassword }),
-      });
+      }, 30000);
+
+      if (!response.ok) {
+        const text = await response.text();
+        console.error("Server response:", text);
+        try {
+          const data = JSON.parse(text);
+          Alert.alert("Error", data.message || "Failed to reset password");
+        } catch {
+          Alert.alert("Error", "Server error. Please try again later.");
+        }
+        return;
+      }
 
       const data = await response.json();
-
-      if (response.ok) {
-        Alert.alert("Success", "Password reset successfully. You can now log in with your new password.", [
-          {
-            text: "OK",
-            onPress: () => {
-              handleClose();
-            },
+      Alert.alert("Success", "Password reset successfully. You can now log in with your new password.", [
+        {
+          text: "OK",
+          onPress: () => {
+            handleClose();
           },
-        ]);
-      } else {
-        Alert.alert("Error", data.message || "Failed to reset password");
-      }
+        },
+      ]);
     } catch (error) {
       console.error("Reset password error:", error);
-      Alert.alert("Error", "Network error. Please try again.");
+      Alert.alert("Error", "Network error. Please check your connection and try again.");
     } finally {
       setLoading(false);
     }

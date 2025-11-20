@@ -41,13 +41,22 @@ app.use('/users', userRouter);
 
 
 async function main() {
-    await connectDB(); 
-    app.listen(PORT, '0.0.0.0', () => {
-        console.log(`Server running on port ${PORT}`);
-        console.log(`Server accessible at:`);
-        console.log(`  - http://localhost:${PORT}`);
-    console.log(`  - http://192.168.1.10:${PORT} (WiFi)`);
-    });
+    try {
+        await connectDB(); 
+        const server = app.listen(PORT, () => {
+            console.log(`Server running on port ${PORT}`);
+            console.log(`Server accessible at:`);
+            console.log(`  - http://localhost:${PORT}`);
+            console.log(`  - http://192.168.1.10:${PORT} (WiFi)`);
+        });
+
+        server.on('error', (err) => {
+            console.error('Server error:', err);
+        });
+    } catch (err) {
+        console.error("Error starting application:", err);
+        process.exit(1);
+    }
 }
 
-main().catch(err => console.error("Eroare la pornirea aplicației:", err));
+main();
