@@ -17,6 +17,7 @@ import { Ionicons } from "@expo/vector-icons";
 import Header from "../src/pages/Header";
 import Footer from "../src/pages/Footer";
 import CalendarModal from "../src/components/CalendarModal";
+import SettingsModal from "../src/components/SettingsModal";
 import {
   getJournalEntries,
   getJournalGallery,
@@ -64,6 +65,7 @@ const JournalPage: React.FC = () => {
   const [editingEntry, setEditingEntry] = useState<JournalEntry | undefined>();
   const [expandedEntry, setExpandedEntry] = useState<string | null>(null);
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   
   // Lightbox state
   const [lightboxVisible, setLightboxVisible] = useState(false);
@@ -323,7 +325,7 @@ const JournalPage: React.FC = () => {
         avatarImage={avatarImage}
         onEditProfile={() => router.push("/babiesList")}
         onMessages={() => {}}
-        onSettings={() => {}}
+        onSettings={() => setSettingsOpen(true)}
         unreadMessages={3}
       />
 
@@ -515,6 +517,11 @@ const JournalPage: React.FC = () => {
         onClose={() => setCalendarOpen(false)}
         babyId={babyId || ''}
         onEventsUpdate={() => {}}
+      />
+
+      <SettingsModal
+        visible={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
       />
     </View>
   );

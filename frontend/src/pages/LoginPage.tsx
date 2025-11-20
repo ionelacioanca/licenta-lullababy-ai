@@ -13,6 +13,7 @@ import {
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import ForgotPasswordModal from "../components/ForgotPasswordModal";
 
 const LoginPage: React.FC = () => {
   const router = useRouter();
@@ -22,6 +23,7 @@ const LoginPage: React.FC = () => {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [checking, setChecking] = useState(true); // verificare token
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
 
   useEffect(() => {
     const checkLoggedIn = async () => {
@@ -189,7 +191,7 @@ const LoginPage: React.FC = () => {
         />
       </View>
 
-      <TouchableOpacity onPress={() => Linking.openURL("#")}>
+      <TouchableOpacity onPress={() => setShowForgotPassword(true)}>
         <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
       </TouchableOpacity>
 
@@ -222,6 +224,11 @@ const LoginPage: React.FC = () => {
       </View>
 
       {message ? <Text style={styles.message}>{message}</Text> : null}
+
+      <ForgotPasswordModal
+        visible={showForgotPassword}
+        onClose={() => setShowForgotPassword(false)}
+      />
     </ScrollView>
   );
 };
