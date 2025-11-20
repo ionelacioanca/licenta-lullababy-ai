@@ -19,6 +19,12 @@ const userSchema = new mongoose.Schema({
         type: String,
         enum: ["mother", "father", "nanny", "others"],
         required: true
+    },
+    resetCode: {
+        type: String
+    },
+    resetCodeExpiry: {
+        type: Number
     }
 }, {timestamps: true});
 
