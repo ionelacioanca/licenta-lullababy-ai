@@ -25,18 +25,24 @@ class BabyService {
 
     static async getBabiesByParentId(parentId) {
         try {
-            // Get the current parent
-            const currentParent = await User.findById(parentId);
+            // Get the current user
+            const currentUser = await User.findById(parentId);
             
             // Array to store parent IDs to fetch babies from
             const parentIds = [parentId];
             
-            // If parent has a linked parent, add their ID too
-            if (currentParent && currentParent.relatedParentId) {
-                parentIds.push(currentParent.relatedParentId);
+            if (currentUser) {
+                // For nanny: add all linked parents from relatedParentIds array
+                if (currentUser.role === 'nanny' && currentUser.relatedParentIds && currentUser.relatedParentIds.length > 0) {
+                    parentIds.push(...currentUser.relatedParentIds);
+                }
+                // For mother/father/others: add single linked parent
+                else if (currentUser.relatedParentId) {
+                    parentIds.push(currentUser.relatedParentId);
+                }
             }
             
-            // Fetch babies from both parents
+            // Fetch babies from all parent IDs
             return BabyModel.find({ parentId: { $in: parentIds } });
         } catch (error) {
             console.error('Error in getBabiesByParentId:', error);

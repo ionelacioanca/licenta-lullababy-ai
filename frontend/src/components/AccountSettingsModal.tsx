@@ -46,6 +46,8 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
   const [showRelatedParent, setShowRelatedParent] = useState(false);
   const [relatedParentEmail, setRelatedParentEmail] = useState("");
   const [relatedParentName, setRelatedParentName] = useState("");
+  const [relatedParents, setRelatedParents] = useState<Array<{id: string, name: string, email: string}>>([]); // For nanny
+  const [isNanny, setIsNanny] = useState(false);
   
   // Delete Account
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
@@ -112,6 +114,7 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
   const loadLinkedParent = async () => {
     try {
       const token = await AsyncStorage.getItem("token");
+      const role = await AsyncStorage.getItem("userRole");
       if (!token) return;
 
       const response = await fetch(`${API_URL}/linked-parent`, {
@@ -122,17 +125,31 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
 
       if (response.ok) {
         const data = await response.json();
-        if (data.relatedParentName) {
-          setRelatedParentName(data.relatedParentName);
+        console.log("Linked parent data received:", data);
+        
+        // Check if user is nanny with multiple parents
+        if (data.isNanny) {
+          console.log("User is nanny, setting related parents:", data.relatedParents);
+          setIsNanny(true);
+          setRelatedParents(data.relatedParents || []);
         } else {
-          setRelatedParentName("");
+          console.log("User is not nanny, setting single parent:", data.relatedParentName);
+          setIsNanny(false);
+          if (data.relatedParentName) {
+            setRelatedParentName(data.relatedParentName);
+          } else {
+            setRelatedParentName("");
+          }
         }
       } else {
+        console.log("Failed to load linked parent, status:", response.status);
         setRelatedParentName("");
+        setRelatedParents([]);
       }
     } catch (error) {
       console.error("Error loading linked parent:", error);
       setRelatedParentName("");
+      setRelatedParents([]);
     }
   };
 
@@ -278,10 +295,11 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
     }
   };
 
-  const handleUnlinkParent = () => {
+  const handleUnlinkParent = (parentId?: string, parentName?: string) => {
+    const nameToShow = parentName || relatedParentName;
     Alert.alert(
       "Unlink Parent",
-      `Are you sure you want to unlink from ${relatedParentName}? You will no longer share baby information.`,
+      `Are you sure you want to unlink from ${nameToShow}? You will no longer share baby information.`,
       [
         {
           text: "Cancel",
@@ -298,13 +316,20 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                 method: "POST",
                 headers: {
                   Authorization: `Bearer ${token}`,
+                  "Content-Type": "application/json",
                 },
+                body: JSON.stringify({ parentId }), // Include parentId for nanny
               });
 
               const data = await response.json();
 
               if (response.ok) {
-                setRelatedParentName("");
+                if (isNanny && parentId) {
+                  // Remove from nanny's parent list
+                  setRelatedParents(prev => prev.filter(p => p.id !== parentId));
+                } else {
+                  setRelatedParentName("");
+                }
                 Alert.alert("Success", "Successfully unlinked parent");
               } else {
                 Alert.alert("Error", data.message || "Failed to unlink parent");
@@ -565,18 +590,19 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
               </View>
             )}
 
-            {/* Related Parent Section - Only for mother/father */}
-            {(userRole === "mother" || userRole === "father") && (
-              <>
-                <TouchableOpacity
-                  style={styles.settingCard}
-                  onPress={() => setShowRelatedParent(!showRelatedParent)}
-                >
-                  <View style={styles.settingHeader}>
-                    <Ionicons name="people" size={24} color="#A2E884" />
-                    <Text style={styles.settingTitle}>Link Related Parent</Text>
-                    <Ionicons
-                      name={showRelatedParent ? "chevron-up" : "chevron-down"}
+            {/* Related Parent Section - For all roles */}
+            <>
+              <TouchableOpacity
+                style={styles.settingCard}
+                onPress={() => setShowRelatedParent(!showRelatedParent)}
+              >
+                <View style={styles.settingHeader}>
+                  <Ionicons name="people" size={24} color="#A2E884" />
+                  <Text style={styles.settingTitle}>
+                    {userRole === "nanny" ? "Linked Parents" : "Link Related Parent"}
+                  </Text>
+                  <Ionicons
+                    name={showRelatedParent ? "chevron-up" : "chevron-down"}
                       size={20}
                       color="#999"
                     />
@@ -586,39 +612,49 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                 {showRelatedParent && (
                   <View style={styles.formContainer}>
                     <Text style={styles.helperText}>
-                      Link your account with your partner's account to share baby information
+                      {isNanny 
+                        ? "Link with parents to access their baby information"
+                        : "Link your account with your partner's account to share baby information"}
                     </Text>
 
-                    {relatedParentName ? (
+                    {/* For Nanny: Show list of linked parents */}
+                    {isNanny ? (
                       <View>
-                        <View style={styles.linkedParentCard}>
-                          <Ionicons name="checkmark-circle" size={24} color="#A2E884" />
-                          <Text style={styles.linkedParentText}>
-                            Linked with: {relatedParentName}
-                          </Text>
-                        </View>
-                        <TouchableOpacity
-                          style={styles.unlinkButton}
-                          onPress={handleUnlinkParent}
-                          disabled={loading}
-                        >
-                          {loading ? (
-                            <ActivityIndicator color="#FF6B6B" />
-                          ) : (
-                            <>
-                              <Ionicons name="unlink-outline" size={20} color="#FF6B6B" />
-                              <Text style={styles.unlinkButtonText}>Unlink Parent</Text>
-                            </>
-                          )}
-                        </TouchableOpacity>
-                      </View>
-                    ) : (
-                      <>
+                        {relatedParents.length > 0 && (
+                          <View style={{ marginBottom: 16 }}>
+                            {relatedParents.map((parent) => (
+                              <View key={parent.id} style={{ marginBottom: 12 }}>
+                                <View style={styles.linkedParentCard}>
+                                  <Ionicons name="checkmark-circle" size={24} color="#A2E884" />
+                                  <Text style={styles.linkedParentText}>
+                                    {parent.name}
+                                  </Text>
+                                </View>
+                                <TouchableOpacity
+                                  style={styles.unlinkButton}
+                                  onPress={() => handleUnlinkParent(parent.id, parent.name)}
+                                  disabled={loading}
+                                >
+                                  {loading ? (
+                                    <ActivityIndicator color="#FF6B6B" />
+                                  ) : (
+                                    <>
+                                      <Ionicons name="unlink-outline" size={20} color="#FF6B6B" />
+                                      <Text style={styles.unlinkButtonText}>Unlink</Text>
+                                    </>
+                                  )}
+                                </TouchableOpacity>
+                              </View>
+                            ))}
+                          </View>
+                        )}
+                        
+                        {/* Add new parent */}
                         <View style={styles.inputContainer}>
                           <Ionicons name="mail-outline" size={20} color="#A2E884" />
                           <TextInput
                             style={styles.input}
-                            placeholder="Partner's Email Address"
+                            placeholder="Parent's Email Address"
                             keyboardType="email-address"
                             autoCapitalize="none"
                             value={relatedParentEmail}
@@ -635,15 +671,69 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                           {loading ? (
                             <ActivityIndicator color="#FFF" />
                           ) : (
-                            <Text style={styles.submitButtonText}>Link Parent</Text>
+                            <Text style={styles.submitButtonText}>
+                              {relatedParents.length > 0 ? "Add Another Parent" : "Link Parent"}
+                            </Text>
                           )}
                         </TouchableOpacity>
-                      </>
+                      </View>
+                    ) : (
+                      // For Mother/Father/Others: Show single parent link
+                      relatedParentName ? (
+                        <View>
+                          <View style={styles.linkedParentCard}>
+                            <Ionicons name="checkmark-circle" size={24} color="#A2E884" />
+                            <Text style={styles.linkedParentText}>
+                              Linked with: {relatedParentName}
+                            </Text>
+                          </View>
+                          <TouchableOpacity
+                            style={styles.unlinkButton}
+                            onPress={() => handleUnlinkParent()}
+                            disabled={loading}
+                          >
+                            {loading ? (
+                              <ActivityIndicator color="#FF6B6B" />
+                            ) : (
+                              <>
+                                <Ionicons name="unlink-outline" size={20} color="#FF6B6B" />
+                                <Text style={styles.unlinkButtonText}>Unlink Parent</Text>
+                              </>
+                            )}
+                          </TouchableOpacity>
+                        </View>
+                      ) : (
+                        <>
+                          <View style={styles.inputContainer}>
+                            <Ionicons name="mail-outline" size={20} color="#A2E884" />
+                            <TextInput
+                              style={styles.input}
+                              placeholder="Partner's Email Address"
+                              keyboardType="email-address"
+                              autoCapitalize="none"
+                              value={relatedParentEmail}
+                              onChangeText={setRelatedParentEmail}
+                              placeholderTextColor="#999"
+                            />
+                          </View>
+
+                          <TouchableOpacity
+                            style={styles.submitButton}
+                            onPress={handleAddRelatedParent}
+                            disabled={loading}
+                          >
+                            {loading ? (
+                              <ActivityIndicator color="#FFF" />
+                            ) : (
+                              <Text style={styles.submitButtonText}>Link Parent</Text>
+                            )}
+                          </TouchableOpacity>
+                        </>
+                      )
                     )}
                   </View>
                 )}
-              </>
-            )}
+            </>
 
             {/* Delete Account Section */}
             <TouchableOpacity

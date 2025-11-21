@@ -29,7 +29,11 @@ const userSchema = new mongoose.Schema({
     relatedParentId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
-    }
+    },
+    relatedParentIds: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }]
 }, {timestamps: true});
 
 userSchema.pre("save", async function (next) {
