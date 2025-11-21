@@ -43,6 +43,17 @@ const GrowthTrackingModal: React.FC<GrowthTrackingModalProps> = ({
   const [newWeight, setNewWeight] = useState("");
   const [newLength, setNewLength] = useState("");
 
+  // Get the latest weight to determine if we should use grams or kg
+  const getLatestWeight = (): number => {
+    if (growthRecords.length > 0) {
+      return parseFloat(growthRecords[0].weight); // Records are sorted by date desc
+    }
+    return birthWeight || 0;
+  };
+
+  const latestWeight = getLatestWeight();
+  const useGrams = latestWeight < 5; // Use grams if under 5kg
+
   // Convert growth records to display format
   const formatGrowthHistory = (): GrowthEntry[] => {
     console.log("Formatting growth history with:", {
@@ -67,9 +78,12 @@ const GrowthTrackingModal: React.FC<GrowthTrackingModalProps> = ({
         year: 'numeric' 
       });
 
+      const weightInKg = parseFloat(record.weight);
+      const weightDisplay = `${(weightInKg * 1000).toFixed(0)} g`;
+
       history.push({
         date: formattedDate,
-        weight: `${record.weight} kg`,
+        weight: weightDisplay,
         length: `${record.length} cm`,
         age: record.age || calculateAge(recordDate),
       });
@@ -78,13 +92,14 @@ const GrowthTrackingModal: React.FC<GrowthTrackingModalProps> = ({
     // Add birth data as the LAST entry (oldest) if we have at least weight or length
     if (birthDate && (birthWeight || birthLength)) {
       console.log("Adding birth entry to history");
+      const birthWeightDisplay = birthWeight ? `${(birthWeight * 1000).toFixed(0)} g` : '--';
       history.push({
         date: birthDate.toLocaleDateString('en-US', { 
           month: 'short', 
           day: 'numeric', 
           year: 'numeric' 
         }),
-        weight: birthWeight ? `${birthWeight} kg` : '--',
+        weight: birthWeightDisplay,
         length: birthLength ? `${birthLength} cm` : '--',
         age: "Birth",
       });
@@ -110,7 +125,9 @@ const GrowthTrackingModal: React.FC<GrowthTrackingModalProps> = ({
 
   const handleSave = () => {
     if (newWeight && newLength) {
-      onSave(newWeight, newLength);
+      // Always convert grams to kg when saving
+      const weightToSave = (parseFloat(newWeight) / 1000).toString();
+      onSave(weightToSave, newLength);
       setNewWeight("");
       setNewLength("");
       setShowAddForm(false);
@@ -169,10 +186,10 @@ const GrowthTrackingModal: React.FC<GrowthTrackingModalProps> = ({
                 
                 <View style={styles.inputRow}>
                   <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>Weight (kg)</Text>
+                    <Text style={styles.inputLabel}>Weight (g)</Text>
                     <TextInput
                       style={styles.input}
-                      placeholder="e.g., 7.2"
+                      placeholder="e.g., 4500"
                       keyboardType="decimal-pad"
                       value={newWeight}
                       onChangeText={setNewWeight}
@@ -253,15 +270,30 @@ const GrowthTrackingModal: React.FC<GrowthTrackingModalProps> = ({
                   </View>
                 </View>
 
-                {index < growthHistory.length - 1 && (
-                  <View style={styles.growthIndicator}>
-                    <Ionicons name="trending-up" size={16} color="#36c261" />
-                    <Text style={styles.growthText}>
-                      +{(parseFloat(entry.weight) - parseFloat(growthHistory[index + 1].weight)).toFixed(1)} kg, +
-                      {parseFloat(entry.length) - parseFloat(growthHistory[index + 1].length)} cm
-                    </Text>
-                  </View>
-                )}
+                {index < growthHistory.length - 1 && (() => {
+                  const currentWeight = parseFloat(entry.weight);
+                  const previousWeight = parseFloat(growthHistory[index + 1].weight);
+                  const currentLength = parseFloat(entry.length);
+                  const previousLength = parseFloat(growthHistory[index + 1].length);
+                  
+                  const weightDiff = currentWeight - previousWeight;
+                  const lengthDiff = currentLength - previousLength;
+                  
+                  // Determine if we're showing grams or kg based on the magnitude
+                  const isGrams = entry.weight.includes('g');
+                  const weightDiffDisplay = isGrams 
+                    ? `+${weightDiff.toFixed(0)} g` 
+                    : `+${weightDiff.toFixed(1)} kg`;
+                  
+                  return (
+                    <View style={styles.growthIndicator}>
+                      <Ionicons name="trending-up" size={16} color="#36c261" />
+                      <Text style={styles.growthText}>
+                        {weightDiffDisplay}, +{lengthDiff} cm
+                      </Text>
+                    </View>
+                  );
+                })()}
               </View>
             ))}
           </ScrollView>
