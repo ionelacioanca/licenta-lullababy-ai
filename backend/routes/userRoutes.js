@@ -182,4 +182,131 @@ router.post('/reset-password', async (req, res) => {
   }
 });
 
+// Change password (authenticated)
+router.post('/change-password', auth, async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+
+  try {
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: 'Current and new password are required' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters' });
+    }
+
+    const user = await User.findById(req.user.userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Verify current password
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Current password is incorrect' });
+    }
+
+    // Set new password (pre-save hook will hash it)
+    user.password = newPassword;
+    await user.save();
+
+    console.log(`Password changed for user ${user.email}`);
+    res.json({ message: 'Password changed successfully' });
+  } catch (error) {
+    console.error('Change password error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Change email (authenticated)
+router.post('/change-email', auth, async (req, res) => {
+  const { newEmail, password } = req.body;
+
+  try {
+    if (!newEmail || !password) {
+      return res.status(400).json({ message: 'New email and password are required' });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newEmail)) {
+      return res.status(400).json({ message: 'Invalid email format' });
+    }
+
+    const user = await User.findById(req.user.userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Verify password
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Incorrect password' });
+    }
+
+    // Check if email already exists
+    const existingUser = await User.findOne({ email: newEmail });
+    if (existingUser) {
+      return res.status(400).json({ message: 'Email already in use' });
+    }
+
+    user.email = newEmail;
+    await user.save();
+
+    console.log(`Email changed for user to ${newEmail}`);
+    res.json({ message: 'Email changed successfully' });
+  } catch (error) {
+    console.error('Change email error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Link related parent (authenticated)
+router.post('/link-parent', auth, async (req, res) => {
+  const { relatedParentEmail } = req.body;
+
+  try {
+    if (!relatedParentEmail) {
+      return res.status(400).json({ message: 'Related parent email is required' });
+    }
+
+    const currentUser = await User.findById(req.user.userId);
+    if (!currentUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Check if current user is mother or father
+    if (currentUser.role !== 'mother' && currentUser.role !== 'father') {
+      return res.status(403).json({ message: 'Only mother or father can link parents' });
+    }
+
+    // Find the related parent
+    const relatedParent = await User.findOne({ email: relatedParentEmail });
+    if (!relatedParent) {
+      return res.status(404).json({ message: 'Parent not found with that email' });
+    }
+
+    // Check if related parent is also mother or father
+    if (relatedParent.role !== 'mother' && relatedParent.role !== 'father') {
+      return res.status(400).json({ message: 'Can only link with mother or father accounts' });
+    }
+
+    // Add relatedParentId field to schema if not exists, then link
+    currentUser.relatedParentId = relatedParent._id;
+    await currentUser.save();
+
+    // Link back
+    relatedParent.relatedParentId = currentUser._id;
+    await relatedParent.save();
+
+    console.log(`Linked ${currentUser.email} with ${relatedParent.email}`);
+    res.json({ 
+      message: 'Parents linked successfully',
+      relatedParentName: relatedParent.name
+    });
+  } catch (error) {
+    console.error('Link parent error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
 export default router;
