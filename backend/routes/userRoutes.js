@@ -330,4 +330,59 @@ router.post('/link-parent', auth, async (req, res) => {
   }
 });
 
+// Get linked parent (authenticated)
+router.get('/linked-parent', auth, async (req, res) => {
+  try {
+    const currentUser = await User.findById(req.user.userId).populate('relatedParentId', 'name email');
+    if (!currentUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (currentUser.relatedParentId) {
+      res.json({
+        relatedParentName: currentUser.relatedParentId.name,
+        relatedParentEmail: currentUser.relatedParentId.email
+      });
+    } else {
+      res.json({ relatedParentName: null });
+    }
+  } catch (error) {
+    console.error('Get linked parent error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Unlink parent (authenticated)
+router.post('/unlink-parent', auth, async (req, res) => {
+  try {
+    const currentUser = await User.findById(req.user.userId);
+    if (!currentUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (!currentUser.relatedParentId) {
+      return res.status(400).json({ message: 'No linked parent to unlink' });
+    }
+
+    // Get the related parent to unlink both ways
+    const relatedParent = await User.findById(currentUser.relatedParentId);
+    
+    // Remove link from current user
+    currentUser.relatedParentId = undefined;
+    await currentUser.save();
+
+    // Remove link from related parent if exists
+    if (relatedParent) {
+      relatedParent.relatedParentId = undefined;
+      await relatedParent.save();
+      console.log(`Unlinked ${currentUser.email} from ${relatedParent.email}`);
+    }
+
+    res.json({ message: 'Parents unlinked successfully' });
+  } catch (error) {
+    console.error('Unlink parent error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
 export default router;
