@@ -116,10 +116,15 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
         const data = await response.json();
         if (data.relatedParentName) {
           setRelatedParentName(data.relatedParentName);
+        } else {
+          setRelatedParentName("");
         }
+      } else {
+        setRelatedParentName("");
       }
     } catch (error) {
       console.error("Error loading linked parent:", error);
+      setRelatedParentName("");
     }
   };
 
@@ -249,7 +254,8 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
       const data = await response.json();
 
       if (response.ok) {
-        setRelatedParentName(data.relatedParentName || "");
+        // Reload linked parent info from backend to ensure it's up to date
+        await loadLinkedParent();
         Alert.alert("Success", `Successfully linked with ${data.relatedParentName || "parent"}`);
         setRelatedParentEmail("");
         setShowRelatedParent(false);
