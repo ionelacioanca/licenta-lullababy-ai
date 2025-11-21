@@ -23,6 +23,8 @@ export const addGrowthRecord = async (
 ): Promise<GrowthRecord> => {
   try {
     const token = await AsyncStorage.getItem("token");
+    console.log("Adding growth record:", { babyId, weight, length, notes });
+    
     const response = await fetch(`${API_URL}/baby/${babyId}`, {
       method: "POST",
       headers: {
@@ -32,11 +34,16 @@ export const addGrowthRecord = async (
       body: JSON.stringify({ weight, length, notes }),
     });
 
+    console.log("Add growth record response status:", response.status);
+
     if (!response.ok) {
-      throw new Error("Failed to add growth record");
+      const errorData = await response.text();
+      console.error("Add growth record error response:", errorData);
+      throw new Error(`Failed to add growth record: ${response.status}`);
     }
 
     const data = await response.json();
+    console.log("Growth record added successfully:", data);
     return data.data;
   } catch (error) {
     console.error("Error adding growth record:", error);

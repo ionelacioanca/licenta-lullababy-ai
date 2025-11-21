@@ -521,7 +521,12 @@ const DashboardPage: React.FC = () => {
 
       <GrowthTrackingModal
         visible={growthTrackingOpen}
-        onClose={() => setGrowthTrackingOpen(false)}
+        onClose={() => {
+          setGrowthTrackingOpen(false);
+          if (babyId) {
+            loadGrowthData(babyId, birthWeight || undefined, birthLength || undefined);
+          }
+        }}
         onSave={handleSaveGrowth}
         growthRecords={growthRecords}
         birthWeight={birthWeight}
