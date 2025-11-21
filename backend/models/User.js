@@ -20,6 +20,9 @@ const userSchema = new mongoose.Schema({
         enum: ["mother", "father", "nanny", "others"],
         required: true
     },
+    customRole: {
+        type: String
+    },
     resetCode: {
         type: String
     },
@@ -29,7 +32,11 @@ const userSchema = new mongoose.Schema({
     relatedParentId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
-    }
+    },
+    relatedParentIds: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }]
 }, {timestamps: true});
 
 userSchema.pre("save", async function (next) {

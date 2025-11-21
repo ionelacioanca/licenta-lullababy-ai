@@ -63,9 +63,11 @@ const BabiesListPage: React.FC = () => {
       );
 
       if (!response.ok) {
-        const errorData = await response.text();
-        console.error("Failed to fetch babies. Status:", response.status, "Error:", errorData);
-        throw new Error(`Failed to fetch babies data: ${response.status}`);
+        // Don't throw error for 404 - just means no babies yet (valid state)
+        console.log("No babies found (status:", response.status, ")");
+        setBabies([]);
+        setLoading(false);
+        return;
       }
 
       const data = await response.json();
