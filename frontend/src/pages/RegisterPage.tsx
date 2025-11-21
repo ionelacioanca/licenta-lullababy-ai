@@ -9,6 +9,7 @@ import {
   ScrollView,
   Linking,
   Platform,
+  KeyboardAvoidingView,
 } from "react-native";
 import DropDownPicker from "react-native-dropdown-picker";
 import Ionicons from "react-native-vector-icons/Ionicons";
@@ -120,11 +121,16 @@ const RegisterPage: React.FC = () => {
   };
 
   return (
-    <ScrollView 
-    contentContainerStyle={styles.container}
-    keyboardShouldPersistTaps="handled"
-    style={{ flex: 1 }}
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={0}
     >
+      <ScrollView 
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
       <Text style={styles.subheader}>Let’s Get Started</Text>
       <Text style={styles.subtitle}>
         Create an account with email to log in from anywhere.
@@ -267,7 +273,8 @@ const RegisterPage: React.FC = () => {
       </Text>
 
       {message ? <Text style={styles.message}>{message}</Text> : null}
-    </ScrollView>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
 
