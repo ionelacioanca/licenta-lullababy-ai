@@ -64,9 +64,8 @@ const DashboardPage: React.FC = () => {
       console.log("Baby fetch response status:", response.status);
       
       if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Failed to fetch baby data:", errorData);
-        throw new Error("Failed to fetch baby data");
+        // Don't log error or throw - having no baby is a valid state for new accounts
+        return;
       }
 
       const data = await response.json();

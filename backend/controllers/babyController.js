@@ -38,10 +38,8 @@ class babyController {
 
     static async getBabiesByParentId(parentId) {
         const babies = await babyService.getBabiesByParentId(parentId);
-        if (!babies || babies.length === 0) {
-            throw new Error('No babies found for this parent.');
-        }
-        return babies;
+        // Return empty array if no babies found - this is a valid state
+        return babies || [];
     }
 
     static async updateBabyAvatar(babyId, avatarData) {
