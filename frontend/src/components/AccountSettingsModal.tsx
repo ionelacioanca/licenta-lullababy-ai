@@ -57,11 +57,74 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
       const role = await AsyncStorage.getItem("userRole");
       const name = await AsyncStorage.getItem("parentName");
       
+      // If role or email not in storage, fetch from backend
+      if (!email || !role) {
+        const token = await AsyncStorage.getItem("token");
+        if (token) {
+          try {
+            const response = await fetch(`${API_URL}/user-info`, {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            });
+            
+            if (response.ok) {
+              const data = await response.json();
+              if (data.email) {
+                setUserEmail(data.email);
+                await AsyncStorage.setItem("userEmail", data.email);
+              }
+              if (data.role) {
+                setUserRole(data.role);
+                await AsyncStorage.setItem("userRole", data.role);
+              }
+              if (data.name) {
+                setUserName(data.name);
+                await AsyncStorage.setItem("parentName", data.name);
+              }
+              return;
+            }
+          } catch (error) {
+            console.error("Error fetching user info:", error);
+          }
+        }
+      }
+      
       if (email) setUserEmail(email);
       if (role) setUserRole(role);
       if (name) setUserName(name);
+      
+      // Load linked parent info
+      await loadLinkedParent();
     } catch (error) {
       console.error("Error loading user info:", error);
+    }
+  };
+
+  const loadLinkedParent = async () => {
+    try {
+      const token = await AsyncStorage.getItem("token");
+      if (!token) return;
+
+      const response = await fetch(`${API_URL}/linked-parent`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.relatedParentName) {
+          setRelatedParentName(data.relatedParentName);
+        } else {
+          setRelatedParentName("");
+        }
+      } else {
+        setRelatedParentName("");
+      }
+    } catch (error) {
+      console.error("Error loading linked parent:", error);
+      setRelatedParentName("");
     }
   };
 
@@ -191,7 +254,8 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
       const data = await response.json();
 
       if (response.ok) {
-        setRelatedParentName(data.relatedParentName || "");
+        // Reload linked parent info from backend to ensure it's up to date
+        await loadLinkedParent();
         Alert.alert("Success", `Successfully linked with ${data.relatedParentName || "parent"}`);
         setRelatedParentEmail("");
         setShowRelatedParent(false);
@@ -204,6 +268,49 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleUnlinkParent = () => {
+    Alert.alert(
+      "Unlink Parent",
+      `Are you sure you want to unlink from ${relatedParentName}? You will no longer share baby information.`,
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Unlink",
+          style: "destructive",
+          onPress: async () => {
+            setLoading(true);
+            try {
+              const token = await AsyncStorage.getItem("token");
+              const response = await fetch(`${API_URL}/unlink-parent`, {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              });
+
+              const data = await response.json();
+
+              if (response.ok) {
+                setRelatedParentName("");
+                Alert.alert("Success", "Successfully unlinked parent");
+              } else {
+                Alert.alert("Error", data.message || "Failed to unlink parent");
+              }
+            } catch (error) {
+              console.error("Unlink parent error:", error);
+              Alert.alert("Error", "Network error. Please try again.");
+            } finally {
+              setLoading(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const resetAllForms = () => {
@@ -407,11 +514,27 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                     </Text>
 
                     {relatedParentName ? (
-                      <View style={styles.linkedParentCard}>
-                        <Ionicons name="checkmark-circle" size={24} color="#A2E884" />
-                        <Text style={styles.linkedParentText}>
-                          Linked with: {relatedParentName}
-                        </Text>
+                      <View>
+                        <View style={styles.linkedParentCard}>
+                          <Ionicons name="checkmark-circle" size={24} color="#A2E884" />
+                          <Text style={styles.linkedParentText}>
+                            Linked with: {relatedParentName}
+                          </Text>
+                        </View>
+                        <TouchableOpacity
+                          style={styles.unlinkButton}
+                          onPress={handleUnlinkParent}
+                          disabled={loading}
+                        >
+                          {loading ? (
+                            <ActivityIndicator color="#FF6B6B" />
+                          ) : (
+                            <>
+                              <Ionicons name="unlink-outline" size={20} color="#FF6B6B" />
+                              <Text style={styles.unlinkButtonText}>Unlink Parent</Text>
+                            </>
+                          )}
+                        </TouchableOpacity>
                       </View>
                     ) : (
                       <>
@@ -599,6 +722,21 @@ const styles = StyleSheet.create({
     color: "#333",
     fontWeight: "600",
     marginLeft: 12,
+  },
+  unlinkButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FFE5E5",
+    padding: 14,
+    borderRadius: 12,
+    marginTop: 12,
+  },
+  unlinkButtonText: {
+    fontSize: 16,
+    color: "#FF6B6B",
+    fontWeight: "600",
+    marginLeft: 8,
   },
 });
 
