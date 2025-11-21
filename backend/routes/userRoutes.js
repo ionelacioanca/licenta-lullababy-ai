@@ -389,4 +389,48 @@ router.post('/unlink-parent', auth, async (req, res) => {
   }
 });
 
+// Delete account (authenticated)
+router.delete('/delete-account', auth, async (req, res) => {
+  try {
+    const { password } = req.body;
+    
+    const user = await User.findById(req.user.userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Verify password before deletion
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Incorrect password' });
+    }
+
+    // Import Baby model
+    const Baby = (await import('../models/Baby.js')).default;
+    
+    // Delete all babies associated with this parent
+    await Baby.deleteMany({ parentId: req.user.userId });
+    console.log(`Deleted all babies for user: ${user.email}`);
+
+    // If user has a linked parent, remove the link from them
+    if (user.relatedParentId) {
+      const relatedParent = await User.findById(user.relatedParentId);
+      if (relatedParent) {
+        relatedParent.relatedParentId = undefined;
+        await relatedParent.save();
+        console.log(`Removed link from related parent: ${relatedParent.email}`);
+      }
+    }
+
+    // Delete the user account
+    await User.findByIdAndDelete(req.user.userId);
+    console.log(`Deleted account: ${user.email}`);
+
+    res.json({ message: 'Account deleted successfully' });
+  } catch (error) {
+    console.error('Delete account error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
 export default router;

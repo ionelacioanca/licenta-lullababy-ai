@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router";
 
 interface AccountSettingsModalProps {
   visible: boolean;
@@ -22,6 +23,7 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
   visible,
   onClose,
 }) => {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [userEmail, setUserEmail] = useState("");
   const [userRole, setUserRole] = useState("");
@@ -42,6 +44,10 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
   const [showRelatedParent, setShowRelatedParent] = useState(false);
   const [relatedParentEmail, setRelatedParentEmail] = useState("");
   const [relatedParentName, setRelatedParentName] = useState("");
+  
+  // Delete Account
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
 
   const API_URL = "http://192.168.1.10:5000/api";
 
@@ -313,16 +319,75 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
     );
   };
 
+  const handleDeleteAccount = async () => {
+    if (!deletePassword) {
+      Alert.alert("Error", "Please enter your password to confirm deletion");
+      return;
+    }
+
+    Alert.alert(
+      "Delete Account",
+      "Are you absolutely sure? This will permanently delete your account and all your baby data. This action cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            setLoading(true);
+            try {
+              const token = await AsyncStorage.getItem("token");
+              const response = await fetch(`${API_URL}/delete-account`, {
+                method: "DELETE",
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ password: deletePassword }),
+              });
+
+              const data = await response.json();
+
+              if (response.ok) {
+                // Clear all stored data
+                await AsyncStorage.clear();
+                Alert.alert("Account Deleted", "Your account has been permanently deleted.", [
+                  {
+                    text: "OK",
+                    onPress: () => {
+                      onClose();
+                      router.replace("/open");
+                    },
+                  },
+                ]);
+              } else {
+                Alert.alert("Error", data.message || "Failed to delete account");
+              }
+            } catch (error) {
+              console.error("Delete account error:", error);
+              Alert.alert("Error", "Network error. Please try again.");
+            } finally {
+              setLoading(false);
+              setDeletePassword("");
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const resetAllForms = () => {
     setShowChangePassword(false);
     setShowChangeEmail(false);
     setShowRelatedParent(false);
+    setShowDeleteAccount(false);
     setCurrentPassword("");
     setNewPassword("");
     setConfirmPassword("");
     setNewEmail("");
     setPasswordForEmail("");
     setRelatedParentEmail("");
+    setDeletePassword("");
   };
 
   return (
@@ -568,6 +633,54 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                 )}
               </>
             )}
+
+            {/* Delete Account Section */}
+            <TouchableOpacity
+              style={[styles.settingCard, { marginTop: 20, borderColor: '#FFE5E5' }]}
+              onPress={() => setShowDeleteAccount(!showDeleteAccount)}
+            >
+              <View style={styles.settingHeader}>
+                <Ionicons name="trash" size={24} color="#FF6B6B" />
+                <Text style={[styles.settingTitle, { color: '#FF6B6B' }]}>Delete Account</Text>
+                <Ionicons
+                  name={showDeleteAccount ? "chevron-up" : "chevron-down"}
+                  size={20}
+                  color="#999"
+                />
+              </View>
+            </TouchableOpacity>
+
+            {showDeleteAccount && (
+              <View style={styles.formContainer}>
+                <Text style={styles.warningText}>
+                  ⚠️ Warning: This will permanently delete your account and all associated baby data. This action cannot be undone.
+                </Text>
+
+                <View style={styles.inputContainer}>
+                  <Ionicons name="lock-closed-outline" size={20} color="#FF6B6B" />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter your password to confirm"
+                    secureTextEntry
+                    value={deletePassword}
+                    onChangeText={setDeletePassword}
+                    placeholderTextColor="#999"
+                  />
+                </View>
+
+                <TouchableOpacity
+                  style={[styles.submitButton, { backgroundColor: '#FF6B6B' }]}
+                  onPress={handleDeleteAccount}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <ActivityIndicator color="#FFF" />
+                  ) : (
+                    <Text style={styles.submitButtonText}>Delete My Account</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            )}
           </ScrollView>
         </View>
       </View>
@@ -737,6 +850,15 @@ const styles = StyleSheet.create({
     color: "#FF6B6B",
     fontWeight: "600",
     marginLeft: 8,
+  },
+  warningText: {
+    fontSize: 14,
+    color: "#FF6B6B",
+    backgroundColor: "#FFE5E5",
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+    lineHeight: 20,
   },
 });
 
