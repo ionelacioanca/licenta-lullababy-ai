@@ -325,7 +325,6 @@ const JournalPage: React.FC = () => {
         avatarImage={avatarImage}
         onEditProfile={() => router.push("/babiesList")}
         onMessages={() => {}}
-        onSettings={() => setSettingsOpen(true)}
         unreadMessages={3}
       />
 
@@ -502,14 +501,13 @@ const JournalPage: React.FC = () => {
             setCalendarOpen(true);
           } else if (screen === "Home") {
             router.push("/dashboard");
-          } else if (screen === "Raports") {
-            router.push("/raports");
           } else if (screen === "Tips") {
             router.push("/tips");
           } else if (screen === "Jurnal") {
             router.push("/jurnal");
           }
         }}
+        onSettings={() => setSettingsOpen(true)}
       />
 
       <CalendarModal
