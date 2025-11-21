@@ -70,6 +70,14 @@ const LoginPage: React.FC = () => {
       } else {
         console.warn("No parentId received from API");
       }
+
+      if (data.email) {
+        await AsyncStorage.setItem("userEmail", data.email);
+      }
+
+      if (data.role) {
+        await AsyncStorage.setItem("userRole", data.role);
+      }
     } catch (e) {
       console.error("Error saving user data:", e);
       throw e; // Re-throw to handle in calling function

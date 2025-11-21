@@ -57,6 +57,39 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
       const role = await AsyncStorage.getItem("userRole");
       const name = await AsyncStorage.getItem("parentName");
       
+      // If role or email not in storage, fetch from backend
+      if (!email || !role) {
+        const token = await AsyncStorage.getItem("token");
+        if (token) {
+          try {
+            const response = await fetch(`${API_URL}/user-info`, {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            });
+            
+            if (response.ok) {
+              const data = await response.json();
+              if (data.email) {
+                setUserEmail(data.email);
+                await AsyncStorage.setItem("userEmail", data.email);
+              }
+              if (data.role) {
+                setUserRole(data.role);
+                await AsyncStorage.setItem("userRole", data.role);
+              }
+              if (data.name) {
+                setUserName(data.name);
+                await AsyncStorage.setItem("parentName", data.name);
+              }
+              return;
+            }
+          } catch (error) {
+            console.error("Error fetching user info:", error);
+          }
+        }
+      }
+      
       if (email) setUserEmail(email);
       if (role) setUserRole(role);
       if (name) setUserName(name);
