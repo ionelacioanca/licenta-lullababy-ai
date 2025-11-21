@@ -10,7 +10,23 @@ router.post('/register', async (req, res) => {
   const { name, email, password, role, relatedParentEmail } = req.body;
 
   try {
-    const newUser = new User({name, email, password, role});
+    // Determine if role is a custom role (not one of the standard enum values)
+    const validRoles = ["mother", "father", "nanny", "others"];
+    let actualRole = role;
+    let customRole = null;
+    
+    if (!validRoles.includes(role)) {
+      // It's a custom role (like "aunt", "uncle", "grandma")
+      customRole = role;
+      actualRole = "others";
+    }
+    
+    const userData = { name, email, password, role: actualRole };
+    if (customRole) {
+      userData.customRole = customRole;
+    }
+    
+    const newUser = new User(userData);
     await newUser.save();
     console.log("newUser:", newUser);
     console.log("newUser._id:", newUser._id);
@@ -22,7 +38,7 @@ router.post('/register', async (req, res) => {
         
         if (parentUser) {
           // For nanny, use relatedParentIds array (multiple parents)
-          if (role === 'nanny') {
+          if (actualRole === 'nanny') {
             newUser.relatedParentIds = [parentUser._id];
             await newUser.save();
             console.log(`Linked nanny ${email} with parent ${relatedParentEmail}`);
@@ -95,7 +111,7 @@ router.post('/login', async (req, res) => {
       name: user.name,
       parentId: user._id.toString(),
       email: user.email,
-      role: user.role
+      role: user.customRole || user.role // Return custom role if exists
     });
   } catch (error) {
     console.error('Login error details:', error);
@@ -120,7 +136,7 @@ router.get('/user-info', auth, async (req, res) => {
     res.json({
       name: user.name,
       email: user.email,
-      role: user.role
+      role: user.customRole || user.role // Return custom role if exists
     });
   } catch (error) {
     console.error('Get user info error:', error);

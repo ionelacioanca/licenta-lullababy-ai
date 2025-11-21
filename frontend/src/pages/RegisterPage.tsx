@@ -60,7 +60,7 @@ const RegisterPage: React.FC = () => {
         name, 
         email, 
         password, 
-        role: role === "others" ? customRole : role 
+        role: role === "others" ? customRole : role // Send custom role directly, backend will handle it
       };
 
       // Add related parent email if provided

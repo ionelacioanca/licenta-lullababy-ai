@@ -20,6 +20,9 @@ const userSchema = new mongoose.Schema({
         enum: ["mother", "father", "nanny", "others"],
         required: true
     },
+    customRole: {
+        type: String
+    },
     resetCode: {
         type: String
     },
