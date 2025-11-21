@@ -2,27 +2,30 @@ import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
-const routeMap: Record<"Home" | "Raports" | "Calendar" | "Tips" | "Jurnal", string> = {
+const routeMap: Record<"Home" | "Raports" | "Calendar" | "Tips" | "Jurnal" | "Settings", string> = {
   Home: "/dashboard",
   Raports: "/raports",
   Calendar: "/calendar",
   Tips: "/tips",
   Jurnal: "/jurnal",
+  Settings: "settings", // Special case - opens modal
 };
 
 
 interface FooterProps {
   active: keyof typeof routeMap;
   onNavigate: (screen: keyof typeof routeMap) => void;
+  onSettings?: () => void; // Optional callback for Settings
 }
 
-const Footer: React.FC<FooterProps> = ({ active, onNavigate }) => {
+const Footer: React.FC<FooterProps> = ({ active, onNavigate, onSettings }) => {
   type IconName =
   | "home-outline"
   | "bar-chart-outline"
   | "calendar-outline"
   | "bulb-outline"
-  | "book-outline";
+  | "book-outline"
+  | "settings-outline";
 
 const tabs: { name: keyof typeof routeMap; icon: IconName }[] = [
   { name: "Home", icon: "home-outline" },
@@ -30,6 +33,7 @@ const tabs: { name: keyof typeof routeMap; icon: IconName }[] = [
   { name: "Calendar", icon: "calendar-outline" },
   { name: "Tips", icon: "bulb-outline" },
   { name: "Jurnal", icon: "book-outline" },
+  { name: "Settings", icon: "settings-outline" },
 ];
   return (
     <View style={styles.container}>
@@ -37,7 +41,13 @@ const tabs: { name: keyof typeof routeMap; icon: IconName }[] = [
         <TouchableOpacity
           key={tab.name}
           style={styles.tab}
-          onPress={() => onNavigate(tab.name)}
+          onPress={() => {
+            if (tab.name === "Settings" && onSettings) {
+              onSettings();
+            } else {
+              onNavigate(tab.name);
+            }
+          }}
         >
           <Ionicons
             name={tab.icon}

@@ -9,11 +9,10 @@ type HeaderProps = {
   avatarImage?: string | null;
   onEditProfile: () => void;
   onMessages: () => void;
-  onSettings: () => void;
   unreadMessages?: number;
 };
 
-export default function Header({ childInitial,  babyName, avatarColor = "#00CFFF", avatarImage, onEditProfile, onMessages, onSettings, unreadMessages = 0 }: HeaderProps) {
+export default function Header({ childInitial,  babyName, avatarColor = "#00CFFF", avatarImage, onEditProfile, onMessages, unreadMessages = 0 }: HeaderProps) {
   return (
     <View style={styles.container}>
         <View style={styles.leftContainer}>
@@ -29,19 +28,15 @@ export default function Header({ childInitial,  babyName, avatarColor = "#00CFFF
 
       <Text style={styles.appName}>lullababy</Text>
 
-      {/* Dreapta: Mesaje + Setări */}
+      {/* Dreapta: Notificări */}
       <View style={styles.rightContainer}>
         <TouchableOpacity style={styles.iconContainer} onPress={onMessages}>
-          <Ionicons name="mail-outline" size={24} color="#444" />
+          <Ionicons name="notifications-outline" size={24} color="#444" />
           {unreadMessages > 0 && (
             <View style={styles.badge}>
               <Text style={styles.badgeText}>{unreadMessages}</Text>
             </View>
           )}
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.iconContainer} onPress={onSettings}>
-          <Ionicons name="settings-outline" size={24} color="#444" />
         </TouchableOpacity>
       </View>
     </View>

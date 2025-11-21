@@ -238,7 +238,6 @@ const DashboardPage: React.FC = () => {
         avatarImage={avatarImage}
         onEditProfile={() => router.push("/babiesList")}
         onMessages={() => {}}
-        onSettings={() => setSettingsOpen(true)}
         unreadMessages={3}
       />
       
@@ -567,7 +566,8 @@ const DashboardPage: React.FC = () => {
           } else if (screen === 'Jurnal') {
             router.push('/jurnal');
           }
-        }} 
+        }}
+        onSettings={() => setSettingsOpen(true)}
       />
     </View>
   );
