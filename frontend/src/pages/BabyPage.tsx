@@ -121,7 +121,7 @@ const BabyDetailsPage: React.FC = () => {
           sex: sexValue,
           birthDate: birthDate ? formatDate(birthDate) : "",
           birthTime: birthTime ? formatTime(birthTime) : "",
-          birthWeight: Number(birthWeight),
+          birthWeight: Number(birthWeight) / 1000, // Convert grams to kg
           birthLength: Number(birthLength),
           birthType: birthTypeValue,
           gestationalWeeks: Number(gestationalWeeks),

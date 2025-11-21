@@ -70,7 +70,10 @@ const ChildProfilePage: React.FC = () => {
       setEditedName(baby.name || "");
       setEditedSex(baby.sex || "");
       setEditedBirthDate(baby.birthDate || "");
-      setEditedBirthWeight(baby.birthWeight?.toString() || "");
+      // Always show weight in grams
+      const weightInKg = baby.birthWeight || 0;
+      const displayWeight = (weightInKg * 1000).toString();
+      setEditedBirthWeight(displayWeight);
       setEditedBirthLength(baby.birthLength?.toString() || "");
       setEditedBirthType(baby.birthType || "");
       setEditedGestationalWeeks(baby.gestationalWeeks?.toString() || "");
@@ -371,7 +374,7 @@ const ChildProfilePage: React.FC = () => {
         name: editedName,
         sex: editedSex,
         birthDate: editedBirthDate,
-        birthWeight: editedBirthWeight ? parseFloat(editedBirthWeight) : undefined,
+        birthWeight: editedBirthWeight ? parseFloat(editedBirthWeight) / 1000 : undefined,
         birthLength: editedBirthLength ? parseFloat(editedBirthLength) : undefined,
         birthType: editedBirthType,
         gestationalWeeks: editedGestationalWeeks ? parseInt(editedGestationalWeeks) : undefined,
@@ -401,7 +404,7 @@ const ChildProfilePage: React.FC = () => {
           name: editedName,
           sex: editedSex,
           birthDate: editedBirthDate,
-          birthWeight: editedBirthWeight ? parseFloat(editedBirthWeight) : undefined,
+          birthWeight: editedBirthWeight ? (baby && baby.birthWeight && baby.birthWeight < 5 ? parseFloat(editedBirthWeight) / 1000 : parseFloat(editedBirthWeight)) : undefined,
           birthLength: editedBirthLength ? parseFloat(editedBirthLength) : undefined,
           birthType: editedBirthType,
           gestationalWeeks: editedGestationalWeeks ? parseInt(editedGestationalWeeks) : undefined,
@@ -573,12 +576,12 @@ const ChildProfilePage: React.FC = () => {
           </View>
 
           <View style={styles.simpleRow}>
-            <Text style={styles.simpleLabel}>Birth Weight (kg):</Text>
+            <Text style={styles.simpleLabel}>Birth Weight (g):</Text>
             <TextInput
               style={styles.simpleValue}
               value={editedBirthWeight}
               onChangeText={setEditedBirthWeight}
-              placeholder="3.5"
+              placeholder="3500"
               keyboardType="decimal-pad"
             />
           </View>

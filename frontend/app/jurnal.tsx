@@ -30,11 +30,11 @@ import AddEntryModal from "@/src/components/AddEntryModal";
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 const MOOD_ICONS: Record<string, string> = {
-  happy: "😄",
-  okay: "🙂",
-  neutral: "😐",
-  crying: "😢",
-  sick: "🤒",
+  happy: "happy-outline",
+  okay: "happy-outline", 
+  neutral: "ellipse-outline",
+  crying: "sad-outline",
+  sick: "thermometer-outline",
 };
 
 const TAG_COLORS: Record<string, string> = {
@@ -212,7 +212,13 @@ const JournalPage: React.FC = () => {
           <View style={styles.entryContent}>
             <View style={styles.entryTitleRow}>
               {entry.title && <Text style={styles.entryTitle}>{entry.title}</Text>}
-              <Text style={styles.entryMood}>{MOOD_ICONS[entry.mood]}</Text>
+              <View style={styles.moodCircle}>
+                <Ionicons 
+                  name={MOOD_ICONS[entry.mood] as any || "happy-outline"} 
+                  size={20} 
+                  color="#A2E884" 
+                />
+              </View>
             </View>
 
             <Text style={styles.entryDescription}>{displayDescription}</Text>
@@ -325,7 +331,6 @@ const JournalPage: React.FC = () => {
         avatarImage={avatarImage}
         onEditProfile={() => router.push("/babiesList")}
         onMessages={() => {}}
-        onSettings={() => setSettingsOpen(true)}
         unreadMessages={3}
       />
 
@@ -502,14 +507,13 @@ const JournalPage: React.FC = () => {
             setCalendarOpen(true);
           } else if (screen === "Home") {
             router.push("/dashboard");
-          } else if (screen === "Raports") {
-            router.push("/raports");
-          } else if (screen === "Tips") {
-            router.push("/tips");
           } else if (screen === "Jurnal") {
             router.push("/jurnal");
+          } else if (screen === "Profile") {
+            router.push("/childProfile");
           }
         }}
+        onSettings={() => setSettingsOpen(true)}
       />
 
       <CalendarModal
@@ -674,8 +678,15 @@ const styles = StyleSheet.create({
     color: "#333",
     flex: 1,
   },
-  entryMood: {
-    fontSize: 24,
+  moodCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 2,
+    borderColor: "#A2E884",
+    backgroundColor: "#FFF",
+    alignItems: "center",
+    justifyContent: "center",
     marginLeft: 8,
   },
   entryDescription: {

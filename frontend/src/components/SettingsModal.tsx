@@ -85,14 +85,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }) => {
 
             <TouchableOpacity style={styles.settingItem}>
               <View style={styles.settingIconContainer}>
-                <Ionicons name="notifications-outline" size={24} color="#666" />
-              </View>
-              <Text style={styles.settingText}>Notifications</Text>
-              <Ionicons name="chevron-forward" size={20} color="#999" />
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.settingItem}>
-              <View style={styles.settingIconContainer}>
                 <Ionicons name="lock-closed-outline" size={24} color="#666" />
               </View>
               <Text style={styles.settingText}>Privacy & Security</Text>

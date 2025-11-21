@@ -30,11 +30,11 @@ interface AddEntryModalProps {
 }
 
 const MOODS = [
-  { key: "happy", icon: "😄", label: "Happy" },
-  { key: "okay", icon: "🙂", label: "Okay" },
-  { key: "neutral", icon: "😐", label: "Neutral" },
-  { key: "crying", icon: "😢", label: "Crying" },
-  { key: "sick", icon: "🤒", label: "Sick" },
+  { key: "happy", icon: "happy-outline", label: "Happy" },
+  { key: "okay", icon: "happy-outline", label: "Okay" },
+  { key: "neutral", icon: "ellipse-outline", label: "Neutral" },
+  { key: "crying", icon: "sad-outline", label: "Crying" },
+  { key: "sick", icon: "thermometer-outline", label: "Sick" },
 ];
 
 const TAGS = [
@@ -285,7 +285,16 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({
                   ]}
                   onPress={() => setSelectedMood(mood.key)}
                 >
-                  <Text style={styles.moodIcon}>{mood.icon}</Text>
+                  <View style={[
+                    styles.moodIconCircle,
+                    selectedMood === mood.key && styles.moodIconCircleActive
+                  ]}>
+                    <Ionicons 
+                      name={mood.icon as any} 
+                      size={24} 
+                      color={selectedMood === mood.key ? "#A2E884" : "#999"}
+                    />
+                  </View>
                   <Text style={styles.moodLabel}>{mood.label}</Text>
                 </TouchableOpacity>
               ))}
@@ -487,9 +496,19 @@ const styles = StyleSheet.create({
     borderColor: "#A2E884",
     backgroundColor: "#F0F9F0",
   },
-  moodIcon: {
-    fontSize: 28,
-    marginBottom: 4,
+  moodIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: "#E0E0E0",
+    backgroundColor: "#FFF",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 6,
+  },
+  moodIconCircleActive: {
+    borderColor: "#A2E884",
   },
   moodLabel: {
     fontSize: 11,
