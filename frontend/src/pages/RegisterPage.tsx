@@ -22,7 +22,10 @@ const RegisterPage: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("mother");
+  const [customRole, setCustomRole] = useState("");
   const [message, setMessage] = useState("");
+  const [hasRelatedParent, setHasRelatedParent] = useState(false);
+  const [relatedParentEmail, setRelatedParentEmail] = useState("");
 
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState([
@@ -38,11 +41,36 @@ const RegisterPage: React.FC = () => {
       return;
     }
 
+    // Validate custom role for "others"
+    if (role === "others" && !customRole.trim()) {
+      Alert.alert("Error", "Please specify your role (e.g., aunt, uncle, grandma)");
+      return;
+    }
+
+    // Validate related parent email if checked
+    if (hasRelatedParent && !relatedParentEmail.trim()) {
+      Alert.alert("Error", "Please enter the parent's email address");
+      return;
+    }
+
     try {
-  const response = await fetch("http://192.168.1.10:5000/api/register", {
+      // Prepare registration data
+      const registrationData: any = { 
+        name, 
+        email, 
+        password, 
+        role: role === "others" ? customRole : role 
+      };
+
+      // Add related parent email if provided
+      if (hasRelatedParent && relatedParentEmail.trim()) {
+        registrationData.relatedParentEmail = relatedParentEmail.trim();
+      }
+
+      const response = await fetch("http://192.168.1.10:5000/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password, role }),
+        body: JSON.stringify(registrationData),
       });
 
       if (response.ok) {
@@ -51,9 +79,19 @@ const RegisterPage: React.FC = () => {
         await AsyncStorage.setItem("parentId", data.parentId);
         await AsyncStorage.setItem("token", data.token);
         await AsyncStorage.setItem("userEmail", email);
-        await AsyncStorage.setItem("userRole", role);
+        await AsyncStorage.setItem("userRole", role === "others" ? customRole : role);
         console.log("the id of the user:", data.parentId);
         setMessage("Successfully registered!");
+        
+        // For nanny/others, skip baby addition if they linked with a parent
+        if ((role === "nanny" || role === "others") && hasRelatedParent) {
+          Alert.alert(
+            "Welcome to LullaBaby!",
+            "You've been successfully linked with the parent. You can now access their baby information.",
+            [{ text: "OK", onPress: () => router.push("/dashboard") }]
+          );
+          return;
+        }
         
         // Ask user if they want to add a baby now or later
         Alert.alert(
@@ -146,8 +184,62 @@ const RegisterPage: React.FC = () => {
           scrollViewProps={{
             nestedScrollEnabled: true,
           }}
+          onChangeValue={(value) => {
+            // Reset related states when role changes
+            if (value !== "nanny" && value !== "others") {
+              setHasRelatedParent(false);
+              setRelatedParentEmail("");
+            }
+            if (value !== "others") {
+              setCustomRole("");
+            }
+          }}
         />
       </View>
+
+      {/* Custom Role Input for "Others" */}
+      {role === "others" && (
+        <View style={styles.inputContainer}>
+          <Ionicons name="create-outline" size={20} color="#777" style={styles.icon} />
+          <TextInput
+            placeholder="Your role (e.g., aunt, uncle, grandma)"
+            placeholderTextColor="#777777"
+            style={styles.input}
+            value={customRole}
+            onChangeText={setCustomRole}
+          />
+        </View>
+      )}
+
+      {/* Related Parent Section for Nanny/Others */}
+      {(role === "nanny" || role === "others") && (
+        <View style={styles.relatedParentSection}>
+          <TouchableOpacity
+            style={styles.checkboxContainer}
+            onPress={() => setHasRelatedParent(!hasRelatedParent)}
+          >
+            <View style={[styles.checkbox, hasRelatedParent && styles.checkboxChecked]}>
+              {hasRelatedParent && <Ionicons name="checkmark" size={16} color="#FFF" />}
+            </View>
+            <Text style={styles.checkboxLabel}>I have a related parent</Text>
+          </TouchableOpacity>
+
+          {hasRelatedParent && (
+            <View style={styles.inputContainer}>
+              <Ionicons name="mail-outline" size={20} color="#777" style={styles.icon} />
+              <TextInput
+                placeholder="Parent's Email Address"
+                placeholderTextColor="#777777"
+                style={styles.input}
+                keyboardType="email-address"
+                value={relatedParentEmail}
+                onChangeText={setRelatedParentEmail}
+                autoCapitalize="none"
+              />
+            </View>
+          )}
+        </View>
+      )}
 
       <TouchableOpacity style={styles.button} onPress={handleRegister}>
         <Text style={styles.buttonText}>Create Account</Text>
@@ -278,6 +370,32 @@ const styles = StyleSheet.create({
     marginTop: 16,
     textAlign: "center",
     color: "#777",
+    fontWeight: "500",
+  },
+  relatedParentSection: {
+    marginBottom: 16,
+  },
+  checkboxContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: "#A2E884",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 10,
+  },
+  checkboxChecked: {
+    backgroundColor: "#A2E884",
+  },
+  checkboxLabel: {
+    fontSize: 16,
+    color: "#555",
     fontWeight: "500",
   },
 });

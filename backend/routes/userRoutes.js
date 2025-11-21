@@ -7,13 +7,32 @@ import auth from '../middleware/authMiddleware.js';
 const router = express.Router();
 
 router.post('/register', async (req, res) => { 
-  const { name, email, password, role } = req.body;
+  const { name, email, password, role, relatedParentEmail } = req.body;
 
   try {
     const newUser = new User({name, email, password, role});
     await newUser.save();
     console.log("newUser:", newUser);
     console.log("newUser._id:", newUser._id);
+
+    // If relatedParentEmail provided (for nanny/others), link with parent
+    if (relatedParentEmail) {
+      try {
+        const parentUser = await User.findOne({ email: relatedParentEmail });
+        
+        if (parentUser) {
+          // Link nanny/others to parent (one-way for now)
+          newUser.relatedParentId = parentUser._id;
+          await newUser.save();
+          console.log(`Linked ${email} with parent ${relatedParentEmail}`);
+        } else {
+          console.warn(`Parent email ${relatedParentEmail} not found, skipping link`);
+        }
+      } catch (linkError) {
+        console.error('Error linking with parent:', linkError);
+        // Don't fail registration if linking fails
+      }
+    }
 
     // Generate token for the new user
     const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
