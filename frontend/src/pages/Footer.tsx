@@ -28,8 +28,8 @@ const Footer: React.FC<FooterProps> = ({ active, onNavigate, onSettings }) => {
 const tabs: { name: keyof typeof routeMap; icon: IconName }[] = [
   { name: "Home", icon: "home-outline" },
   { name: "Calendar", icon: "calendar-outline" },
-  { name: "Jurnal", icon: "book-outline" },
   { name: "Profile", icon: "person-outline" },
+  { name: "Jurnal", icon: "book-outline" },
   { name: "Settings", icon: "settings-outline" },
 ];
   return (
