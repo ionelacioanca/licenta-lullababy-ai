@@ -561,6 +561,8 @@ const DashboardPage: React.FC = () => {
             router.push('/dashboard');
           } else if (screen === 'Jurnal') {
             router.push('/jurnal');
+          } else if (screen === 'Profile') {
+            router.push('/childProfile');
           }
         }}
         onSettings={() => setSettingsOpen(true)}

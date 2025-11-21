@@ -2,10 +2,11 @@ import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
-const routeMap: Record<"Home" | "Calendar" | "Jurnal" | "Settings", string> = {
+const routeMap: Record<"Home" | "Calendar" | "Jurnal" | "Profile" | "Settings", string> = {
   Home: "/dashboard",
   Calendar: "/calendar",
   Jurnal: "/jurnal",
+  Profile: "/childProfile",
   Settings: "settings", // Special case - opens modal
 };
 
@@ -21,12 +22,14 @@ const Footer: React.FC<FooterProps> = ({ active, onNavigate, onSettings }) => {
   | "home-outline"
   | "calendar-outline"
   | "book-outline"
+  | "person-outline"
   | "settings-outline";
 
 const tabs: { name: keyof typeof routeMap; icon: IconName }[] = [
   { name: "Home", icon: "home-outline" },
   { name: "Calendar", icon: "calendar-outline" },
   { name: "Jurnal", icon: "book-outline" },
+  { name: "Profile", icon: "person-outline" },
   { name: "Settings", icon: "settings-outline" },
 ];
   return (
