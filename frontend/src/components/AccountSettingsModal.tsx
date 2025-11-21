@@ -9,6 +9,8 @@ import {
   Alert,
   ScrollView,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -400,7 +402,11 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
         onClose();
       }}
     >
-      <View style={styles.overlay}>
+      <KeyboardAvoidingView 
+        style={styles.overlay}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={0}
+      >
         <View style={styles.container}>
           <View style={styles.header}>
             <TouchableOpacity
@@ -416,7 +422,12 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
             <View style={{ width: 24 }} />
           </View>
 
-          <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          <ScrollView 
+            style={styles.content} 
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ paddingBottom: 40 }}
+          >
             {/* User Info */}
             <View style={styles.userInfoCard}>
               <View style={styles.avatarContainer}>
@@ -683,7 +694,7 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
             )}
           </ScrollView>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 };
