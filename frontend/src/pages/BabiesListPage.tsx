@@ -63,7 +63,9 @@ const BabiesListPage: React.FC = () => {
       );
 
       if (!response.ok) {
-        throw new Error("Failed to fetch babies data");
+        const errorData = await response.text();
+        console.error("Failed to fetch babies. Status:", response.status, "Error:", errorData);
+        throw new Error(`Failed to fetch babies data: ${response.status}`);
       }
 
       const data = await response.json();
@@ -76,6 +78,10 @@ const BabiesListPage: React.FC = () => {
         }));
         setBabies(babiesWithAvatars);
         console.log("Babies loaded with avatars:", babiesWithAvatars);
+      } else {
+        // No babies found - this is OK for new accounts
+        setBabies([]);
+        console.log("No babies found for this parent");
       }
     } catch (error) {
       console.error("Error loading babies:", error);
