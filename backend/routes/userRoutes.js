@@ -15,9 +15,13 @@ router.post('/register', async (req, res) => {
     console.log("newUser:", newUser);
     console.log("newUser._id:", newUser._id);
 
+    // Generate token for the new user
+    const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
     res.status(201).json({ 
       message: 'User registered successfully',
-      parentId: newUser._id.toString()   
+      parentId: newUser._id.toString(),
+      token: token
     });
   } catch (error) {
     res.status(400).json({ error: 'User already exists' });

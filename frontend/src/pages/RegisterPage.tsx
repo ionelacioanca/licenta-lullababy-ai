@@ -49,9 +49,28 @@ const RegisterPage: React.FC = () => {
         const data = await response.json();
         await AsyncStorage.setItem("parentName", name);
         await AsyncStorage.setItem("parentId", data.parentId);
+        await AsyncStorage.setItem("token", data.token);
+        await AsyncStorage.setItem("userEmail", email);
+        await AsyncStorage.setItem("userRole", role);
         console.log("the id of the user:", data.parentId);
         setMessage("Successfully registered!");
-        router.push("/babyDetails");
+        
+        // Ask user if they want to add a baby now or later
+        Alert.alert(
+          "Welcome to LullaBaby!",
+          "Would you like to add your baby now?",
+          [
+            {
+              text: "Later",
+              style: "cancel",
+              onPress: () => router.push("/dashboard"),
+            },
+            {
+              text: "Add Baby",
+              onPress: () => router.push("/babyDetails"),
+            },
+          ]
+        );
       } else {
         const data = await response.json();
         throw new Error(data.message || "Registration failed");
