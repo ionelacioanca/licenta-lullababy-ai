@@ -8,11 +8,13 @@ type HeaderProps = {
   avatarColor?: string;
   avatarImage?: string | null;
   onEditProfile: () => void;
+  onNotifications: () => void;
   onMessages: () => void;
+  unreadNotifications?: number;
   unreadMessages?: number;
 };
 
-export default function Header({ childInitial,  babyName, avatarColor = "#00CFFF", avatarImage, onEditProfile, onMessages, unreadMessages = 0 }: HeaderProps) {
+export default function Header({ childInitial,  babyName, avatarColor = "#00CFFF", avatarImage, onEditProfile, onNotifications, onMessages, unreadNotifications = 0, unreadMessages = 0 }: HeaderProps) {
   return (
     <View style={styles.container}>
         <View style={styles.leftContainer}>
@@ -28,10 +30,21 @@ export default function Header({ childInitial,  babyName, avatarColor = "#00CFFF
 
       <Text style={styles.appName}>lullababy</Text>
 
-      {/* Dreapta: Notificări */}
+      {/* Right side: Notifications & Messages */}
       <View style={styles.rightContainer}>
-        <TouchableOpacity style={styles.iconContainer} onPress={onMessages}>
+        {/* Notifications Bell */}
+        <TouchableOpacity style={styles.iconContainer} onPress={onNotifications}>
           <Ionicons name="notifications-outline" size={24} color="#444" />
+          {unreadNotifications > 0 && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{unreadNotifications}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+
+        {/* Messages Inbox */}
+        <TouchableOpacity style={styles.iconContainer} onPress={onMessages}>
+          <Ionicons name="mail-outline" size={24} color="#444" />
           {unreadMessages > 0 && (
             <View style={styles.badge}>
               <Text style={styles.badgeText}>{unreadMessages}</Text>
@@ -80,7 +93,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   iconContainer: {
-    marginLeft: 20,
+    marginLeft: 16,
   },
   badge: {
     position: "absolute",

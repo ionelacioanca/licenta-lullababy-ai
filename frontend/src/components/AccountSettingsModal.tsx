@@ -610,9 +610,9 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                 {showRelatedParent && (
                   <View style={styles.formContainer}>
                     <Text style={styles.helperText}>
-                      {isNanny || (userRole !== "mother" && userRole !== "father")
-                        ? "Your linked parents. Send link requests from Settings → Request Parent Link"
-                        : "Manage your linked accounts. You can link with partners, nannies, or other caregivers who have been approved."}
+                      {userRole !== "mother" && userRole !== "father"
+                        ? "Your linked accounts. Send link requests from Settings → Request Parent Link"
+                        : "Manage your linked accounts. You can link with partners, nannies, or other caregivers."}
                     </Text>
 
                     {/* Check actual role, not isNanny flag */}
@@ -649,7 +649,7 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                         ) : (
                           <View style={styles.emptyStateContainer}>
                             <Ionicons name="people-outline" size={48} color="#CCC" />
-                            <Text style={styles.emptyStateText}>No linked parents yet</Text>
+                            <Text style={styles.emptyStateText}>No linked accounts yet</Text>
                             <Text style={styles.emptyStateSubtext}>
                               Go to Settings → Request Parent Link to send a link request
                             </Text>
