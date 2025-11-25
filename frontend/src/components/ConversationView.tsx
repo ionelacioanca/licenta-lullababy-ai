@@ -53,8 +53,12 @@ export default function ConversationView({
   }, [visible, userId]);
 
   const loadCurrentUser = async () => {
-    const userId = await AsyncStorage.getItem("userId");
+    let userId = await AsyncStorage.getItem("userId");
+    if (!userId) {
+      userId = await AsyncStorage.getItem("parentId");
+    }
     if (userId) {
+      console.log("[ConversationView] Current user ID:", userId);
       setCurrentUserId(userId);
     }
   };
@@ -107,6 +111,7 @@ export default function ConversationView({
 
   const renderMessage = ({ item, index }: { item: Message; index: number }) => {
     const isMyMessage = item.senderId === currentUserId;
+    console.log(`[Message] senderId: ${item.senderId}, currentUserId: ${currentUserId}, isMyMessage: ${isMyMessage}`);
     const showDate =
       index === 0 ||
       new Date(messages[index - 1].createdAt).toDateString() !==
@@ -347,11 +352,11 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   myMessageBubble: {
-    backgroundColor: "#A2E884",
+    backgroundColor: "#E8F5E9",
     borderBottomRightRadius: 4,
   },
   theirMessageBubble: {
-    backgroundColor: "#FFF",
+    backgroundColor: "#A2E884",
     borderBottomLeftRadius: 4,
   },
   messageText: {
@@ -359,20 +364,20 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   myMessageText: {
-    color: "#FFF",
+    color: "#444",
   },
   theirMessageText: {
-    color: "#444",
+    color: "#FFF",
   },
   timeText: {
     fontSize: 10,
     marginTop: 4,
   },
   myTimeText: {
-    color: "rgba(255, 255, 255, 0.7)",
+    color: "#999",
   },
   theirTimeText: {
-    color: "#999",
+    color: "rgba(255, 255, 255, 0.7)",
   },
   inputContainer: {
     flexDirection: "row",
