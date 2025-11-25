@@ -32,12 +32,12 @@ class BabyService {
             const parentIds = [parentId];
             
             if (currentUser) {
-                // For nanny: add all linked parents from relatedParentIds array
-                if (currentUser.role === 'nanny' && currentUser.relatedParentIds && currentUser.relatedParentIds.length > 0) {
+                // For nanny or others with relatedParentIds: add all linked parents from array
+                if (currentUser.relatedParentIds && currentUser.relatedParentIds.length > 0) {
                     parentIds.push(...currentUser.relatedParentIds);
                 }
-                // For mother/father/others: add single linked parent
-                else if (currentUser.relatedParentId) {
+                // For mother/father/others: also add single linked parent if exists
+                if (currentUser.relatedParentId) {
                     parentIds.push(currentUser.relatedParentId);
                 }
             }

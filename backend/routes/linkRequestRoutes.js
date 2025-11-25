@@ -135,7 +135,7 @@ router.post('/accept/:requestId', authMiddleware, async (req, res) => {
       return res.status(400).json({ message: 'Request already processed' });
     }
 
-    // Update requester's relatedParentIds
+    // Update requester's relatedParentIds (add parent to requester's list)
     const requester = await User.findById(linkRequest.requesterId);
     if (!requester) {
       return res.status(404).json({ message: 'Requester not found' });
@@ -145,9 +145,22 @@ router.post('/accept/:requestId', authMiddleware, async (req, res) => {
       requester.relatedParentIds = [];
     }
     
-    if (!requester.relatedParentIds.includes(parentId)) {
+    if (!requester.relatedParentIds.some(id => id.toString() === parentId)) {
       requester.relatedParentIds.push(parentId);
       await requester.save();
+    }
+
+    // Also update parent's relatedParentIds (add requester to parent's list)
+    const parent = await User.findById(parentId);
+    if (parent) {
+      if (!parent.relatedParentIds) {
+        parent.relatedParentIds = [];
+      }
+      
+      if (!parent.relatedParentIds.some(id => id.toString() === linkRequest.requesterId.toString())) {
+        parent.relatedParentIds.push(linkRequest.requesterId);
+        await parent.save();
+      }
     }
 
     // Update link request status

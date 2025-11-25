@@ -451,7 +451,30 @@ router.get('/linked-parent', auth, async (req, res) => {
       console.log(`Nanny has ${parents.length} linked parents`);
       res.json({ relatedParents: parents, isNanny: true });
     }
-    // For mother/father/others: return single linked parent
+    // For mother/father: return array of linked users (nannies, partners, etc.) AND old single link if exists
+    else if (currentUser.role === 'mother' || currentUser.role === 'father') {
+      const linkedUsers = (currentUser.relatedParentIds || []).map(user => ({
+        id: user._id,
+        name: user.name,
+        email: user.email
+      }));
+      console.log(`Parent has ${linkedUsers.length} linked users`);
+      
+      // Also check for old single parent link
+      const response = {
+        relatedParents: linkedUsers,
+        isNanny: true // Use same structure as nanny to show list
+      };
+      
+      // Add old single link if exists
+      if (currentUser.relatedParentId) {
+        response.relatedParentName = currentUser.relatedParentId.name;
+        response.relatedParentEmail = currentUser.relatedParentId.email;
+      }
+      
+      res.json(response);
+    }
+    // For others: return single linked parent if exists
     else if (currentUser.relatedParentId) {
       console.log(`User has single linked parent: ${currentUser.relatedParentId.name}`);
       res.json({ 
@@ -459,7 +482,18 @@ router.get('/linked-parent', auth, async (req, res) => {
         relatedParentEmail: currentUser.relatedParentId.email,
         isNanny: false
       });
-    } else {
+    } 
+    // For others with relatedParentIds array
+    else if (currentUser.relatedParentIds && currentUser.relatedParentIds.length > 0) {
+      const parents = currentUser.relatedParentIds.map(parent => ({
+        id: parent._id,
+        name: parent.name,
+        email: parent.email
+      }));
+      console.log(`User (others) has ${parents.length} linked parents`);
+      res.json({ relatedParents: parents, isNanny: true });
+    }
+    else {
       console.log(`User has no linked parents`);
       res.json({ relatedParents: [], isNanny: false });
     }

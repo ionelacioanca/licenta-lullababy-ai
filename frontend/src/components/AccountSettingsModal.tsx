@@ -598,9 +598,7 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
               >
                 <View style={styles.settingHeader}>
                   <Ionicons name="people" size={24} color="#A2E884" />
-                  <Text style={styles.settingTitle}>
-                    {userRole === "nanny" ? "Linked Parents" : "Link Related Parent"}
-                  </Text>
+                  <Text style={styles.settingTitle}>Links</Text>
                   <Ionicons
                     name={showRelatedParent ? "chevron-up" : "chevron-down"}
                       size={20}
@@ -614,7 +612,7 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                     <Text style={styles.helperText}>
                       {isNanny || (userRole !== "mother" && userRole !== "father")
                         ? "Your linked parents. Send link requests from Settings → Request Parent Link"
-                        : "Link your account with your partner's account to share baby information"}
+                        : "Manage your linked accounts. You can link with partners, nannies, or other caregivers who have been approved."}
                     </Text>
 
                     {/* For Nanny/Others: Show only list of linked parents (no ability to add here) */}
@@ -658,58 +656,92 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                         )}
                       </View>
                     ) : (
-                      // For Mother/Father/Others: Show single parent link
-                      relatedParentName ? (
-                        <View>
-                          <View style={styles.linkedParentCard}>
-                            <Ionicons name="checkmark-circle" size={24} color="#A2E884" />
-                            <Text style={styles.linkedParentText}>
-                              Linked with: {relatedParentName}
-                            </Text>
+                      // For Mother/Father: Show list of linked users and allow adding more
+                      <View>
+                        {/* Show list of linked users */}
+                        {relatedParents.length > 0 && (
+                          <View style={{ marginBottom: 16 }}>
+                            {relatedParents.map((parent) => (
+                              <View key={parent.id} style={{ marginBottom: 12 }}>
+                                <View style={styles.linkedParentCard}>
+                                  <Ionicons name="checkmark-circle" size={24} color="#A2E884" />
+                                  <Text style={styles.linkedParentText}>
+                                    {parent.name}
+                                  </Text>
+                                </View>
+                                <TouchableOpacity
+                                  style={styles.unlinkButton}
+                                  onPress={() => handleUnlinkParent(parent.id, parent.name)}
+                                  disabled={loading}
+                                >
+                                  {loading ? (
+                                    <ActivityIndicator color="#FF6B6B" />
+                                  ) : (
+                                    <>
+                                      <Ionicons name="unlink-outline" size={20} color="#FF6B6B" />
+                                      <Text style={styles.unlinkButtonText}>Unlink</Text>
+                                    </>
+                                  )}
+                                </TouchableOpacity>
+                              </View>
+                            ))}
                           </View>
-                          <TouchableOpacity
-                            style={styles.unlinkButton}
-                            onPress={() => handleUnlinkParent()}
-                            disabled={loading}
-                          >
-                            {loading ? (
-                              <ActivityIndicator color="#FF6B6B" />
-                            ) : (
-                              <>
-                                <Ionicons name="unlink-outline" size={20} color="#FF6B6B" />
-                                <Text style={styles.unlinkButtonText}>Unlink Parent</Text>
-                              </>
-                            )}
-                          </TouchableOpacity>
-                        </View>
-                      ) : (
-                        <>
-                          <View style={styles.inputContainer}>
-                            <Ionicons name="mail-outline" size={20} color="#A2E884" />
-                            <TextInput
-                              style={styles.input}
-                              placeholder="Partner's Email Address"
-                              keyboardType="email-address"
-                              autoCapitalize="none"
-                              value={relatedParentEmail}
-                              onChangeText={setRelatedParentEmail}
-                              placeholderTextColor="#999"
-                            />
-                          </View>
+                        )}
 
-                          <TouchableOpacity
-                            style={styles.submitButton}
-                            onPress={handleAddRelatedParent}
-                            disabled={loading}
-                          >
-                            {loading ? (
-                              <ActivityIndicator color="#FFF" />
-                            ) : (
-                              <Text style={styles.submitButtonText}>Link Parent</Text>
-                            )}
-                          </TouchableOpacity>
-                        </>
-                      )
+                        {/* Show old single parent link if exists */}
+                        {relatedParentName && (
+                          <View style={{ marginBottom: 16 }}>
+                            <View style={styles.linkedParentCard}>
+                              <Ionicons name="checkmark-circle" size={24} color="#A2E884" />
+                              <Text style={styles.linkedParentText}>
+                                {relatedParentName}
+                              </Text>
+                            </View>
+                            <TouchableOpacity
+                              style={styles.unlinkButton}
+                              onPress={() => handleUnlinkParent()}
+                              disabled={loading}
+                            >
+                              {loading ? (
+                                <ActivityIndicator color="#FF6B6B" />
+                              ) : (
+                                <>
+                                  <Ionicons name="unlink-outline" size={20} color="#FF6B6B" />
+                                  <Text style={styles.unlinkButtonText}>Unlink</Text>
+                                </>
+                              )}
+                            </TouchableOpacity>
+                          </View>
+                        )}
+                        
+                        {/* Add new link (for parents only - direct linking without request) */}
+                        <View style={styles.inputContainer}>
+                          <Ionicons name="mail-outline" size={20} color="#A2E884" />
+                          <TextInput
+                            style={styles.input}
+                            placeholder="Partner's Email Address"
+                            keyboardType="email-address"
+                            autoCapitalize="none"
+                            value={relatedParentEmail}
+                            onChangeText={setRelatedParentEmail}
+                            placeholderTextColor="#999"
+                          />
+                        </View>
+
+                        <TouchableOpacity
+                          style={styles.submitButton}
+                          onPress={handleAddRelatedParent}
+                          disabled={loading}
+                        >
+                          {loading ? (
+                            <ActivityIndicator color="#FFF" />
+                          ) : (
+                            <Text style={styles.submitButtonText}>
+                              {relatedParents.length > 0 || relatedParentName ? "Add Another Link" : "Link Partner"}
+                            </Text>
+                          )}
+                        </TouchableOpacity>
+                      </View>
                     )}
                   </View>
                 )}
