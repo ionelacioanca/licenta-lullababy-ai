@@ -7,6 +7,7 @@ import {
   FlatList,
   StyleSheet,
   ActivityIndicator,
+  SafeAreaView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { getConversations, Conversation } from "../services/messageService";
@@ -107,15 +108,16 @@ export default function MessagesInbox({
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <View style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Ionicons name="arrow-back" size={24} color="#444" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Messages</Text>
-          <View style={styles.placeholder} />
-        </View>
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.container}>
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+              <Ionicons name="arrow-back" size={24} color="#444" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Messages</Text>
+            <View style={styles.placeholder} />
+          </View>
 
         {/* Content */}
         {loading ? (
@@ -138,12 +140,17 @@ export default function MessagesInbox({
             contentContainerStyle={styles.listContainer}
           />
         )}
-      </View>
+        </View>
+      </SafeAreaView>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#FFF",
+  },
   container: {
     flex: 1,
     backgroundColor: "#FFF8F0",
