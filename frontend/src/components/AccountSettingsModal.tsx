@@ -615,8 +615,9 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                         : "Manage your linked accounts. You can link with partners, nannies, or other caregivers who have been approved."}
                     </Text>
 
-                    {/* For Nanny/Others: Show only list of linked parents (no ability to add here) */}
-                    {isNanny || (userRole !== "mother" && userRole !== "father") ? (
+                    {/* Check actual role, not isNanny flag */}
+                    {userRole !== "mother" && userRole !== "father" ? (
+                      // For Nanny/Others: Show only list of linked parents (no ability to add here)
                       <View>
                         {relatedParents.length > 0 ? (
                           <View style={{ marginBottom: 16 }}>

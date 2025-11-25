@@ -409,14 +409,28 @@ router.post('/link-parent', auth, async (req, res) => {
         requestSent: true
       });
     }
-    // For mother/father: bidirectional link (no request needed)
+    // For mother/father: direct bidirectional link (no request needed) using relatedParentIds array
     else {
-      currentUser.relatedParentId = relatedParent._id;
+      // Check if already linked
+      if (currentUser.relatedParentIds && currentUser.relatedParentIds.some(id => id.toString() === relatedParent._id.toString())) {
+        return res.status(400).json({ message: 'Already linked with this user' });
+      }
+      
+      // Add to current user's relatedParentIds
+      if (!currentUser.relatedParentIds) {
+        currentUser.relatedParentIds = [];
+      }
+      currentUser.relatedParentIds.push(relatedParent._id);
       await currentUser.save();
-      relatedParent.relatedParentId = currentUser._id;
+      
+      // Add to related parent's relatedParentIds (bidirectional)
+      if (!relatedParent.relatedParentIds) {
+        relatedParent.relatedParentIds = [];
+      }
+      relatedParent.relatedParentIds.push(currentUser._id);
       await relatedParent.save();
       
-      console.log(`Linked ${currentUser.email} with ${relatedParent.email}`);
+      console.log(`[Direct Link] Linked ${currentUser.email} with ${relatedParent.email} (parent direct link)`);
       res.json({ 
         message: 'Parents linked successfully',
         relatedParentName: relatedParent.name
