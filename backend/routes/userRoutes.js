@@ -1,5 +1,6 @@
 import express from 'express';
 import User from '../models/User.js';
+import LinkRequest from '../models/LinkRequest.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import auth from '../middleware/authMiddleware.js';
@@ -31,30 +32,30 @@ router.post('/register', async (req, res) => {
     console.log("newUser:", newUser);
     console.log("newUser._id:", newUser._id);
 
-    // If relatedParentEmail provided (for nanny/others), link with parent
+    // If relatedParentEmail provided (for nanny/others), create a link request instead of auto-linking
     if (relatedParentEmail) {
       try {
         const parentUser = await User.findOne({ email: relatedParentEmail });
         
-        if (parentUser) {
-          // For nanny, use relatedParentIds array (multiple parents)
-          if (actualRole === 'nanny') {
-            newUser.relatedParentIds = [parentUser._id];
-            await newUser.save();
-            console.log(`Linked nanny ${email} with parent ${relatedParentEmail}`);
-          } 
-          // For others (custom roles), use single relatedParentId
-          else {
-            newUser.relatedParentId = parentUser._id;
-            await newUser.save();
-            console.log(`Linked ${email} with parent ${relatedParentEmail}`);
-          }
+        if (parentUser && (parentUser.role === 'mother' || parentUser.role === 'father')) {
+          // Create a pending link request
+          const linkRequest = new LinkRequest({
+            requesterId: newUser._id,
+            requesterName: newUser.name,
+            requesterRole: actualRole === 'others' ? customRole : actualRole,
+            parentId: parentUser._id,
+            parentEmail: parentUser.email,
+            message: 'Sent during registration'
+          });
+          
+          await linkRequest.save();
+          console.log(`Created link request from ${email} to parent ${relatedParentEmail}`);
         } else {
-          console.warn(`Parent email ${relatedParentEmail} not found, skipping link`);
+          console.warn(`Parent email ${relatedParentEmail} not found or not a parent role, skipping link request`);
         }
       } catch (linkError) {
-        console.error('Error linking with parent:', linkError);
-        // Don't fail registration if linking fails
+        console.error('Error creating link request:', linkError);
+        // Don't fail registration if link request creation fails
       }
     }
 
@@ -372,32 +373,55 @@ router.post('/link-parent', auth, async (req, res) => {
       }
     }
 
-    // For nanny: add to relatedParentIds array
-    if (currentUser.role === 'nanny') {
-      if (!currentUser.relatedParentIds) {
-        currentUser.relatedParentIds = [];
-      }
+    // For nanny/others linking with parent: create link request instead of auto-linking
+    if (currentUser.role === 'nanny' || (currentUser.role !== 'mother' && currentUser.role !== 'father')) {
       // Check if already linked
-      if (currentUser.relatedParentIds.some(id => id.toString() === relatedParent._id.toString())) {
+      if (currentUser.relatedParentIds && currentUser.relatedParentIds.some(id => id.toString() === relatedParent._id.toString())) {
         return res.status(400).json({ message: 'Already linked with this parent' });
       }
-      currentUser.relatedParentIds.push(relatedParent._id);
-      await currentUser.save();
-      console.log(`Added parent ${relatedParent.email} to nanny ${currentUser.email}`);
+      
+      // Check if there's already a pending request
+      const existingRequest = await LinkRequest.findOne({
+        requesterId: currentUser._id,
+        parentId: relatedParent._id,
+        status: 'pending'
+      });
+      
+      if (existingRequest) {
+        return res.status(400).json({ message: 'You already have a pending request to this parent' });
+      }
+      
+      // Create link request
+      const linkRequest = new LinkRequest({
+        requesterId: currentUser._id,
+        requesterName: currentUser.name,
+        requesterRole: currentUser.role === 'others' ? currentUser.customRole : currentUser.role,
+        parentId: relatedParent._id,
+        parentEmail: relatedParent.email,
+        message: ''
+      });
+      
+      await linkRequest.save();
+      console.log(`Created link request from ${currentUser.email} to ${relatedParent.email}`);
+      
+      return res.json({ 
+        message: 'Link request sent to parent. They will be notified and can accept or decline.',
+        requestSent: true
+      });
     }
-    // For mother/father: bidirectional link
+    // For mother/father: bidirectional link (no request needed)
     else {
       currentUser.relatedParentId = relatedParent._id;
       await currentUser.save();
       relatedParent.relatedParentId = currentUser._id;
       await relatedParent.save();
+      
+      console.log(`Linked ${currentUser.email} with ${relatedParent.email}`);
+      res.json({ 
+        message: 'Parents linked successfully',
+        relatedParentName: relatedParent.name
+      });
     }
-
-    console.log(`Linked ${currentUser.email} with ${relatedParent.email}`);
-    res.json({ 
-      message: 'Parents linked successfully',
-      relatedParentName: relatedParent.name
-    });
   } catch (error) {
     console.error('Link parent error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });

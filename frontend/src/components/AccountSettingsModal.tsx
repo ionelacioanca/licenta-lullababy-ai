@@ -612,15 +612,15 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                 {showRelatedParent && (
                   <View style={styles.formContainer}>
                     <Text style={styles.helperText}>
-                      {isNanny 
-                        ? "Link with parents to access their baby information"
+                      {isNanny || (userRole !== "mother" && userRole !== "father")
+                        ? "Your linked parents. Send link requests from Settings → Request Parent Link"
                         : "Link your account with your partner's account to share baby information"}
                     </Text>
 
-                    {/* For Nanny: Show list of linked parents */}
-                    {isNanny ? (
+                    {/* For Nanny/Others: Show only list of linked parents (no ability to add here) */}
+                    {isNanny || (userRole !== "mother" && userRole !== "father") ? (
                       <View>
-                        {relatedParents.length > 0 && (
+                        {relatedParents.length > 0 ? (
                           <View style={{ marginBottom: 16 }}>
                             {relatedParents.map((parent) => (
                               <View key={parent.id} style={{ marginBottom: 12 }}>
@@ -647,35 +647,15 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                               </View>
                             ))}
                           </View>
-                        )}
-                        
-                        {/* Add new parent */}
-                        <View style={styles.inputContainer}>
-                          <Ionicons name="mail-outline" size={20} color="#A2E884" />
-                          <TextInput
-                            style={styles.input}
-                            placeholder="Parent's Email Address"
-                            keyboardType="email-address"
-                            autoCapitalize="none"
-                            value={relatedParentEmail}
-                            onChangeText={setRelatedParentEmail}
-                            placeholderTextColor="#999"
-                          />
-                        </View>
-
-                        <TouchableOpacity
-                          style={styles.submitButton}
-                          onPress={handleAddRelatedParent}
-                          disabled={loading}
-                        >
-                          {loading ? (
-                            <ActivityIndicator color="#FFF" />
-                          ) : (
-                            <Text style={styles.submitButtonText}>
-                              {relatedParents.length > 0 ? "Add Another Parent" : "Link Parent"}
+                        ) : (
+                          <View style={styles.emptyStateContainer}>
+                            <Ionicons name="people-outline" size={48} color="#CCC" />
+                            <Text style={styles.emptyStateText}>No linked parents yet</Text>
+                            <Text style={styles.emptyStateSubtext}>
+                              Go to Settings → Request Parent Link to send a link request
                             </Text>
-                          )}
-                        </TouchableOpacity>
+                          </View>
+                        )}
                       </View>
                     ) : (
                       // For Mother/Father/Others: Show single parent link
@@ -959,6 +939,24 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     marginBottom: 16,
+    lineHeight: 20,
+  },
+  emptyStateContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 32,
+  },
+  emptyStateText: {
+    fontSize: 16,
+    color: "#666",
+    marginTop: 16,
+    fontWeight: "600",
+  },
+  emptyStateSubtext: {
+    fontSize: 14,
+    color: "#999",
+    textAlign: 'center',
+    marginTop: 8,
     lineHeight: 20,
   },
 });

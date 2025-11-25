@@ -84,11 +84,11 @@ const RegisterPage: React.FC = () => {
         console.log("the id of the user:", data.parentId);
         setMessage("Successfully registered!");
         
-        // For nanny/others, skip baby addition if they linked with a parent
+        // For nanny/others, show message about link request
         if ((role === "nanny" || role === "others") && hasRelatedParent) {
           Alert.alert(
             "Welcome to LullaBaby!",
-            "You've been successfully linked with the parent. You can now access their baby information.",
+            "A link request has been sent to the parent. Once they approve it, you'll be able to access their baby information.",
             [{ text: "OK", onPress: () => router.push("/dashboard") }]
           );
           return;
