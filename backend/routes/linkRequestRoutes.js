@@ -141,6 +141,8 @@ router.post('/accept/:requestId', authMiddleware, async (req, res) => {
       return res.status(404).json({ message: 'Requester not found' });
     }
 
+    console.log(`[Accept Link] Requester before: ${requester.email}, relatedParentIds:`, requester.relatedParentIds);
+    
     if (!requester.relatedParentIds) {
       requester.relatedParentIds = [];
     }
@@ -148,11 +150,16 @@ router.post('/accept/:requestId', authMiddleware, async (req, res) => {
     if (!requester.relatedParentIds.some(id => id.toString() === parentId)) {
       requester.relatedParentIds.push(parentId);
       await requester.save();
+      console.log(`[Accept Link] Added parent ${parentId} to requester ${requester.email}`);
+    } else {
+      console.log(`[Accept Link] Parent ${parentId} already in requester's list`);
     }
 
     // Also update parent's relatedParentIds (add requester to parent's list)
     const parent = await User.findById(parentId);
     if (parent) {
+      console.log(`[Accept Link] Parent before: ${parent.email}, relatedParentIds:`, parent.relatedParentIds);
+      
       if (!parent.relatedParentIds) {
         parent.relatedParentIds = [];
       }
@@ -160,12 +167,19 @@ router.post('/accept/:requestId', authMiddleware, async (req, res) => {
       if (!parent.relatedParentIds.some(id => id.toString() === linkRequest.requesterId.toString())) {
         parent.relatedParentIds.push(linkRequest.requesterId);
         await parent.save();
+        console.log(`[Accept Link] Added requester ${linkRequest.requesterId} to parent ${parent.email}`);
+      } else {
+        console.log(`[Accept Link] Requester ${linkRequest.requesterId} already in parent's list`);
       }
+    } else {
+      console.log(`[Accept Link] ERROR: Parent ${parentId} not found!`);
     }
 
     // Update link request status
     linkRequest.status = 'accepted';
     await linkRequest.save();
+    
+    console.log(`[Accept Link] Link request ${requestId} marked as accepted`);
 
     res.json({
       message: 'Link request accepted successfully',

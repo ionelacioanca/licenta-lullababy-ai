@@ -453,12 +453,15 @@ router.get('/linked-parent', auth, async (req, res) => {
     }
     // For mother/father: return array of linked users (nannies, partners, etc.) AND old single link if exists
     else if (currentUser.role === 'mother' || currentUser.role === 'father') {
+      console.log(`[Linked Parent] Parent ${currentUser.email} relatedParentIds:`, currentUser.relatedParentIds);
+      console.log(`[Linked Parent] Parent ${currentUser.email} relatedParentId:`, currentUser.relatedParentId);
+      
       const linkedUsers = (currentUser.relatedParentIds || []).map(user => ({
         id: user._id,
         name: user.name,
         email: user.email
       }));
-      console.log(`Parent has ${linkedUsers.length} linked users`);
+      console.log(`[Linked Parent] Parent has ${linkedUsers.length} linked users:`, linkedUsers);
       
       // Also check for old single parent link
       const response = {
@@ -472,6 +475,7 @@ router.get('/linked-parent', auth, async (req, res) => {
         response.relatedParentEmail = currentUser.relatedParentId.email;
       }
       
+      console.log(`[Linked Parent] Sending response:`, response);
       res.json(response);
     }
     // For others: return single linked parent if exists
@@ -506,47 +510,62 @@ router.get('/linked-parent', auth, async (req, res) => {
 // Unlink parent (authenticated)
 router.post('/unlink-parent', auth, async (req, res) => {
   try {
-    const { parentId } = req.body; // For nanny: specify which parent to unlink
+    const { parentId } = req.body; // Specify which user to unlink from relatedParentIds array
     const currentUser = await User.findById(req.user.userId);
     
     if (!currentUser) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // For nanny: remove specific parent from array
-    if (currentUser.role === 'nanny') {
-      if (!parentId) {
-        return res.status(400).json({ message: 'Parent ID required for unlinking' });
-      }
-      if (!currentUser.relatedParentIds || currentUser.relatedParentIds.length === 0) {
-        return res.status(400).json({ message: 'No linked parents to unlink' });
+    console.log(`[Unlink] User ${currentUser.email} wants to unlink from ${parentId}`);
+
+    // Handle unlinking from relatedParentIds array (for everyone using the new system)
+    if (parentId && currentUser.relatedParentIds && currentUser.relatedParentIds.length > 0) {
+      // Check if the parent exists in the array
+      const parentExists = currentUser.relatedParentIds.some(id => id.toString() === parentId.toString());
+      
+      if (!parentExists) {
+        return res.status(400).json({ message: 'This user is not in your linked list' });
       }
       
+      // Remove from current user's array
       currentUser.relatedParentIds = currentUser.relatedParentIds.filter(
         id => id.toString() !== parentId.toString()
       );
       await currentUser.save();
-      console.log(`Removed parent ${parentId} from nanny ${currentUser.email}`);
-    }
-    // For mother/father/others: bidirectional unlink
-    else {
-      if (!currentUser.relatedParentId) {
-        return res.status(400).json({ message: 'No linked parent to unlink' });
+      console.log(`[Unlink] Removed ${parentId} from ${currentUser.email}'s relatedParentIds`);
+      
+      // Also remove current user from the other user's array (bidirectional)
+      const otherUser = await User.findById(parentId);
+      if (otherUser && otherUser.relatedParentIds && otherUser.relatedParentIds.length > 0) {
+        otherUser.relatedParentIds = otherUser.relatedParentIds.filter(
+          id => id.toString() !== currentUser._id.toString()
+        );
+        await otherUser.save();
+        console.log(`[Unlink] Removed ${currentUser._id} from ${otherUser.email}'s relatedParentIds`);
       }
-
+      
+      res.json({ message: 'User unlinked successfully' });
+    }
+    // Handle old single parent link (relatedParentId)
+    else if (!parentId && currentUser.relatedParentId) {
       const relatedParent = await User.findById(currentUser.relatedParentId);
       
       currentUser.relatedParentId = undefined;
       await currentUser.save();
+      console.log(`[Unlink] Removed relatedParentId from ${currentUser.email}`);
 
       if (relatedParent) {
         relatedParent.relatedParentId = undefined;
         await relatedParent.save();
-        console.log(`Unlinked ${currentUser.email} from ${relatedParent.email}`);
+        console.log(`[Unlink] Unlinked ${currentUser.email} from ${relatedParent.email} (old system)`);
       }
+      
+      res.json({ message: 'User unlinked successfully' });
     }
-
-    res.json({ message: 'Parent unlinked successfully' });
+    else {
+      return res.status(400).json({ message: 'No linked users to unlink' });
+    }
   } catch (error) {
     console.error('Unlink parent error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
