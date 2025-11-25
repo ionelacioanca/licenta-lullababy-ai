@@ -12,6 +12,7 @@ import calendarRouter from './routes/calendarRoutes.js';
 import journalRouter from './routes/journalRoutes.js';
 import auth from './middleware/authMiddleware.js';
 import cors from 'cors';
+import emailService from './services/emailService.js';
 
 dotenv.config(); 
 const app = express();
@@ -42,7 +43,11 @@ app.use('/users', userRouter);
 
 async function main() {
     try {
-        await connectDB(); 
+        await connectDB();
+        
+        // Verify email service connection
+        await emailService.verifyConnection();
+        
         const server = app.listen(PORT, () => {
             console.log(`Server running on port ${PORT}`);
             console.log(`Server accessible at:`);

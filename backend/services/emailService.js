@@ -1,13 +1,33 @@
 import nodemailer from 'nodemailer';
+import dotenv from 'dotenv';
+
+// Ensure dotenv is loaded
+dotenv.config();
 
 class EmailService {
   constructor() {
+    // Get email credentials and remove any whitespace
+    const emailUser = process.env.EMAIL_USER?.trim();
+    const emailPassword = process.env.EMAIL_PASSWORD?.trim().replace(/[\s-]/g, ''); // Remove spaces and dashes
+    
+    console.log('=== Email Service Debug ===');
+    console.log('EMAIL_USER exists:', !!process.env.EMAIL_USER);
+    console.log('EMAIL_PASSWORD exists:', !!process.env.EMAIL_PASSWORD);
+    console.log('Email user:', emailUser || 'NOT SET');
+    console.log('Password length:', emailPassword?.length || 0);
+    console.log('==========================');
+
+    if (!emailUser || !emailPassword) {
+      console.error('⚠️ Email credentials not configured properly');
+      console.error('Please check your .env file');
+    }
+
     // Create a transporter using Gmail or other email service
     this.transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
-        user: process.env.EMAIL_USER, // Your email
-        pass: process.env.EMAIL_PASSWORD, // Your app password
+        user: emailUser,
+        pass: emailPassword,
       },
     });
   }
