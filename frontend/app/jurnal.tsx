@@ -84,7 +84,7 @@ const JournalPage: React.FC = () => {
 
       if (!parentId) return;
 
-      const response = await fetch(`http://192.168.1.10:5000/api/baby/parent/${parentId}`, {
+      const response = await fetch(`http://192.168.1.16:5000/api/baby/parent/${parentId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -101,7 +101,7 @@ const JournalPage: React.FC = () => {
         setChildInitial(baby.name.charAt(0).toUpperCase());
         setBabyId(baby._id);
         setAvatarColor(baby.avatarColor || "#00CFFF");
-        setAvatarImage(baby.avatarImage ? `http://192.168.1.10:5000${baby.avatarImage}` : null);
+        setAvatarImage(baby.avatarImage ? `http://192.168.1.16:5000${baby.avatarImage}` : null);
         
         loadEntries(baby._id);
         loadGallery(baby._id);
@@ -256,7 +256,7 @@ const JournalPage: React.FC = () => {
                     onPress={() => openLightbox(entry.photos, index)}
                   >
                     <Image
-                      source={{ uri: `http://192.168.1.10:5000${photo}` }}
+                      source={{ uri: `http://192.168.1.16:5000${photo}` }}
                       style={styles.carouselPhoto}
                     />
                   </TouchableOpacity>
@@ -304,7 +304,7 @@ const JournalPage: React.FC = () => {
                 onPress={() => openLightbox([item.photoUrl], 0)}
               >
                 <Image
-                  source={{ uri: `http://192.168.1.10:5000${item.photoUrl}` }}
+                  source={{ uri: `http://192.168.1.16:5000${item.photoUrl}` }}
                   style={styles.galleryPhoto}
                 />
                 {item.caption && (
@@ -463,7 +463,7 @@ const JournalPage: React.FC = () => {
           </TouchableOpacity>
           {lightboxPhotos.length > 0 && (
             <Image
-              source={{ uri: `http://192.168.1.10:5000${lightboxPhotos[lightboxIndex]}` }}
+              source={{ uri: `http://192.168.1.16:5000${lightboxPhotos[lightboxIndex]}` }}
               style={styles.lightboxImage}
               resizeMode="contain"
             />

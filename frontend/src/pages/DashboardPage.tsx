@@ -14,9 +14,12 @@ import CalendarModal from "../components/CalendarModal";
 import { Sound } from "../services/soundService";
 import ChatbotModal from "../components/ChatbotModal";
 import SettingsModal from "../components/SettingsModal";
+import LinkRequestNotifications from "../components/LinkRequestNotifications";
+import SendLinkRequestModal from "../components/SendLinkRequestModal";
 import { getGrowthRecords, getLatestGrowthRecord, addGrowthRecord, GrowthRecord } from "../services/growthService";
 import { getUpcomingEvents, CalendarEvent, generateVaccinationSchedule, generateMilestoneSchedule } from "../services/calendarService";
 import { getRecentEntries, JournalEntry } from "../services/journalService";
+import { getPendingRequestsCount } from "../services/linkRequestService";
 
 const DashboardPage: React.FC = () => {
   const router = useRouter();
@@ -41,6 +44,19 @@ const DashboardPage: React.FC = () => {
   const [birthLength, setBirthLength] = useState<number | null>(null);
   const [birthDate, setBirthDate] = useState<Date | null>(null);
   const [recentMemories, setRecentMemories] = useState<JournalEntry[]>([]);
+  const [linkRequestsOpen, setLinkRequestsOpen] = useState(false);
+  const [sendLinkRequestOpen, setSendLinkRequestOpen] = useState(false);
+  const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+  const [userRole, setUserRole] = useState<string | null>(null);
+
+  const loadPendingRequestsCount = async () => {
+    try {
+      const count = await getPendingRequestsCount();
+      setPendingRequestsCount(count);
+    } catch (error) {
+      console.log("Error loading pending requests count:", error);
+    }
+  };
 
   const loadBabyForParent = async () => {
     const parentId = await AsyncStorage.getItem("parentId");
@@ -52,9 +68,31 @@ const DashboardPage: React.FC = () => {
     }
 
     const token = await AsyncStorage.getItem("token");
+    
+    // Load user role and pending requests count
+    try {
+      const userInfoResponse = await fetch(`http://192.168.1.16:5000/api/user-info`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (userInfoResponse.ok) {
+        const userInfo = await userInfoResponse.json();
+        setUserRole(userInfo.role);
+        
+        // Load pending requests count if user is a parent
+        if (userInfo.role === 'mother' || userInfo.role === 'father') {
+          loadPendingRequestsCount();
+        }
+      }
+    } catch (error) {
+      console.error("Error loading user info:", error);
+    }
 
     try {
-  const response = await fetch(`http://192.168.1.10:5000/api/baby/parent/${parentId}`, {
+  const response = await fetch(`http://192.168.1.16:5000/api/baby/parent/${parentId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -93,7 +131,7 @@ const DashboardPage: React.FC = () => {
           
           // Load avatar data from backend
           setAvatarColor(baby.avatarColor || "#00CFFF");
-          setAvatarImage(baby.avatarImage ? `http://192.168.1.10:5000${baby.avatarImage}` : null);
+          setAvatarImage(baby.avatarImage ? `http://192.168.1.16:5000${baby.avatarImage}` : null);
           
           // Store birth data
           console.log("Baby birth data - birthWeight:", baby.birthWeight, "birthLength:", baby.birthLength, "birthDate:", baby.birthDate);
@@ -237,8 +275,8 @@ const DashboardPage: React.FC = () => {
         avatarColor={avatarColor}
         avatarImage={avatarImage}
         onEditProfile={() => router.push("/babiesList")}
-        onMessages={() => {}}
-        unreadMessages={3}
+        onMessages={() => setLinkRequestsOpen(true)}
+        unreadMessages={pendingRequestsCount}
       />
       
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -489,7 +527,7 @@ const DashboardPage: React.FC = () => {
                       </View>
                       {memory.photos.length > 0 && (
                         <Image
-                          source={{ uri: `http://192.168.1.10:5000${memory.photos[0]}` }}
+                          source={{ uri: `http://192.168.1.16:5000${memory.photos[0]}` }}
                           style={styles.memoryThumbnail}
                         />
                       )}
@@ -555,6 +593,32 @@ const DashboardPage: React.FC = () => {
       <SettingsModal
         visible={settingsOpen}
         onClose={() => setSettingsOpen(false)}
+        onRequestLink={() => {
+          // For parents, open link requests modal
+          if (userRole === 'mother' || userRole === 'father') {
+            setLinkRequestsOpen(true);
+          } else {
+            // For nanny/others, open send request modal
+            setSendLinkRequestOpen(true);
+          }
+        }}
+        userRole={userRole || undefined}
+      />
+
+      <LinkRequestNotifications
+        visible={linkRequestsOpen}
+        onClose={() => setLinkRequestsOpen(false)}
+        onRequestProcessed={() => {
+          loadPendingRequestsCount();
+        }}
+      />
+
+      <SendLinkRequestModal
+        visible={sendLinkRequestOpen}
+        onClose={() => setSendLinkRequestOpen(false)}
+        onSuccess={() => {
+          Alert.alert('Success', 'Link request sent successfully!');
+        }}
       />
 
       <Footer 

@@ -68,7 +68,7 @@ const RegisterPage: React.FC = () => {
         registrationData.relatedParentEmail = relatedParentEmail.trim();
       }
 
-      const response = await fetch("http://192.168.1.10:5000/api/register", {
+      const response = await fetch("http://192.168.1.16:5000/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(registrationData),
@@ -84,11 +84,11 @@ const RegisterPage: React.FC = () => {
         console.log("the id of the user:", data.parentId);
         setMessage("Successfully registered!");
         
-        // For nanny/others, skip baby addition if they linked with a parent
+        // For nanny/others, show message about link request
         if ((role === "nanny" || role === "others") && hasRelatedParent) {
           Alert.alert(
             "Welcome to LullaBaby!",
-            "You've been successfully linked with the parent. You can now access their baby information.",
+            "A link request has been sent to the parent. Once they approve it, you'll be able to access their baby information.",
             [{ text: "OK", onPress: () => router.push("/dashboard") }]
           );
           return;

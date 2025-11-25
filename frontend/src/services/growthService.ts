@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const API_URL = "http://192.168.1.10:5000/api/growth";
+const API_URL = "http://192.168.1.16:5000/api/growth";
 
 export interface GrowthRecord {
   _id: string;

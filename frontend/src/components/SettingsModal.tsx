@@ -15,9 +15,11 @@ import AccountSettingsModal from "./AccountSettingsModal";
 interface SettingsModalProps {
   visible: boolean;
   onClose: () => void;
+  onRequestLink?: () => void;
+  userRole?: string;
 }
 
-const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }) => {
+const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose, onRequestLink, userRole }) => {
   const router = useRouter();
   const [accountSettingsOpen, setAccountSettingsOpen] = useState(false);
 
@@ -82,6 +84,40 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose }) => {
               <Text style={styles.settingText}>Account Settings</Text>
               <Ionicons name="chevron-forward" size={20} color="#999" />
             </TouchableOpacity>
+
+            {/* Show "Request Parent Link" only for nanny and others */}
+            {userRole && userRole !== 'mother' && userRole !== 'father' && onRequestLink && (
+              <TouchableOpacity
+                style={styles.settingItem}
+                onPress={() => {
+                  onClose();
+                  onRequestLink();
+                }}
+              >
+                <View style={styles.settingIconContainer}>
+                  <Ionicons name="link-outline" size={24} color="#A2E884" />
+                </View>
+                <Text style={styles.settingText}>Request Parent Link</Text>
+                <Ionicons name="chevron-forward" size={20} color="#999" />
+              </TouchableOpacity>
+            )}
+
+            {/* Show "Link Requests" only for parents */}
+            {userRole && (userRole === 'mother' || userRole === 'father') && onRequestLink && (
+              <TouchableOpacity
+                style={styles.settingItem}
+                onPress={() => {
+                  onClose();
+                  onRequestLink();
+                }}
+              >
+                <View style={styles.settingIconContainer}>
+                  <Ionicons name="notifications-outline" size={24} color="#A2E884" />
+                </View>
+                <Text style={styles.settingText}>Link Requests</Text>
+                <Ionicons name="chevron-forward" size={20} color="#999" />
+              </TouchableOpacity>
+            )}
 
             <TouchableOpacity style={styles.settingItem}>
               <View style={styles.settingIconContainer}>

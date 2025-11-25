@@ -1,5 +1,6 @@
 import express from 'express';
 import User from '../models/User.js';
+import LinkRequest from '../models/LinkRequest.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import auth from '../middleware/authMiddleware.js';
@@ -31,30 +32,30 @@ router.post('/register', async (req, res) => {
     console.log("newUser:", newUser);
     console.log("newUser._id:", newUser._id);
 
-    // If relatedParentEmail provided (for nanny/others), link with parent
+    // If relatedParentEmail provided (for nanny/others), create a link request instead of auto-linking
     if (relatedParentEmail) {
       try {
         const parentUser = await User.findOne({ email: relatedParentEmail });
         
-        if (parentUser) {
-          // For nanny, use relatedParentIds array (multiple parents)
-          if (actualRole === 'nanny') {
-            newUser.relatedParentIds = [parentUser._id];
-            await newUser.save();
-            console.log(`Linked nanny ${email} with parent ${relatedParentEmail}`);
-          } 
-          // For others (custom roles), use single relatedParentId
-          else {
-            newUser.relatedParentId = parentUser._id;
-            await newUser.save();
-            console.log(`Linked ${email} with parent ${relatedParentEmail}`);
-          }
+        if (parentUser && (parentUser.role === 'mother' || parentUser.role === 'father')) {
+          // Create a pending link request
+          const linkRequest = new LinkRequest({
+            requesterId: newUser._id,
+            requesterName: newUser.name,
+            requesterRole: actualRole === 'others' ? customRole : actualRole,
+            parentId: parentUser._id,
+            parentEmail: parentUser.email,
+            message: 'Sent during registration'
+          });
+          
+          await linkRequest.save();
+          console.log(`Created link request from ${email} to parent ${relatedParentEmail}`);
         } else {
-          console.warn(`Parent email ${relatedParentEmail} not found, skipping link`);
+          console.warn(`Parent email ${relatedParentEmail} not found or not a parent role, skipping link request`);
         }
       } catch (linkError) {
-        console.error('Error linking with parent:', linkError);
-        // Don't fail registration if linking fails
+        console.error('Error creating link request:', linkError);
+        // Don't fail registration if link request creation fails
       }
     }
 
@@ -167,9 +168,17 @@ router.post('/forgot-password', async (req, res) => {
     user.resetCodeExpiry = resetCodeExpiry;
     await user.save();
 
-    // In production, send email with reset code
-    // For development, log it
-    console.log(`Password reset code for ${email}: ${resetCode}`);
+    // Send email with reset code
+    try {
+      const emailService = await import('../services/emailService.js');
+      await emailService.default.sendPasswordResetCode(email, resetCode, user.name);
+      console.log(`✅ Password reset email sent to ${email}`);
+    } catch (emailError) {
+      console.error('❌ Failed to send email, but reset code saved:', emailError);
+      // Still save the code in database even if email fails
+      // Log it for development
+      console.log(`Password reset code for ${email}: ${resetCode}`);
+    }
 
     res.json({ message: 'If an account exists with this email, a reset code has been sent.' });
   } catch (error) {
@@ -364,32 +373,69 @@ router.post('/link-parent', auth, async (req, res) => {
       }
     }
 
-    // For nanny: add to relatedParentIds array
-    if (currentUser.role === 'nanny') {
+    // For nanny/others linking with parent: create link request instead of auto-linking
+    if (currentUser.role === 'nanny' || (currentUser.role !== 'mother' && currentUser.role !== 'father')) {
+      // Check if already linked
+      if (currentUser.relatedParentIds && currentUser.relatedParentIds.some(id => id.toString() === relatedParent._id.toString())) {
+        return res.status(400).json({ message: 'Already linked with this parent' });
+      }
+      
+      // Check if there's already a pending request
+      const existingRequest = await LinkRequest.findOne({
+        requesterId: currentUser._id,
+        parentId: relatedParent._id,
+        status: 'pending'
+      });
+      
+      if (existingRequest) {
+        return res.status(400).json({ message: 'You already have a pending request to this parent' });
+      }
+      
+      // Create link request
+      const linkRequest = new LinkRequest({
+        requesterId: currentUser._id,
+        requesterName: currentUser.name,
+        requesterRole: currentUser.role === 'others' ? currentUser.customRole : currentUser.role,
+        parentId: relatedParent._id,
+        parentEmail: relatedParent.email,
+        message: ''
+      });
+      
+      await linkRequest.save();
+      console.log(`Created link request from ${currentUser.email} to ${relatedParent.email}`);
+      
+      return res.json({ 
+        message: 'Link request sent to parent. They will be notified and can accept or decline.',
+        requestSent: true
+      });
+    }
+    // For mother/father: direct bidirectional link (no request needed) using relatedParentIds array
+    else {
+      // Check if already linked
+      if (currentUser.relatedParentIds && currentUser.relatedParentIds.some(id => id.toString() === relatedParent._id.toString())) {
+        return res.status(400).json({ message: 'Already linked with this user' });
+      }
+      
+      // Add to current user's relatedParentIds
       if (!currentUser.relatedParentIds) {
         currentUser.relatedParentIds = [];
       }
-      // Check if already linked
-      if (currentUser.relatedParentIds.some(id => id.toString() === relatedParent._id.toString())) {
-        return res.status(400).json({ message: 'Already linked with this parent' });
-      }
       currentUser.relatedParentIds.push(relatedParent._id);
       await currentUser.save();
-      console.log(`Added parent ${relatedParent.email} to nanny ${currentUser.email}`);
-    }
-    // For mother/father: bidirectional link
-    else {
-      currentUser.relatedParentId = relatedParent._id;
-      await currentUser.save();
-      relatedParent.relatedParentId = currentUser._id;
+      
+      // Add to related parent's relatedParentIds (bidirectional)
+      if (!relatedParent.relatedParentIds) {
+        relatedParent.relatedParentIds = [];
+      }
+      relatedParent.relatedParentIds.push(currentUser._id);
       await relatedParent.save();
+      
+      console.log(`[Direct Link] Linked ${currentUser.email} with ${relatedParent.email} (parent direct link)`);
+      res.json({ 
+        message: 'Parents linked successfully',
+        relatedParentName: relatedParent.name
+      });
     }
-
-    console.log(`Linked ${currentUser.email} with ${relatedParent.email}`);
-    res.json({ 
-      message: 'Parents linked successfully',
-      relatedParentName: relatedParent.name
-    });
   } catch (error) {
     console.error('Link parent error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -419,7 +465,34 @@ router.get('/linked-parent', auth, async (req, res) => {
       console.log(`Nanny has ${parents.length} linked parents`);
       res.json({ relatedParents: parents, isNanny: true });
     }
-    // For mother/father/others: return single linked parent
+    // For mother/father: return array of linked users (nannies, partners, etc.) AND old single link if exists
+    else if (currentUser.role === 'mother' || currentUser.role === 'father') {
+      console.log(`[Linked Parent] Parent ${currentUser.email} relatedParentIds:`, currentUser.relatedParentIds);
+      console.log(`[Linked Parent] Parent ${currentUser.email} relatedParentId:`, currentUser.relatedParentId);
+      
+      const linkedUsers = (currentUser.relatedParentIds || []).map(user => ({
+        id: user._id,
+        name: user.name,
+        email: user.email
+      }));
+      console.log(`[Linked Parent] Parent has ${linkedUsers.length} linked users:`, linkedUsers);
+      
+      // Also check for old single parent link
+      const response = {
+        relatedParents: linkedUsers,
+        isNanny: true // Use same structure as nanny to show list
+      };
+      
+      // Add old single link if exists
+      if (currentUser.relatedParentId) {
+        response.relatedParentName = currentUser.relatedParentId.name;
+        response.relatedParentEmail = currentUser.relatedParentId.email;
+      }
+      
+      console.log(`[Linked Parent] Sending response:`, response);
+      res.json(response);
+    }
+    // For others: return single linked parent if exists
     else if (currentUser.relatedParentId) {
       console.log(`User has single linked parent: ${currentUser.relatedParentId.name}`);
       res.json({ 
@@ -427,7 +500,18 @@ router.get('/linked-parent', auth, async (req, res) => {
         relatedParentEmail: currentUser.relatedParentId.email,
         isNanny: false
       });
-    } else {
+    } 
+    // For others with relatedParentIds array
+    else if (currentUser.relatedParentIds && currentUser.relatedParentIds.length > 0) {
+      const parents = currentUser.relatedParentIds.map(parent => ({
+        id: parent._id,
+        name: parent.name,
+        email: parent.email
+      }));
+      console.log(`User (others) has ${parents.length} linked parents`);
+      res.json({ relatedParents: parents, isNanny: true });
+    }
+    else {
       console.log(`User has no linked parents`);
       res.json({ relatedParents: [], isNanny: false });
     }
@@ -440,47 +524,62 @@ router.get('/linked-parent', auth, async (req, res) => {
 // Unlink parent (authenticated)
 router.post('/unlink-parent', auth, async (req, res) => {
   try {
-    const { parentId } = req.body; // For nanny: specify which parent to unlink
+    const { parentId } = req.body; // Specify which user to unlink from relatedParentIds array
     const currentUser = await User.findById(req.user.userId);
     
     if (!currentUser) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // For nanny: remove specific parent from array
-    if (currentUser.role === 'nanny') {
-      if (!parentId) {
-        return res.status(400).json({ message: 'Parent ID required for unlinking' });
-      }
-      if (!currentUser.relatedParentIds || currentUser.relatedParentIds.length === 0) {
-        return res.status(400).json({ message: 'No linked parents to unlink' });
+    console.log(`[Unlink] User ${currentUser.email} wants to unlink from ${parentId}`);
+
+    // Handle unlinking from relatedParentIds array (for everyone using the new system)
+    if (parentId && currentUser.relatedParentIds && currentUser.relatedParentIds.length > 0) {
+      // Check if the parent exists in the array
+      const parentExists = currentUser.relatedParentIds.some(id => id.toString() === parentId.toString());
+      
+      if (!parentExists) {
+        return res.status(400).json({ message: 'This user is not in your linked list' });
       }
       
+      // Remove from current user's array
       currentUser.relatedParentIds = currentUser.relatedParentIds.filter(
         id => id.toString() !== parentId.toString()
       );
       await currentUser.save();
-      console.log(`Removed parent ${parentId} from nanny ${currentUser.email}`);
-    }
-    // For mother/father/others: bidirectional unlink
-    else {
-      if (!currentUser.relatedParentId) {
-        return res.status(400).json({ message: 'No linked parent to unlink' });
+      console.log(`[Unlink] Removed ${parentId} from ${currentUser.email}'s relatedParentIds`);
+      
+      // Also remove current user from the other user's array (bidirectional)
+      const otherUser = await User.findById(parentId);
+      if (otherUser && otherUser.relatedParentIds && otherUser.relatedParentIds.length > 0) {
+        otherUser.relatedParentIds = otherUser.relatedParentIds.filter(
+          id => id.toString() !== currentUser._id.toString()
+        );
+        await otherUser.save();
+        console.log(`[Unlink] Removed ${currentUser._id} from ${otherUser.email}'s relatedParentIds`);
       }
-
+      
+      res.json({ message: 'User unlinked successfully' });
+    }
+    // Handle old single parent link (relatedParentId)
+    else if (!parentId && currentUser.relatedParentId) {
       const relatedParent = await User.findById(currentUser.relatedParentId);
       
       currentUser.relatedParentId = undefined;
       await currentUser.save();
+      console.log(`[Unlink] Removed relatedParentId from ${currentUser.email}`);
 
       if (relatedParent) {
         relatedParent.relatedParentId = undefined;
         await relatedParent.save();
-        console.log(`Unlinked ${currentUser.email} from ${relatedParent.email}`);
+        console.log(`[Unlink] Unlinked ${currentUser.email} from ${relatedParent.email} (old system)`);
       }
+      
+      res.json({ message: 'User unlinked successfully' });
     }
-
-    res.json({ message: 'Parent unlinked successfully' });
+    else {
+      return res.status(400).json({ message: 'No linked users to unlink' });
+    }
   } catch (error) {
     console.error('Unlink parent error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });

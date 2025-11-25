@@ -27,7 +27,7 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const API_URL = "http://192.168.1.10:5000/api";
+  const API_URL = "http://192.168.1.16:5000/api";
 
   // Custom fetch with timeout
   const fetchWithTimeout = async (url: string, options: RequestInit, timeout = 30000) => {
