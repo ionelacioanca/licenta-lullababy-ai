@@ -167,9 +167,17 @@ router.post('/forgot-password', async (req, res) => {
     user.resetCodeExpiry = resetCodeExpiry;
     await user.save();
 
-    // In production, send email with reset code
-    // For development, log it
-    console.log(`Password reset code for ${email}: ${resetCode}`);
+    // Send email with reset code
+    try {
+      const emailService = await import('../services/emailService.js');
+      await emailService.default.sendPasswordResetCode(email, resetCode, user.name);
+      console.log(`✅ Password reset email sent to ${email}`);
+    } catch (emailError) {
+      console.error('❌ Failed to send email, but reset code saved:', emailError);
+      // Still save the code in database even if email fails
+      // Log it for development
+      console.log(`Password reset code for ${email}: ${resetCode}`);
+    }
 
     res.json({ message: 'If an account exists with this email, a reset code has been sent.' });
   } catch (error) {
