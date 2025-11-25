@@ -16,10 +16,13 @@ import ChatbotModal from "../components/ChatbotModal";
 import SettingsModal from "../components/SettingsModal";
 import LinkRequestNotifications from "../components/LinkRequestNotifications";
 import SendLinkRequestModal from "../components/SendLinkRequestModal";
+import MessagesInbox from "../components/MessagesInbox";
+import ConversationView from "../components/ConversationView";
 import { getGrowthRecords, getLatestGrowthRecord, addGrowthRecord, GrowthRecord } from "../services/growthService";
 import { getUpcomingEvents, CalendarEvent, generateVaccinationSchedule, generateMilestoneSchedule } from "../services/calendarService";
 import { getRecentEntries, JournalEntry } from "../services/journalService";
 import { getPendingRequestsCount } from "../services/linkRequestService";
+import { getUnreadCount } from "../services/messageService";
 
 const DashboardPage: React.FC = () => {
   const router = useRouter();
@@ -48,6 +51,11 @@ const DashboardPage: React.FC = () => {
   const [sendLinkRequestOpen, setSendLinkRequestOpen] = useState(false);
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [messagesInboxOpen, setMessagesInboxOpen] = useState(false);
+  const [conversationOpen, setConversationOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState("");
+  const [selectedUserName, setSelectedUserName] = useState("");
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
 
   const loadPendingRequestsCount = async () => {
     try {
@@ -56,6 +64,28 @@ const DashboardPage: React.FC = () => {
     } catch (error) {
       console.log("Error loading pending requests count:", error);
     }
+  };
+
+  const loadUnreadMessagesCount = async () => {
+    const result = await getUnreadCount();
+    if (result.success && result.count !== undefined) {
+      setUnreadMessagesCount(result.count);
+    }
+  };
+
+  const handleSelectConversation = (userId: string, userName: string) => {
+    setSelectedUserId(userId);
+    setSelectedUserName(userName);
+    setConversationOpen(true);
+  };
+
+  const handleMessageSent = () => {
+    loadUnreadMessagesCount();
+  };
+
+  const handleConversationClose = () => {
+    setConversationOpen(false);
+    loadUnreadMessagesCount();
   };
 
   const loadBabyForParent = async () => {
@@ -86,6 +116,8 @@ const DashboardPage: React.FC = () => {
         if (userInfo.role === 'mother' || userInfo.role === 'father') {
           loadPendingRequestsCount();
         }
+        // Load unread messages count for all users
+        loadUnreadMessagesCount();
       }
     } catch (error) {
       console.error("Error loading user info:", error);
@@ -275,8 +307,10 @@ const DashboardPage: React.FC = () => {
         avatarColor={avatarColor}
         avatarImage={avatarImage}
         onEditProfile={() => router.push("/babiesList")}
-        onMessages={() => setLinkRequestsOpen(true)}
-        unreadMessages={pendingRequestsCount}
+        onNotifications={() => setLinkRequestsOpen(true)}
+        onMessages={() => setMessagesInboxOpen(true)}
+        unreadNotifications={pendingRequestsCount}
+        unreadMessages={unreadMessagesCount}
       />
       
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -619,6 +653,20 @@ const DashboardPage: React.FC = () => {
         onSuccess={() => {
           Alert.alert('Success', 'Link request sent successfully!');
         }}
+      />
+
+      <MessagesInbox
+        visible={messagesInboxOpen}
+        onClose={() => setMessagesInboxOpen(false)}
+        onSelectConversation={handleSelectConversation}
+      />
+
+      <ConversationView
+        visible={conversationOpen}
+        onClose={handleConversationClose}
+        userId={selectedUserId}
+        userName={selectedUserName}
+        onMessageSent={handleMessageSent}
       />
 
       <Footer 
