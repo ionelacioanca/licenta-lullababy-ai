@@ -352,11 +352,11 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   myMessageBubble: {
-    backgroundColor: "#E8F5E9",
+    backgroundColor: "#D4F1C5",
     borderBottomRightRadius: 4,
   },
   theirMessageBubble: {
-    backgroundColor: "#A2E884",
+    backgroundColor: "#FFF3E0",
     borderBottomLeftRadius: 4,
   },
   messageText: {
@@ -364,20 +364,20 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   myMessageText: {
-    color: "#444",
+    color: "#333",
   },
   theirMessageText: {
-    color: "#FFF",
+    color: "#333",
   },
   timeText: {
     fontSize: 10,
     marginTop: 4,
   },
   myTimeText: {
-    color: "#999",
+    color: "#666",
   },
   theirTimeText: {
-    color: "rgba(255, 255, 255, 0.7)",
+    color: "#666",
   },
   inputContainer: {
     flexDirection: "row",
