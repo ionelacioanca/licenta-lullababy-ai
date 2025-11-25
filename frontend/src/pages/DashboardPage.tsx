@@ -54,7 +54,7 @@ const DashboardPage: React.FC = () => {
     const token = await AsyncStorage.getItem("token");
 
     try {
-  const response = await fetch(`http://192.168.1.10:5000/api/baby/parent/${parentId}`, {
+  const response = await fetch(`http://192.168.1.16:5000/api/baby/parent/${parentId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -93,7 +93,7 @@ const DashboardPage: React.FC = () => {
           
           // Load avatar data from backend
           setAvatarColor(baby.avatarColor || "#00CFFF");
-          setAvatarImage(baby.avatarImage ? `http://192.168.1.10:5000${baby.avatarImage}` : null);
+          setAvatarImage(baby.avatarImage ? `http://192.168.1.16:5000${baby.avatarImage}` : null);
           
           // Store birth data
           console.log("Baby birth data - birthWeight:", baby.birthWeight, "birthLength:", baby.birthLength, "birthDate:", baby.birthDate);
@@ -489,7 +489,7 @@ const DashboardPage: React.FC = () => {
                       </View>
                       {memory.photos.length > 0 && (
                         <Image
-                          source={{ uri: `http://192.168.1.10:5000${memory.photos[0]}` }}
+                          source={{ uri: `http://192.168.1.16:5000${memory.photos[0]}` }}
                           style={styles.memoryThumbnail}
                         />
                       )}
