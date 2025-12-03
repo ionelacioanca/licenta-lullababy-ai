@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useTheme } from "../contexts/ThemeContext";
 import {
   getMessagesWithUser,
   sendMessage,
@@ -41,6 +42,7 @@ export default function ConversationView({
   const [sending, setSending] = useState(false);
   const [currentUserId, setCurrentUserId] = useState("");
   const flatListRef = useRef<FlatList>(null);
+  const { theme } = useTheme();
 
   useEffect(() => {
     loadCurrentUser();
@@ -121,7 +123,7 @@ export default function ConversationView({
       <View>
         {showDate && (
           <View style={styles.dateSeparator}>
-            <Text style={styles.dateText}>
+            <Text style={[styles.dateText, { color: theme.textTertiary, backgroundColor: theme.surface }]}>
               {new Date(item.createdAt).toLocaleDateString("en-US", {
                 month: "short",
                 day: "numeric",
@@ -139,13 +141,13 @@ export default function ConversationView({
           <View
             style={[
               styles.messageBubble,
-              isMyMessage ? styles.myMessageBubble : styles.theirMessageBubble,
+              isMyMessage ? { backgroundColor: theme.userBubble } : { backgroundColor: theme.otherBubble },
             ]}
           >
             <Text
               style={[
                 styles.messageText,
-                isMyMessage ? styles.myMessageText : styles.theirMessageText,
+                { color: theme.text },
               ]}
             >
               {item.content}
@@ -153,7 +155,7 @@ export default function ConversationView({
             <Text
               style={[
                 styles.timeText,
-                isMyMessage ? styles.myTimeText : styles.theirTimeText,
+                { color: theme.textTertiary },
               ]}
             >
               {formatTime(item.createdAt)}
@@ -166,24 +168,24 @@ export default function ConversationView({
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.surface }]}>
         <KeyboardAvoidingView
-          style={styles.container}
+          style={[styles.container, { backgroundColor: theme.background }]}
           behavior={Platform.OS === "ios" ? "padding" : undefined}
           keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
         >
           {/* Header */}
-          <View style={styles.header}>
+          <View style={[styles.header, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
           <TouchableOpacity onPress={onClose} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#444" />
+            <Ionicons name="arrow-back" size={24} color={theme.icon} />
           </TouchableOpacity>
           <View style={styles.headerInfo}>
-            <View style={styles.headerAvatar}>
+            <View style={[styles.headerAvatar, { backgroundColor: theme.primary }]}>
               <Text style={styles.headerAvatarText}>
                 {userName.charAt(0).toUpperCase()}
               </Text>
             </View>
-            <Text style={styles.headerTitle}>{userName}</Text>
+            <Text style={[styles.headerTitle, { color: theme.text }]}>{userName}</Text>
           </View>
           <View style={styles.placeholder} />
         </View>
@@ -191,13 +193,13 @@ export default function ConversationView({
         {/* Messages */}
         {loading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#A2E884" />
+            <ActivityIndicator size="large" color={theme.primary} />
           </View>
         ) : messages.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Ionicons name="chatbubbles-outline" size={64} color="#CCC" />
-            <Text style={styles.emptyText}>No messages yet</Text>
-            <Text style={styles.emptySubtext}>
+            <Ionicons name="chatbubbles-outline" size={64} color={theme.textTertiary} />
+            <Text style={[styles.emptyText, { color: theme.textSecondary }]}>No messages yet</Text>
+            <Text style={[styles.emptySubtext, { color: theme.textTertiary }]}>
               Start the conversation with {userName}
             </Text>
           </View>
@@ -215,11 +217,11 @@ export default function ConversationView({
         )}
 
         {/* Input */}
-        <View style={styles.inputContainer}>
+        <View style={[styles.inputContainer, { backgroundColor: theme.surface, borderTopColor: theme.border }]}>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { backgroundColor: theme.card, color: theme.text }]}
             placeholder="Type a message..."
-            placeholderTextColor="#AAA"
+            placeholderTextColor={theme.textTertiary}
             value={newMessage}
             onChangeText={setNewMessage}
             multiline
@@ -228,6 +230,7 @@ export default function ConversationView({
           <TouchableOpacity
             style={[
               styles.sendButton,
+              { backgroundColor: theme.primary },
               (!newMessage.trim() || sending) && styles.sendButtonDisabled,
             ]}
             onPress={handleSendMessage}

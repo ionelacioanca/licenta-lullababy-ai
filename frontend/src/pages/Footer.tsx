@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { useTheme } from "../contexts/ThemeContext";
 
 const routeMap: Record<"Home" | "Calendar" | "Jurnal" | "Profile" | "Settings", string> = {
   Home: "/dashboard",
@@ -32,8 +33,10 @@ const tabs: { name: keyof typeof routeMap; icon: IconName }[] = [
   { name: "Jurnal", icon: "book-outline" },
   { name: "Settings", icon: "settings-outline" },
 ];
+  const { theme } = useTheme();
+  
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.surface, borderTopColor: theme.border }]}>
       {tabs.map((tab) => (
         <TouchableOpacity
           key={tab.name}
@@ -49,12 +52,13 @@ const tabs: { name: keyof typeof routeMap; icon: IconName }[] = [
           <Ionicons
             name={tab.icon}
             size={24}
-            color={active === tab.name ? "#A2E884" : "#66788A"}
+            color={active === tab.name ? theme.primary : theme.iconInactive}
           />
           <Text
             style={[
               styles.label,
-              active === tab.name && styles.labelActive,
+              { color: theme.textSecondary },
+              active === tab.name && { color: theme.primary },
             ]}
           >
             {tab.name}

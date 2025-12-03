@@ -11,6 +11,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Audio } from "expo-av";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Sound, getDefaultSounds } from "../services/soundService";
+import { useTheme } from "../contexts/ThemeContext";
 
 type SoundPlayerProps = {
   onOpenLibrary: () => void;
@@ -180,26 +181,28 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
     }
   };
 
+  const { theme } = useTheme();
+
   if (!currentSound) {
     return (
-      <TouchableOpacity style={styles.card} activeOpacity={0.7} onPress={onOpenLibrary}>
+      <TouchableOpacity style={[styles.card, { backgroundColor: theme.card }]} activeOpacity={0.7} onPress={onOpenLibrary}>
         <View style={styles.emptyState}>
-          <Ionicons name="musical-notes-outline" size={48} color="#ccc" />
-          <Text style={styles.emptyText}>No sound selected</Text>
-          <Text style={styles.emptySubtext}>Tap to browse library</Text>
+          <Ionicons name="musical-notes-outline" size={48} color={theme.textTertiary} />
+          <Text style={[styles.emptyText, { color: theme.textSecondary }]}>No sound selected</Text>
+          <Text style={[styles.emptySubtext, { color: theme.textTertiary }]}>Tap to browse library</Text>
         </View>
       </TouchableOpacity>
     );
   }
 
   return (
-    <TouchableOpacity style={styles.card} activeOpacity={0.7} onPress={onOpenLibrary}>
+    <TouchableOpacity style={[styles.card, { backgroundColor: theme.card }]} activeOpacity={0.7} onPress={onOpenLibrary}>
       <View style={styles.header}>
         <View style={styles.titleRow}>
-          <Ionicons name="musical-notes" size={18} color="#A2E884" />
-          <Text style={styles.headerTitle}>Lullaby Player</Text>
+          <Ionicons name="musical-notes" size={18} color={theme.primary} />
+          <Text style={[styles.headerTitle, { color: theme.text }]}>Lullaby Player</Text>
         </View>
-        <Ionicons name="chevron-forward" size={20} color="#999" />
+        <Ionicons name="chevron-forward" size={20} color={theme.textTertiary} />
       </View>
 
       <View style={styles.content}>
@@ -211,10 +214,10 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
             defaultSource={require("../../assets/images/partial-react-logo.png")}
           />
           <View style={styles.textInfo}>
-            <Text style={styles.soundTitle} numberOfLines={1}>
+            <Text style={[styles.soundTitle, { color: theme.text }]} numberOfLines={1}>
               {currentSound.title}
             </Text>
-            <Text style={styles.soundArtist} numberOfLines={1}>
+            <Text style={[styles.soundArtist, { color: theme.textSecondary }]} numberOfLines={1}>
               {currentSound.artist}
             </Text>
           </View>
@@ -223,17 +226,17 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
         {/* Controls */}
         <View style={styles.controls}>
           <TouchableOpacity
-            style={styles.volumeBtn}
+            style={[styles.volumeBtn, { backgroundColor: theme.surface }]}
             onPress={(e) => {
               e.stopPropagation();
               handleVolumeDown();
             }}
           >
-            <Ionicons name="volume-low" size={20} color="#666" />
+            <Ionicons name="volume-low" size={20} color={theme.textSecondary} />
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.playBtn, isPlaying && styles.playBtnActive]}
+            style={[styles.playBtn, { backgroundColor: theme.primary }, isPlaying && styles.playBtnActive]}
             onPress={(e) => {
               e.stopPropagation();
               togglePlayPause();
@@ -252,24 +255,24 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.volumeBtn}
+            style={[styles.volumeBtn, { backgroundColor: theme.surface }]}
             onPress={(e) => {
               e.stopPropagation();
               handleVolumeUp();
             }}
           >
-            <Ionicons name="volume-high" size={20} color="#666" />
+            <Ionicons name="volume-high" size={20} color={theme.textSecondary} />
           </TouchableOpacity>
         </View>
 
         {/* Volume Indicator */}
         <View style={styles.volumeIndicator}>
-          <View style={styles.volumeBarBg}>
+          <View style={[styles.volumeBarBg, { backgroundColor: theme.border }]}>
             <View
-              style={[styles.volumeBarFill, { width: `${volume * 100}%` }]}
+              style={[styles.volumeBarFill, { width: `${volume * 100}%`, backgroundColor: theme.primary }]}
             />
           </View>
-          <Text style={styles.volumeText}>{Math.round(volume * 100)}%</Text>
+          <Text style={[styles.volumeText, { color: theme.textSecondary }]}>{Math.round(volume * 100)}%</Text>
         </View>
       </View>
     </TouchableOpacity>

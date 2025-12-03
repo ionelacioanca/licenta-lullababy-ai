@@ -20,6 +20,7 @@ import {
   toggleEventCompleted,
   deleteCalendarEvent,
 } from '../services/calendarService';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface CalendarModalProps {
   visible: boolean;
@@ -47,6 +48,7 @@ const EVENT_TYPE_ICONS = {
 };
 
 const CalendarModal: React.FC<CalendarModalProps> = ({ visible, onClose, babyId, onEventsUpdate }) => {
+  const { theme } = useTheme();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -393,24 +395,24 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ visible, onClose, babyId,
   return (
     <Modal visible={visible} transparent animationType="slide">
       <View style={styles.overlay}>
-        <View style={styles.modalContainer}>
-          <View style={styles.header}>
+        <View style={[styles.modalContainer, { backgroundColor: theme.background }]}>
+          <View style={[styles.header, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Ionicons name="close" size={28} color="#333" />
+              <Ionicons name="close" size={28} color={theme.icon} />
             </TouchableOpacity>
-            <Text style={styles.title}>Calendar</Text>
+            <Text style={[styles.title, { color: theme.text }]}>Calendar</Text>
             <View style={styles.headerButton} />
           </View>
 
-          <View style={styles.monthHeader}>
+          <View style={[styles.monthHeader, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
             <TouchableOpacity onPress={() => changeMonth(-1)} style={styles.monthButton}>
-              <Ionicons name="chevron-back" size={24} color="#333" />
+              <Ionicons name="chevron-back" size={24} color={theme.icon} />
             </TouchableOpacity>
-            <Text style={styles.monthText}>
+            <Text style={[styles.monthText, { color: theme.text }]}>
               {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
             </Text>
             <TouchableOpacity onPress={() => changeMonth(1)} style={styles.monthButton}>
-              <Ionicons name="chevron-forward" size={24} color="#333" />
+              <Ionicons name="chevron-forward" size={24} color={theme.icon} />
             </TouchableOpacity>
           </View>
 
@@ -454,7 +456,7 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ visible, onClose, babyId,
               />
               <KeyboardAvoidingView 
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                style={styles.addForm}
+                style={[styles.addForm, { backgroundColor: theme.card }]}
               >
                 <ScrollView 
                   keyboardShouldPersistTaps="handled"
@@ -462,7 +464,7 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ visible, onClose, babyId,
                   contentContainerStyle={styles.scrollContent}
                 >
                   <View style={styles.formHeader}>
-                    <Text style={styles.formTitle}>
+                    <Text style={[styles.formTitle, { color: theme.text }]}>
                       Add Event - {selectedDate.toLocaleDateString()}
                     </Text>
                     <TouchableOpacity 
@@ -474,24 +476,24 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ visible, onClose, babyId,
                       }}
                       style={styles.formCloseButton}
                     >
-                      <Ionicons name="close" size={24} color="#999" />
+                      <Ionicons name="close" size={24} color={theme.textSecondary} />
                     </TouchableOpacity>
                   </View>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { backgroundColor: theme.surface, color: theme.text }]}
                   placeholder="Event title"
                   value={newEventTitle}
                   onChangeText={setNewEventTitle}
-                  placeholderTextColor="#999"
+                  placeholderTextColor={theme.textTertiary}
                 />
                 <TextInput
-                  style={[styles.input, styles.textArea]}
+                  style={[styles.input, styles.textArea, { backgroundColor: theme.surface, color: theme.text }]}
                   placeholder="Description (optional)"
                   value={newEventDescription}
                   onChangeText={setNewEventDescription}
                   multiline
                   numberOfLines={3}
-                  placeholderTextColor="#999"
+                  placeholderTextColor={theme.textTertiary}
                 />
                 <View style={styles.typeSelector}>
                   {Object.keys(EVENT_TYPE_COLORS).map((type) => (

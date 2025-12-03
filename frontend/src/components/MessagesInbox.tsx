@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { getConversations, Conversation } from "../services/messageService";
+import { useTheme } from "../contexts/ThemeContext";
 
 interface MessagesInboxProps {
   visible: boolean;
@@ -25,6 +26,7 @@ export default function MessagesInbox({
 }: MessagesInboxProps) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(false);
+  const { theme } = useTheme();
 
   useEffect(() => {
     if (visible) {
@@ -59,18 +61,18 @@ export default function MessagesInbox({
 
   const renderConversation = ({ item }: { item: Conversation }) => (
     <TouchableOpacity
-      style={styles.conversationItem}
+      style={[styles.conversationItem, { backgroundColor: theme.card, borderBottomColor: theme.border }]}
       onPress={() => {
         onSelectConversation(item.userId, item.name);
         onClose();
       }}
     >
       <View style={styles.avatarContainer}>
-        <View style={[styles.avatar, { backgroundColor: "#A2E884" }]}>
+        <View style={[styles.avatar, { backgroundColor: theme.primary }]}>
           <Text style={styles.avatarText}>{item.name.charAt(0).toUpperCase()}</Text>
         </View>
         {item.unreadCount > 0 && (
-          <View style={styles.unreadBadge}>
+          <View style={[styles.unreadBadge, { backgroundColor: theme.error }]}>
             <Text style={styles.unreadBadgeText}>{item.unreadCount}</Text>
           </View>
         )}
@@ -78,9 +80,9 @@ export default function MessagesInbox({
 
       <View style={styles.conversationContent}>
         <View style={styles.conversationHeader}>
-          <Text style={styles.conversationName}>{item.name}</Text>
+          <Text style={[styles.conversationName, { color: theme.text }]}>{item.name}</Text>
           {item.lastMessage && (
-            <Text style={styles.conversationTime}>
+            <Text style={[styles.conversationTime, { color: theme.textTertiary }]}>
               {formatTime(item.lastMessage.createdAt)}
             </Text>
           )}
@@ -90,7 +92,8 @@ export default function MessagesInbox({
           <Text
             style={[
               styles.lastMessage,
-              item.unreadCount > 0 && styles.unreadMessage,
+              { color: theme.textSecondary },
+              item.unreadCount > 0 && { color: theme.text, fontWeight: '600' },
             ]}
             numberOfLines={1}
           >
@@ -98,37 +101,37 @@ export default function MessagesInbox({
             {item.lastMessage.content}
           </Text>
         ) : (
-          <Text style={styles.noMessages}>No messages yet</Text>
+          <Text style={[styles.noMessages, { color: theme.textTertiary }]}>No messages yet</Text>
         )}
       </View>
 
-      <Ionicons name="chevron-forward" size={20} color="#999" />
+      <Ionicons name="chevron-forward" size={20} color={theme.textTertiary} />
     </TouchableOpacity>
   );
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.container}>
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.surface }]}>
+        <View style={[styles.container, { backgroundColor: theme.background }]}>
           {/* Header */}
-          <View style={styles.header}>
+          <View style={[styles.header, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Ionicons name="arrow-back" size={24} color="#444" />
+              <Ionicons name="arrow-back" size={24} color={theme.icon} />
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>Messages</Text>
+            <Text style={[styles.headerTitle, { color: theme.text }]}>Messages</Text>
             <View style={styles.placeholder} />
           </View>
 
         {/* Content */}
         {loading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#A2E884" />
+            <ActivityIndicator size="large" color={theme.primary} />
           </View>
         ) : conversations.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Ionicons name="mail-outline" size={64} color="#CCC" />
-            <Text style={styles.emptyText}>No conversations yet</Text>
-            <Text style={styles.emptySubtext}>
+            <Ionicons name="mail-outline" size={64} color={theme.textTertiary} />
+            <Text style={[styles.emptyText, { color: theme.textSecondary }]}>No conversations yet</Text>
+            <Text style={[styles.emptySubtext, { color: theme.textTertiary }]}>
               Messages with your linked users will appear here
             </Text>
           </View>

@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { sendLinkRequest } from '../services/linkRequestService';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface SendLinkRequestModalProps {
   visible: boolean;
@@ -23,6 +24,7 @@ export default function SendLinkRequestModal({
   onClose,
   onSuccess,
 }: SendLinkRequestModalProps) {
+  const { theme } = useTheme();
   const [parentEmail, setParentEmail] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -75,27 +77,28 @@ export default function SendLinkRequestModal({
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={handleClose}>
       <View style={styles.overlay}>
-        <View style={styles.container}>
-          <View style={styles.header}>
-            <Text style={styles.title}>Request Parent Link</Text>
+        <View style={[styles.container, { backgroundColor: theme.background }]}>
+          <View style={[styles.header, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
+            <Text style={[styles.title, { color: theme.text }]}>Request Parent Link</Text>
             <TouchableOpacity onPress={handleClose}>
-              <Ionicons name="close" size={28} color="#333" />
+              <Ionicons name="close" size={28} color={theme.icon} />
             </TouchableOpacity>
           </View>
 
           <View style={styles.content}>
-            <View style={styles.infoBox}>
-              <Ionicons name="information-circle-outline" size={24} color="#A2E884" />
-              <Text style={styles.infoText}>
+            <View style={[styles.infoBox, { backgroundColor: theme.primaryLight }]}>
+              <Ionicons name="information-circle-outline" size={24} color={theme.primary} />
+              <Text style={[styles.infoText, { color: theme.text }]}>
                 Send a link request to the parent. They will see a notification in their app and can accept or decline. Once accepted, you'll be able to view and manage their baby's information.
               </Text>
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Parent Email Address *</Text>
+              <Text style={[styles.label, { color: theme.text }]}>Parent Email Address *</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: theme.surface, color: theme.text, borderColor: theme.border }]}
                 placeholder="parent@example.com"
+                placeholderTextColor={theme.textTertiary}
                 value={parentEmail}
                 onChangeText={setParentEmail}
                 keyboardType="email-address"
@@ -106,10 +109,11 @@ export default function SendLinkRequestModal({
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Message (Optional)</Text>
+              <Text style={[styles.label, { color: theme.text }]}>Message (Optional)</Text>
               <TextInput
-                style={[styles.input, styles.textArea]}
+                style={[styles.input, styles.textArea, { backgroundColor: theme.surface, color: theme.text, borderColor: theme.border }]}
                 placeholder="Add a personal message..."
+                placeholderTextColor={theme.textTertiary}
                 value={message}
                 onChangeText={setMessage}
                 multiline
@@ -117,11 +121,11 @@ export default function SendLinkRequestModal({
                 textAlignVertical="top"
                 editable={!loading}
               />
-              <Text style={styles.characterCount}>{message.length}/200</Text>
+              <Text style={[styles.characterCount, { color: theme.textTertiary }]}>{message.length}/200</Text>
             </View>
 
             <TouchableOpacity
-              style={[styles.sendButton, loading && styles.sendButtonDisabled]}
+              style={[styles.sendButton, { backgroundColor: theme.primary }, loading && styles.sendButtonDisabled]}
               onPress={handleSend}
               disabled={loading}
             >
@@ -136,7 +140,7 @@ export default function SendLinkRequestModal({
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.cancelButton} onPress={handleClose} disabled={loading}>
-              <Text style={styles.cancelButtonText}>Cancel</Text>
+              <Text style={[styles.cancelButtonText, { color: theme.textSecondary }]}>Cancel</Text>
             </TouchableOpacity>
           </View>
         </View>

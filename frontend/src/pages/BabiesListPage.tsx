@@ -11,6 +11,7 @@ import {
 import { useRouter, useFocusEffect } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
+import { useTheme } from "../contexts/ThemeContext";
 
 interface Baby {
   _id: string;
@@ -31,6 +32,7 @@ interface BabyWithAvatar extends Baby {
 
 const BabiesListPage: React.FC = () => {
   const router = useRouter();
+  const { theme } = useTheme();
   const [babies, setBabies] = useState<BabyWithAvatar[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -53,7 +55,7 @@ const BabiesListPage: React.FC = () => {
       }
 
       const response = await fetch(
-        `http://192.168.1.16:5000/api/baby/parent/${parentId}`,
+        `http://192.168.1.20:5000/api/baby/parent/${parentId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -76,7 +78,7 @@ const BabiesListPage: React.FC = () => {
         const babiesWithAvatars = data.map((baby: any) => ({
           ...baby,
           avatarColor: baby.avatarColor || "#00CFFF",
-          avatarImage: baby.avatarImage ? `http://192.168.1.16:5000${baby.avatarImage}` : null,
+          avatarImage: baby.avatarImage ? `http://192.168.1.20:5000${baby.avatarImage}` : null,
         }));
         setBabies(babiesWithAvatars);
         console.log("Babies loaded with avatars:", babiesWithAvatars);
@@ -125,23 +127,23 @@ const BabiesListPage: React.FC = () => {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#A2E884" />
+      <View style={[styles.loadingContainer, { backgroundColor: theme.background }]}>
+        <ActivityIndicator size="large" color={theme.primary} />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#333" />
+          <Ionicons name="arrow-back" size={24} color={theme.icon} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>My Babies</Text>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>My Babies</Text>
         <TouchableOpacity onPress={handleAddChild} style={styles.addButton}>
-          <Ionicons name="person-add" size={24} color="#A2E884" />
-          <Text style={styles.addButtonText}>Add</Text>
+          <Ionicons name="person-add" size={24} color={theme.primary} />
+          <Text style={[styles.addButtonText, { color: theme.primary }]}>Add</Text>
         </TouchableOpacity>
       </View>
 
@@ -150,7 +152,7 @@ const BabiesListPage: React.FC = () => {
           babies.map((baby) => (
             <TouchableOpacity 
               key={baby._id} 
-              style={styles.babyCard}
+              style={[styles.babyCard, { backgroundColor: theme.card }]}
               onPress={() => handleSelectBaby(baby)}
               activeOpacity={0.7}
             >
@@ -166,8 +168,8 @@ const BabiesListPage: React.FC = () => {
                   )}
                 </View>
                 <View style={styles.babyDetails}>
-                  <Text style={styles.babyName}>{baby.name || "Baby"}</Text>
-                  <Text style={styles.babyAge}>
+                  <Text style={[styles.babyName, { color: theme.text }]}>{baby.name || "Baby"}</Text>
+                  <Text style={[styles.babyAge, { color: theme.textSecondary }]}>
                     {baby.birthDate ? calculateAge(baby.birthDate) : "Age unknown"}
                   </Text>
                   
@@ -179,7 +181,7 @@ const BabiesListPage: React.FC = () => {
                       handleEditProfile(baby);
                     }}
                   >
-                    <Text style={styles.editButtonText}>Edit profile</Text>
+                    <Text style={[styles.editButtonText, { color: theme.primary }]}>Edit profile</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -187,9 +189,9 @@ const BabiesListPage: React.FC = () => {
           ))
         ) : (
           <View style={styles.noChildrenContainer}>
-            <Ionicons name="person-add-outline" size={80} color="#ccc" />
-            <Text style={styles.noChildrenText}>No children profiles found</Text>
-            <TouchableOpacity style={styles.addChildButton} onPress={handleAddChild}>
+            <Ionicons name="person-add-outline" size={80} color={theme.textTertiary} />
+            <Text style={[styles.noChildrenText, { color: theme.textSecondary }]}>No children profiles found</Text>
+            <TouchableOpacity style={[styles.addChildButton, { backgroundColor: theme.primary }]} onPress={handleAddChild}>
               <Text style={styles.addChildButtonText}>Add Child Profile</Text>
             </TouchableOpacity>
           </View>

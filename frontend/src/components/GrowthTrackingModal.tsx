@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { GrowthRecord, updateGrowthRecord } from "../services/growthService";
+import { useTheme } from "../contexts/ThemeContext";
 
 type GrowthEntry = {
   date: string;
@@ -39,6 +40,7 @@ const GrowthTrackingModal: React.FC<GrowthTrackingModalProps> = ({
   birthLength,
   birthDate,
 }) => {
+  const { theme } = useTheme();
   const [showAddForm, setShowAddForm] = useState(false);
   const [newWeight, setNewWeight] = useState("");
   const [newLength, setNewLength] = useState("");
@@ -180,18 +182,18 @@ const GrowthTrackingModal: React.FC<GrowthTrackingModalProps> = ({
       onRequestClose={onClose}
     >
       <View style={styles.modalOverlay}>
-        <View style={styles.modalContainer}>
+        <View style={[styles.modalContainer, { backgroundColor: theme.background }]}>
           {/* Header */}
-          <View style={styles.header}>
+          <View style={[styles.header, { borderBottomColor: theme.border }]}>
             <View style={styles.headerLeft}>
-              <Ionicons name="fitness" size={24} color="#A2E884" />
+              <Ionicons name="fitness" size={24} color={theme.primary} />
               <View>
-                <Text style={styles.title}>Growth Tracking</Text>
-                <Text style={styles.subtitle}>Weight & Length History</Text>
+                <Text style={[styles.title, { color: theme.text }]}>Growth Tracking</Text>
+                <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Weight & Length History</Text>
               </View>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Ionicons name="close" size={28} color="#666" />
+              <Ionicons name="close" size={28} color={theme.icon} />
             </TouchableOpacity>
           </View>
 
@@ -203,54 +205,54 @@ const GrowthTrackingModal: React.FC<GrowthTrackingModalProps> = ({
             {/* Add New Measurement Button */}
             {!showAddForm && (
               <TouchableOpacity
-                style={styles.addButton}
+                style={[styles.addButton, { backgroundColor: theme.card, borderColor: theme.border }]}
                 onPress={() => setShowAddForm(true)}
               >
-                <Ionicons name="add-circle" size={24} color="#A2E884" />
-                <Text style={styles.addButtonText}>Add New Measurement</Text>
+                <Ionicons name="add-circle" size={24} color={theme.primary} />
+                <Text style={[styles.addButtonText, { color: theme.primary }]}>Add New Measurement</Text>
               </TouchableOpacity>
             )}
 
             {/* Add Form */}
             {showAddForm && (
-              <View style={styles.addForm}>
-                <Text style={styles.formTitle}>New Measurement</Text>
+              <View style={[styles.addForm, { backgroundColor: theme.card }]}>
+                <Text style={[styles.formTitle, { color: theme.text }]}>New Measurement</Text>
                 
                 <View style={styles.inputRow}>
                   <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>Weight (g)</Text>
+                    <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>Weight (g)</Text>
                     <TextInput
-                      style={styles.input}
+                      style={[styles.input, { backgroundColor: theme.surface, color: theme.text, borderColor: theme.border }]}
                       placeholder="e.g., 4500"
                       keyboardType="decimal-pad"
                       value={newWeight}
                       onChangeText={setNewWeight}
-                      placeholderTextColor="#999"
+                      placeholderTextColor={theme.textTertiary}
                     />
                   </View>
                   
                   <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>Length (cm)</Text>
+                    <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>Length (cm)</Text>
                     <TextInput
-                      style={styles.input}
+                      style={[styles.input, { backgroundColor: theme.surface, color: theme.text, borderColor: theme.border }]}
                       placeholder="e.g., 65"
                       keyboardType="decimal-pad"
                       value={newLength}
                       onChangeText={setNewLength}
-                      placeholderTextColor="#999"
+                      placeholderTextColor={theme.textTertiary}
                     />
                   </View>
                 </View>
 
                 <View style={styles.formButtons}>
                   <TouchableOpacity
-                    style={styles.cancelButton}
+                    style={[styles.cancelButton, { borderColor: theme.border }]}
                     onPress={handleCancel}
                   >
-                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                    <Text style={[styles.cancelButtonText, { color: theme.textSecondary }]}>Cancel</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={styles.saveButton}
+                    style={[styles.saveButton, { backgroundColor: theme.primary }]}
                     onPress={handleSave}
                   >
                     <Text style={styles.saveButtonText}>Save</Text>
@@ -260,7 +262,7 @@ const GrowthTrackingModal: React.FC<GrowthTrackingModalProps> = ({
             )}
 
             {/* History */}
-            <Text style={styles.historyTitle}>Measurement History</Text>
+            <Text style={[styles.historyTitle, { color: theme.text }]}>Measurement History</Text>
 
             {growthHistory.map((entry, index) => {
               const isEditing = growthRecords[index] && editingRecordId === growthRecords[index]._id;

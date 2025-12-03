@@ -82,7 +82,7 @@ const ChildProfilePage: React.FC = () => {
       
       // Handle avatar image URL construction
       const newAvatarImage = baby.avatarImage 
-        ? (baby.avatarImage.startsWith('http') ? baby.avatarImage : `http://192.168.1.16:5000${baby.avatarImage}`)
+        ? (baby.avatarImage.startsWith('http') ? baby.avatarImage : `http://192.168.1.20:5000${baby.avatarImage}`)
         : null;
       
       console.log("Setting avatar image in useEffect:", newAvatarImage);
@@ -103,7 +103,7 @@ const ChildProfilePage: React.FC = () => {
       }
 
       const response = await fetch(
-        `http://192.168.1.16:5000/api/baby/parent/${parentId}`,
+        `http://192.168.1.20:5000/api/baby/parent/${parentId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -126,7 +126,7 @@ const ChildProfilePage: React.FC = () => {
           
           // Load avatar data from backend
           setSelectedColor(selectedBaby.avatarColor || "#00CFFF");
-          setAvatarImage(selectedBaby.avatarImage ? `http://192.168.1.16:5000${selectedBaby.avatarImage}` : null);
+          setAvatarImage(selectedBaby.avatarImage ? `http://192.168.1.20:5000${selectedBaby.avatarImage}` : null);
         } else {
           console.warn("Selected baby not found in data");
         }
@@ -181,7 +181,7 @@ const ChildProfilePage: React.FC = () => {
       formData.append('avatarColor', selectedColor);
 
       const response = await fetch(
-        `http://192.168.1.16:5000/api/baby/${selectedBabyId}/avatar`,
+        `http://192.168.1.20:5000/api/baby/${selectedBabyId}/avatar`,
         {
           method: "POST",
           headers: {
@@ -199,7 +199,7 @@ const ChildProfilePage: React.FC = () => {
       console.log("Updated baby from server:", updatedBaby);
       console.log("Avatar image path:", updatedBaby.avatarImage);
       
-      const fullImageUrl = updatedBaby.avatarImage ? `http://192.168.1.16:5000${updatedBaby.avatarImage}` : null;
+      const fullImageUrl = updatedBaby.avatarImage ? `http://192.168.1.20:5000${updatedBaby.avatarImage}` : null;
       console.log("Full image URL:", fullImageUrl);
       
       setBaby(updatedBaby);
@@ -279,7 +279,7 @@ const ChildProfilePage: React.FC = () => {
       formData.append('removeImage', 'true');
       
       const response = await fetch(
-        `http://192.168.1.16:5000/api/baby/${selectedBabyId}/avatar`,
+        `http://192.168.1.20:5000/api/baby/${selectedBabyId}/avatar`,
         {
           method: "POST",
           headers: {
@@ -322,7 +322,7 @@ const ChildProfilePage: React.FC = () => {
       formData.append('removeImage', 'true'); // Remove image when selecting color
       
       const response = await fetch(
-        `http://192.168.1.16:5000/api/baby/${selectedBabyId}/avatar`,
+        `http://192.168.1.20:5000/api/baby/${selectedBabyId}/avatar`,
         {
           method: "POST",
           headers: {
@@ -382,7 +382,7 @@ const ChildProfilePage: React.FC = () => {
       };
 
       const response = await fetch(
-        `http://192.168.1.16:5000/api/baby/${selectedBabyId}`,
+        `http://192.168.1.20:5000/api/baby/${selectedBabyId}`,
         {
           method: "PUT",
           headers: {
@@ -451,7 +451,7 @@ const ChildProfilePage: React.FC = () => {
               await AsyncStorage.removeItem(`baby_image_${selectedBabyId}`);
 
               const response = await fetch(
-                `http://192.168.1.16:5000/api/baby/${selectedBabyId}`,
+                `http://192.168.1.20:5000/api/baby/${selectedBabyId}`,
                 {
                   method: "DELETE",
                   headers: {

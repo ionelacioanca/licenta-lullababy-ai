@@ -23,9 +23,11 @@ import { getUpcomingEvents, CalendarEvent, generateVaccinationSchedule, generate
 import { getRecentEntries, JournalEntry } from "../services/journalService";
 import { getPendingRequestsCount } from "../services/linkRequestService";
 import { getUnreadCount } from "../services/messageService";
+import { useTheme } from "../contexts/ThemeContext";
 
 const DashboardPage: React.FC = () => {
   const router = useRouter();
+  const { theme } = useTheme();
   const [babyName, setBabyName] = useState("");
   const [childInitial, setChildInitial] = useState("?");
   const [avatarColor, setAvatarColor] = useState("#00CFFF");
@@ -101,7 +103,7 @@ const DashboardPage: React.FC = () => {
     
     // Load user role and pending requests count
     try {
-      const userInfoResponse = await fetch(`http://192.168.1.16:5000/api/user-info`, {
+      const userInfoResponse = await fetch(`http://192.168.1.20:5000/api/user-info`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -124,7 +126,7 @@ const DashboardPage: React.FC = () => {
     }
 
     try {
-  const response = await fetch(`http://192.168.1.16:5000/api/baby/parent/${parentId}`, {
+  const response = await fetch(`http://192.168.1.20:5000/api/baby/parent/${parentId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -163,7 +165,7 @@ const DashboardPage: React.FC = () => {
           
           // Load avatar data from backend
           setAvatarColor(baby.avatarColor || "#00CFFF");
-          setAvatarImage(baby.avatarImage ? `http://192.168.1.16:5000${baby.avatarImage}` : null);
+          setAvatarImage(baby.avatarImage ? `http://192.168.1.20:5000${baby.avatarImage}` : null);
           
           // Store birth data
           console.log("Baby birth data - birthWeight:", baby.birthWeight, "birthLength:", baby.birthLength, "birthDate:", baby.birthDate);
@@ -300,7 +302,7 @@ const DashboardPage: React.FC = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       <Header
         childInitial={childInitial}
         babyName={babyName}
@@ -313,19 +315,19 @@ const DashboardPage: React.FC = () => {
         unreadMessages={unreadMessagesCount}
       />
       
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView style={[styles.content, { backgroundColor: theme.background }]} showsVerticalScrollIndicator={false}>
         <BabyMonitorStream babyName={babyName} />
         
         {/* Baby Sleep Activity */}
         <TouchableOpacity
-          style={[styles.activityCard, styles.firstCard]}
+          style={[styles.activityCard, styles.firstCard, { backgroundColor: theme.card }]}
           activeOpacity={0.7}
           onPress={() => setSleepHistoryOpen(true)}
         >
           <View style={styles.activityHeader}>
             <View style={styles.titleRow}>
-              <Ionicons name="moon" size={18} color="#A2E884" />
-              <Text style={styles.headerTitle}>Sleep Activity</Text>
+              <Ionicons name="moon" size={18} color={theme.primary} />
+              <Text style={[styles.headerTitle, { color: theme.text }]}>Sleep Activity</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color="#999" />
           </View>
@@ -374,16 +376,16 @@ const DashboardPage: React.FC = () => {
 
         {/* Growth Tracking */}
         <TouchableOpacity
-          style={[styles.activityCard, { marginTop: 20 }]}
+          style={[styles.activityCard, { marginTop: 20, backgroundColor: theme.card }]}
           activeOpacity={0.7}
           onPress={() => setGrowthTrackingOpen(true)}
         >
           <View style={styles.activityHeader}>
             <View style={styles.titleRow}>
-              <Ionicons name="fitness" size={18} color="#A2E884" />
-              <Text style={styles.headerTitle}>Growth Tracking</Text>
+              <Ionicons name="fitness" size={18} color={theme.primary} />
+              <Text style={[styles.headerTitle, { color: theme.text }]}>Growth Tracking</Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color="#999" />
+            <Ionicons name="chevron-forward" size={20} color={theme.textTertiary} />
           </View>
 
           <View style={styles.activityContent}>
@@ -418,14 +420,14 @@ const DashboardPage: React.FC = () => {
 
         {/* Calendar */}
         <TouchableOpacity
-          style={[styles.activityCard, { marginTop: 20 }]}
+          style={[styles.activityCard, { marginTop: 20, backgroundColor: theme.card }]}
           activeOpacity={0.7}
           onPress={() => setCalendarOpen(true)}
         >
           <View style={styles.activityHeader}>
             <View style={styles.titleRow}>
-              <Ionicons name="calendar" size={18} color="#A2E884" />
-              <Text style={styles.headerTitle}>Upcoming Events</Text>
+              <Ionicons name="calendar" size={18} color={theme.primary} />
+              <Text style={[styles.headerTitle, { color: theme.text }]}>Upcoming Events</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color="#999" />
           </View>
@@ -502,27 +504,27 @@ const DashboardPage: React.FC = () => {
             
             {!hasAutoGeneratedEvents && (
               <TouchableOpacity 
-                style={styles.generateSchedulesButton}
+                style={[styles.generateSchedulesButton, { backgroundColor: theme.card, borderColor: theme.primary }]}
                 onPress={handleGenerateSchedules}
                 activeOpacity={0.7}
               >
-                <Ionicons name="medical" size={18} color="#A2E884" />
-                <Text style={styles.generateSchedulesText}>Generate Schedules</Text>
+                <Ionicons name="medical" size={18} color={theme.primary} />
+                <Text style={[styles.generateSchedulesText, { color: theme.primary }]}>Generate Schedules</Text>
               </TouchableOpacity>
             )}
           </View>
         </TouchableOpacity>
 
-        {/* Recent Memories */}
+        {/* Journal / Memories */}
         <TouchableOpacity
-          style={[styles.activityCard, { marginTop: 20 }]}
+          style={[styles.activityCard, { marginTop: 20, backgroundColor: theme.card }]}
           activeOpacity={0.7}
-          onPress={() => router.push("/jurnal")}
+          onPress={() => router.push('/jurnal')}
         >
           <View style={styles.activityHeader}>
             <View style={styles.titleRow}>
-              <Ionicons name="book" size={18} color="#A2E884" />
-              <Text style={styles.headerTitle}>Recent Memories</Text>
+              <Ionicons name="book" size={18} color={theme.primary} />
+              <Text style={[styles.headerTitle, { color: theme.text }]}>Memories</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color="#999" />
           </View>
@@ -561,7 +563,7 @@ const DashboardPage: React.FC = () => {
                       </View>
                       {memory.photos.length > 0 && (
                         <Image
-                          source={{ uri: `http://192.168.1.16:5000${memory.photos[0]}` }}
+                          source={{ uri: `http://192.168.1.20:5000${memory.photos[0]}` }}
                           style={styles.memoryThumbnail}
                         />
                       )}
