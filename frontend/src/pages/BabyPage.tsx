@@ -14,8 +14,10 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import DropDownPicker from "react-native-dropdown-picker";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { useRouter } from "expo-router";
+import { useTheme } from "../contexts/ThemeContext";
 
 const BabyDetailsPage: React.FC = () => {
+  const { theme } = useTheme();
   const [parentName, setParentName] = useState("");
 
   useEffect(() => {
@@ -113,7 +115,7 @@ const BabyDetailsPage: React.FC = () => {
 
     try {
       console.log("👉 Trimitem parentId:", parentId);
-  const response = await fetch("http://192.168.1.16:5000/api/babyDetails", {
+  const response = await fetch("http://192.168.1.20:5000/api/babyDetails", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -155,23 +157,23 @@ const BabyDetailsPage: React.FC = () => {
 
   return (
     <KeyboardAwareScrollView
-      contentContainerStyle={styles.container}
+      contentContainerStyle={[styles.container, { backgroundColor: theme.background }]}
       keyboardShouldPersistTaps="handled"
       extraScrollHeight={20}
       enableOnAndroid={true}
     >
-      <Text style={styles.subheader}>Hello, {parentName}!</Text>
-      <Text style={styles.subtitle}>Tell us more about your baby.</Text>
+      <Text style={[styles.subheader, { color: theme.text }]}>Hello, {parentName}!</Text>
+      <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Tell us more about your baby.</Text>
 
       <View style={{ height: 40 }} />
 
       {/* Name */}
-      <View style={styles.inputContainer}>
-        <Ionicons name="person-outline" size={20} color="#777" style={styles.icon} />
+      <View style={[styles.inputContainer, { backgroundColor: theme.surface }]}>
+        <Ionicons name="person-outline" size={20} color={theme.textSecondary} style={styles.icon} />
         <TextInput
           placeholder="Baby's Name"
-          placeholderTextColor="#777"
-          style={styles.input}
+          placeholderTextColor={theme.textTertiary}
+          style={[styles.input, { color: theme.text }]}
           value={name}
           onChangeText={setName}
         />
@@ -182,12 +184,13 @@ const BabyDetailsPage: React.FC = () => {
       <TouchableOpacity
         style={[
           styles.sexButton,
-          sexValue === "Boy" && styles.sexButtonActive,
+          { backgroundColor: theme.surface },
+          sexValue === "Boy" && { backgroundColor: theme.primary },
         ]}
         onPress={() => setSexValue("Boy")}
       >
-        <Ionicons name="man-outline" size={20} color={sexValue === "Boy" ? "#fff" : "#333"} />
-        <Text style={[styles.sexButtonText, sexValue === "Boy" && styles.sexButtonTextActive]}>
+        <Ionicons name="man-outline" size={20} color={sexValue === "Boy" ? "#fff" : theme.text} />
+        <Text style={[styles.sexButtonText, { color: sexValue === "Boy" ? "#fff" : theme.text }]}>
           Male
         </Text>
       </TouchableOpacity>
@@ -195,12 +198,13 @@ const BabyDetailsPage: React.FC = () => {
       <TouchableOpacity
         style={[
           styles.sexButton,
-          sexValue === "Girl" && styles.sexButtonActive,
+          { backgroundColor: theme.surface },
+          sexValue === "Girl" && { backgroundColor: theme.primary },
         ]}
         onPress={() => setSexValue("Girl")}
       >
-        <Ionicons name="woman-outline" size={20} color={sexValue === "Girl" ? "#fff" : "#333"} />
-        <Text style={[styles.sexButtonText, sexValue === "Girl" && styles.sexButtonTextActive]}>
+        <Ionicons name="woman-outline" size={20} color={sexValue === "Girl" ? "#fff" : theme.text} />
+        <Text style={[styles.sexButtonText, { color: sexValue === "Girl" ? "#fff" : theme.text }]}>
           Female
         </Text>
       </TouchableOpacity>
@@ -230,9 +234,9 @@ const BabyDetailsPage: React.FC = () => {
 
       {/* Date Picker */}
       <TouchableOpacity onPress={showDatePicker}>
-        <View style={styles.inputContainer}>
-           <Ionicons name="calendar-outline" size={20} color="#777" style={styles.icon} />
-              <Text style={styles.input}>
+        <View style={[styles.inputContainer, { backgroundColor: theme.surface }]}>
+           <Ionicons name="calendar-outline" size={20} color={theme.textSecondary} style={styles.icon} />
+              <Text style={[styles.input, { color: theme.text }]}>
                 {birthDate ? formatDate(birthDate) : "Select Birth Date"}
               </Text>
         </View>
@@ -248,9 +252,9 @@ const BabyDetailsPage: React.FC = () => {
 
       {/* Time Picker */}
       <TouchableOpacity onPress={showTimePicker}>
-        <View style={styles.inputContainer}>
-          <Ionicons name="time-outline" size={20} color="#777" style={styles.icon} />
-          <Text style={styles.input}>
+        <View style={[styles.inputContainer, { backgroundColor: theme.surface }]}>
+          <Ionicons name="time-outline" size={20} color={theme.textSecondary} style={styles.icon} />
+          <Text style={[styles.input, { color: theme.text }]}>
             {birthTime ? formatTime(birthTime) : "Select Birth Time"}
           </Text>
         </View>
@@ -266,54 +270,54 @@ const BabyDetailsPage: React.FC = () => {
       />
 
       {/* Other Inputs */}
-      <View style={styles.inputContainer}>
-        <Ionicons name="fitness-outline" size={20} color="#777" style={styles.icon} />
+      <View style={[styles.inputContainer, { backgroundColor: theme.surface }]}>
+        <Ionicons name="fitness-outline" size={20} color={theme.textSecondary} style={styles.icon} />
         <TextInput
           placeholder="Birth Weight (g)"
-          placeholderTextColor="#777"
-          style={styles.input}
+          placeholderTextColor={theme.textTertiary}
+          style={[styles.input, { color: theme.text }]}
           keyboardType="numeric"
           value={birthWeight}
           onChangeText={setBirthWeight}
         />
       </View>
 
-      <View style={styles.inputContainer}>
-        <Ionicons name="body-outline" size={20} color="#777" style={styles.icon} />
+      <View style={[styles.inputContainer, { backgroundColor: theme.surface }]}>
+        <Ionicons name="body-outline" size={20} color={theme.textSecondary} style={styles.icon} />
         <TextInput
           placeholder="Birth Length (cm)"
-          placeholderTextColor="#777"
-          style={styles.input}
+          placeholderTextColor={theme.textTertiary}
+          style={[styles.input, { color: theme.text }]}
           keyboardType="numeric"
           value={birthLength}
           onChangeText={setBirthLength}
         />
       </View>
 
-      <View style={styles.inputContainer}>
-        <Ionicons name="hourglass-outline" size={20} color="#777" style={styles.icon} />
+      <View style={[styles.inputContainer, { backgroundColor: theme.surface }]}>
+        <Ionicons name="hourglass-outline" size={20} color={theme.textSecondary} style={styles.icon} />
         <TextInput
           placeholder="Gestational Weeks"
-          placeholderTextColor="#777"
-          style={styles.input}
+          placeholderTextColor={theme.textTertiary}
+          style={[styles.input, { color: theme.text }]}
           keyboardType="numeric"
           value={gestationalWeeks}
           onChangeText={setGestationalWeeks}
         />
       </View>
 
-      <View style={styles.inputContainer}>
-        <Ionicons name="alert-circle-outline" size={20} color="#777" style={styles.icon} />
+      <View style={[styles.inputContainer, { backgroundColor: theme.surface }]}>
+        <Ionicons name="alert-circle-outline" size={20} color={theme.textSecondary} style={styles.icon} />
         <TextInput
           placeholder="Known Allergies"
-          placeholderTextColor="#777"
-          style={styles.input}
+          placeholderTextColor={theme.textTertiary}
+          style={[styles.input, { color: theme.text }]}
           value={knownAllergies}
           onChangeText={setKnownAllergies}
         />
       </View>
 
-      <TouchableOpacity style={styles.button} onPress={handleSave}>
+      <TouchableOpacity style={[styles.button, { backgroundColor: theme.primary }]} onPress={handleSave}>
         <Text style={styles.buttonText}>Save Baby Details</Text>
       </TouchableOpacity>
     </KeyboardAwareScrollView>

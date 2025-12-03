@@ -18,6 +18,7 @@ import {
   CATEGORY_LABELS,
   CATEGORY_COLORS,
 } from "../services/soundService";
+import { useTheme } from "../contexts/ThemeContext";
 
 type SoundLibraryModalProps = {
   visible: boolean;
@@ -30,6 +31,7 @@ const SoundLibraryModal: React.FC<SoundLibraryModalProps> = ({
   onClose,
   onSelectSound,
 }) => {
+  const { theme } = useTheme();
   const [sounds, setSounds] = useState<Sound[]>([]);
   const [filteredSounds, setFilteredSounds] = useState<Sound[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -107,36 +109,36 @@ const SoundLibraryModal: React.FC<SoundLibraryModalProps> = ({
       transparent={true}
     >
       <View style={styles.modalOverlay}>
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: theme.background }]}>
           {/* Header */}
-          <View style={styles.header}>
+          <View style={[styles.header, { borderBottomColor: theme.border }]}>
             <View style={styles.headerLeft}>
-              <Ionicons name="musical-notes" size={24} color="#A2E884" />
+              <Ionicons name="musical-notes" size={24} color={theme.primary} />
               <View>
-                <Text style={styles.headerTitle}>Sound Library</Text>
-                <Text style={styles.headerSubtitle}>
+                <Text style={[styles.headerTitle, { color: theme.text }]}>Sound Library</Text>
+                <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>
                   {isLoading ? "Loading..." : `${filteredSounds.length} sound${filteredSounds.length !== 1 ? "s" : ""} available`}
                 </Text>
               </View>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <Ionicons name="close" size={28} color="#666" />
+              <Ionicons name="close" size={28} color={theme.icon} />
             </TouchableOpacity>
           </View>
 
         {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <Ionicons name="search" size={20} color="#999" />
+        <View style={[styles.searchContainer, { backgroundColor: theme.surface }]}>
+          <Ionicons name="search" size={20} color={theme.textSecondary} />
           <TextInput
-            style={styles.searchInput}
+            style={[styles.searchInput, { color: theme.text }]}
             placeholder="Search sounds..."
             value={searchQuery}
             onChangeText={setSearchQuery}
-            placeholderTextColor="#999"
+            placeholderTextColor={theme.textTertiary}
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => setSearchQuery("")}>
-              <Ionicons name="close-circle" size={20} color="#999" />
+              <Ionicons name="close-circle" size={20} color={theme.textSecondary} />
             </TouchableOpacity>
           )}
         </View>
@@ -151,14 +153,16 @@ const SoundLibraryModal: React.FC<SoundLibraryModalProps> = ({
           <TouchableOpacity
             style={[
               styles.categoryChip,
-              selectedCategory === null && styles.categoryChipActive,
+              { backgroundColor: theme.surface, borderColor: theme.border },
+              selectedCategory === null && { backgroundColor: theme.primary, borderColor: theme.primary },
             ]}
             onPress={() => setSelectedCategory(null)}
           >
             <Text
               style={[
                 styles.categoryChipText,
-                selectedCategory === null && styles.categoryChipTextActive,
+                { color: theme.text },
+                selectedCategory === null && { color: '#FFF' },
               ]}
             >
               All
@@ -169,15 +173,16 @@ const SoundLibraryModal: React.FC<SoundLibraryModalProps> = ({
               key={cat}
               style={[
                 styles.categoryChip,
-                selectedCategory === cat && styles.categoryChipActive,
-                { borderColor: CATEGORY_COLORS[cat] },
+                { backgroundColor: theme.surface, borderColor: CATEGORY_COLORS[cat] },
+                selectedCategory === cat && { backgroundColor: CATEGORY_COLORS[cat] },
               ]}
               onPress={() => setSelectedCategory(cat)}
             >
               <Text
                 style={[
                   styles.categoryChipText,
-                  selectedCategory === cat && styles.categoryChipTextActive,
+                  { color: theme.text },
+                  selectedCategory === cat && { color: '#FFF' },
                 ]}
               >
                 {CATEGORY_LABELS[cat]}
@@ -189,8 +194,8 @@ const SoundLibraryModal: React.FC<SoundLibraryModalProps> = ({
         {/* Sound List */}
         {isLoading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#A2E884" />
-            <Text style={styles.loadingText}>Loading sounds...</Text>
+            <ActivityIndicator size="large" color={theme.primary} />
+            <Text style={[styles.loadingText, { color: theme.textSecondary }]}>Loading sounds...</Text>
           </View>
         ) : (
           <ScrollView
@@ -200,9 +205,9 @@ const SoundLibraryModal: React.FC<SoundLibraryModalProps> = ({
           >
             {filteredSounds.length === 0 ? (
               <View style={styles.emptyState}>
-                <Ionicons name="musical-notes-outline" size={64} color="#ccc" />
-                <Text style={styles.emptyText}>No sounds found</Text>
-                <Text style={styles.emptySubtext}>
+                <Ionicons name="musical-notes-outline" size={64} color={theme.textTertiary} />
+                <Text style={[styles.emptyText, { color: theme.textSecondary }]}>No sounds found</Text>
+                <Text style={[styles.emptySubtext, { color: theme.textTertiary }]}>
                   Try adjusting your filters
                 </Text>
               </View>
@@ -210,7 +215,7 @@ const SoundLibraryModal: React.FC<SoundLibraryModalProps> = ({
               filteredSounds.map((sound) => (
                 <TouchableOpacity
                   key={sound._id}
-                  style={styles.soundCard}
+                  style={[styles.soundCard, { backgroundColor: theme.card }]}
                   onPress={() => handleSelectSound(sound)}
                 >
                   <Image
@@ -221,18 +226,18 @@ const SoundLibraryModal: React.FC<SoundLibraryModalProps> = ({
                     ]}
                   />
                   <View style={styles.soundCardContent}>
-                    <Text style={styles.soundCardTitle} numberOfLines={1}>
+                    <Text style={[styles.soundCardTitle, { color: theme.text }]} numberOfLines={1}>
                       {sound.title}
                     </Text>
-                    <Text style={styles.soundCardArtist} numberOfLines={1}>
+                    <Text style={[styles.soundCardArtist, { color: theme.textSecondary }]} numberOfLines={1}>
                       {sound.artist}
                     </Text>
-                    <Text style={styles.soundCardMeta} numberOfLines={1}>
+                    <Text style={[styles.soundCardMeta, { color: theme.textTertiary }]} numberOfLines={1}>
                       {CATEGORY_LABELS[sound.category]} •{" "}
                       {formatDuration(sound.duration)}
                     </Text>
                   </View>
-                  <Ionicons name="play-circle" size={36} color="#A2E884" />
+                  <Ionicons name="play-circle" size={36} color={theme.primary} />
                 </TouchableOpacity>
               ))
             )}

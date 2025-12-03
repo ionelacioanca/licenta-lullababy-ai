@@ -4,6 +4,7 @@ import { ThemedText } from '../../components/ThemedText';
 import { ThemedView } from '../../components/ThemedView';
 import { sendChatMessage } from '../services/chatbotService';
 import { Colors } from '../../constants/Colors';
+import { useTheme } from '../contexts/ThemeContext';
 
 const TypingDots: React.FC = () => {
   const dot1 = useRef(new Animated.Value(0)).current;
@@ -75,6 +76,7 @@ const INITIAL_SUGGESTIONS = [
 ];
 
 export const ChatbotModal: React.FC<ChatbotModalProps> = ({ visible, onClose }) => {
+  const { theme } = useTheme();
   const [messages, setMessages] = useState<MessageItem[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -124,18 +126,18 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({ visible, onClose }) 
   };
 
   const renderItem = ({ item }: { item: MessageItem }) => (
-    <View style={[styles.bubble, item.role === 'user' ? styles.userBubble : styles.botBubble]}>
-      <ThemedText style={styles.bubbleText}>{item.text}</ThemedText>
+    <View style={[styles.bubble, item.role === 'user' ? { backgroundColor: theme.userBubble } : { backgroundColor: theme.otherBubble }]}>
+      <ThemedText style={[styles.bubbleText, { color: theme.text }]}>{item.text}</ThemedText>
     </View>
   );
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="fullScreen" onRequestClose={onClose}>
-      <ThemedView style={styles.container}>
-        <View style={styles.header}>
-          <ThemedText type="title" style={styles.headerTitle}>BabyCareBuddy</ThemedText>
+      <ThemedView style={[styles.container, { backgroundColor: theme.background }]}>
+        <View style={[styles.header, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
+          <ThemedText type="title" style={[styles.headerTitle, { color: theme.text }]}>BabyCareBuddy</ThemedText>
           <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-            <ThemedText style={styles.closeText}>×</ThemedText>
+            <ThemedText style={[styles.closeText, { color: theme.text }]}>×</ThemedText>
           </TouchableOpacity>
         </View>
 
@@ -147,8 +149,8 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({ visible, onClose }) 
           {messages.length === 1 && (
             <View style={styles.suggestionsWrap}>
               {INITIAL_SUGGESTIONS.map((s) => (
-                <TouchableOpacity key={s} style={styles.suggestion} onPress={() => pickSuggestion(s)}>
-                  <ThemedText style={styles.suggestionText}>{s}</ThemedText>
+                <TouchableOpacity key={s} style={[styles.suggestion, { backgroundColor: theme.primaryLight }]} onPress={() => pickSuggestion(s)}>
+                  <ThemedText style={[styles.suggestionText, { color: theme.text }]}>{s}</ThemedText>
                 </TouchableOpacity>
               ))}
             </View>
@@ -166,22 +168,26 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({ visible, onClose }) 
 
           {loading && (
             <View style={styles.loadingRow}>
-              <TypingDots />
+              <View style={[styles.typingContainer, { backgroundColor: theme.otherBubble }]}>
+                <View style={[styles.typingDot, { backgroundColor: theme.primary }]} />
+                <View style={[styles.typingDot, { backgroundColor: theme.primary }]} />
+                <View style={[styles.typingDot, { backgroundColor: theme.primary }]} />
+              </View>
             </View>
           )}
           {error && <ThemedText style={styles.error}>{error}</ThemedText>}
 
-          <View style={styles.inputRow}>
+          <View style={[styles.inputRow, { backgroundColor: theme.surface, borderTopColor: theme.border }]}>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: theme.card, color: theme.text }]}
               placeholder="Ask something about your baby…"
               value={input}
               onChangeText={setInput}
-              placeholderTextColor="#999"
+              placeholderTextColor={theme.textTertiary}
               multiline
               maxLength={500}
             />
-            <TouchableOpacity style={[styles.sendBtn, !input.trim() && styles.sendBtnDisabled]} disabled={!input.trim() || loading} onPress={send}>
+            <TouchableOpacity style={[styles.sendBtn, { backgroundColor: theme.primary }, !input.trim() && styles.sendBtnDisabled]} disabled={!input.trim() || loading} onPress={send}>
               <ThemedText style={styles.sendText}>{loading ? '...' : 'Send'}</ThemedText>
             </TouchableOpacity>
           </View>

@@ -6,11 +6,13 @@ import {
   StyleSheet,
   Modal,
   Alert,
+  Switch,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import AccountSettingsModal from "./AccountSettingsModal";
+import { useTheme } from "../contexts/ThemeContext";
 
 interface SettingsModalProps {
   visible: boolean;
@@ -22,6 +24,7 @@ interface SettingsModalProps {
 const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose, onRequestLink, userRole }) => {
   const router = useRouter();
   const [accountSettingsOpen, setAccountSettingsOpen] = useState(false);
+  const { theme, isDark, toggleTheme } = useTheme();
 
   const handleLogout = () => {
     Alert.alert(
@@ -65,88 +68,101 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose, onReque
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
-        <View style={styles.container}>
-          <View style={styles.header}>
-            <Text style={styles.title}>Settings</Text>
+        <View style={[styles.container, { backgroundColor: theme.surface }]}>
+          <View style={[styles.header, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
+            <Text style={[styles.title, { color: theme.text }]}>Settings</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Ionicons name="close" size={28} color="#333" />
+              <Ionicons name="close" size={28} color={theme.icon} />
             </TouchableOpacity>
           </View>
 
           <View style={styles.content}>
             <TouchableOpacity
-              style={styles.settingItem}
+              style={[styles.settingItem, { backgroundColor: theme.surface }]}
               onPress={() => setAccountSettingsOpen(true)}
             >
               <View style={styles.settingIconContainer}>
-                <Ionicons name="person-outline" size={24} color="#666" />
+                <Ionicons name="person-outline" size={24} color={theme.textSecondary} />
               </View>
-              <Text style={styles.settingText}>Account Settings</Text>
-              <Ionicons name="chevron-forward" size={20} color="#999" />
+              <Text style={[styles.settingText, { color: theme.text }]}>Account Settings</Text>
+              <Ionicons name="chevron-forward" size={20} color={theme.textTertiary} />
             </TouchableOpacity>
 
             {/* Show "Request Parent Link" only for nanny and others */}
             {userRole && userRole !== 'mother' && userRole !== 'father' && onRequestLink && (
               <TouchableOpacity
-                style={styles.settingItem}
+                style={[styles.settingItem, { backgroundColor: theme.surface }]}
                 onPress={() => {
                   onClose();
                   onRequestLink();
                 }}
               >
                 <View style={styles.settingIconContainer}>
-                  <Ionicons name="link-outline" size={24} color="#A2E884" />
+                  <Ionicons name="link-outline" size={24} color={theme.primary} />
                 </View>
-                <Text style={styles.settingText}>Request Parent Link</Text>
-                <Ionicons name="chevron-forward" size={20} color="#999" />
+                <Text style={[styles.settingText, { color: theme.text }]}>Request Parent Link</Text>
+                <Ionicons name="chevron-forward" size={20} color={theme.textTertiary} />
               </TouchableOpacity>
             )}
 
             {/* Show "Link Requests" only for parents */}
             {userRole && (userRole === 'mother' || userRole === 'father') && onRequestLink && (
               <TouchableOpacity
-                style={styles.settingItem}
+                style={[styles.settingItem, { backgroundColor: theme.surface }]}
                 onPress={() => {
                   onClose();
                   onRequestLink();
                 }}
               >
                 <View style={styles.settingIconContainer}>
-                  <Ionicons name="notifications-outline" size={24} color="#A2E884" />
+                  <Ionicons name="notifications-outline" size={24} color={theme.primary} />
                 </View>
-                <Text style={styles.settingText}>Link Requests</Text>
-                <Ionicons name="chevron-forward" size={20} color="#999" />
+                <Text style={[styles.settingText, { color: theme.text }]}>Link Requests</Text>
+                <Ionicons name="chevron-forward" size={20} color={theme.textTertiary} />
               </TouchableOpacity>
             )}
 
-            <TouchableOpacity style={styles.settingItem}>
+            <View style={[styles.settingItem, { backgroundColor: theme.surface }]}>
               <View style={styles.settingIconContainer}>
-                <Ionicons name="lock-closed-outline" size={24} color="#666" />
+                <Ionicons name={isDark ? "moon" : "sunny"} size={24} color={theme.primary} />
               </View>
-              <Text style={styles.settingText}>Privacy & Security</Text>
-              <Ionicons name="chevron-forward" size={20} color="#999" />
+              <Text style={[styles.settingText, { color: theme.text }]}>Dark Mode</Text>
+              <Switch
+                value={isDark}
+                onValueChange={toggleTheme}
+                trackColor={{ false: "#E0E0E0", true: "#A2E884" }}
+                thumbColor={isDark ? "#FFF" : "#FFF"}
+              />
+            </View>
+
+            <TouchableOpacity style={[styles.settingItem, { backgroundColor: theme.surface }]}>
+              <View style={styles.settingIconContainer}>
+                <Ionicons name="lock-closed-outline" size={24} color={theme.textSecondary} />
+              </View>
+              <Text style={[styles.settingText, { color: theme.text }]}>Privacy & Security</Text>
+              <Ionicons name="chevron-forward" size={20} color={theme.textTertiary} />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.settingItem}>
+            <TouchableOpacity style={[styles.settingItem, { backgroundColor: theme.surface }]}>
               <View style={styles.settingIconContainer}>
-                <Ionicons name="help-circle-outline" size={24} color="#666" />
+                <Ionicons name="help-circle-outline" size={24} color={theme.textSecondary} />
               </View>
-              <Text style={styles.settingText}>Help & Support</Text>
-              <Ionicons name="chevron-forward" size={20} color="#999" />
+              <Text style={[styles.settingText, { color: theme.text }]}>Help & Support</Text>
+              <Ionicons name="chevron-forward" size={20} color={theme.textTertiary} />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.settingItem}>
+            <TouchableOpacity style={[styles.settingItem, { backgroundColor: theme.surface }]}>
               <View style={styles.settingIconContainer}>
-                <Ionicons name="information-circle-outline" size={24} color="#666" />
+                <Ionicons name="information-circle-outline" size={24} color={theme.textSecondary} />
               </View>
-              <Text style={styles.settingText}>About</Text>
-              <Ionicons name="chevron-forward" size={20} color="#999" />
+              <Text style={[styles.settingText, { color: theme.text }]}>About</Text>
+              <Ionicons name="chevron-forward" size={20} color={theme.textTertiary} />
             </TouchableOpacity>
 
-            <View style={styles.divider} />
+            <View style={[styles.divider, { backgroundColor: theme.border }]} />
 
             <TouchableOpacity
-              style={[styles.settingItem, styles.logoutItem]}
+              style={[styles.settingItem, styles.logoutItem, { backgroundColor: theme.surface }]}
               onPress={handleLogout}
             >
               <View style={[styles.settingIconContainer, styles.logoutIconContainer]}>

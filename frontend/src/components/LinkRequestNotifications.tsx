@@ -16,6 +16,7 @@ import {
   declineLinkRequest,
   LinkRequest,
 } from '../services/linkRequestService';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface LinkRequestNotificationsProps {
   visible: boolean;
@@ -28,6 +29,7 @@ export default function LinkRequestNotifications({
   onClose,
   onRequestProcessed,
 }: LinkRequestNotificationsProps) {
+  const { theme } = useTheme();
   const [requests, setRequests] = useState<LinkRequest[]>([]);
   const [loading, setLoading] = useState(false);
   const [processing, setProcessing] = useState<string | null>(null);
@@ -124,42 +126,42 @@ export default function LinkRequestNotifications({
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
-        <View style={styles.container}>
-          <View style={styles.header}>
-            <Text style={styles.title}>Link Requests</Text>
+        <View style={[styles.container, { backgroundColor: theme.background }]}>
+          <View style={[styles.header, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
+            <Text style={[styles.title, { color: theme.text }]}>Link Requests</Text>
             <TouchableOpacity onPress={onClose}>
-              <Ionicons name="close" size={28} color="#333" />
+              <Ionicons name="close" size={28} color={theme.icon} />
             </TouchableOpacity>
           </View>
 
           {loading ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#A2E884" />
+              <ActivityIndicator size="large" color={theme.primary} />
             </View>
           ) : requests.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <Ionicons name="notifications-off-outline" size={64} color="#CCC" />
-              <Text style={styles.emptyText}>No pending link requests</Text>
+              <Ionicons name="notifications-off-outline" size={64} color={theme.textTertiary} />
+              <Text style={[styles.emptyText, { color: theme.textSecondary }]}>No pending link requests</Text>
             </View>
           ) : (
             <ScrollView style={styles.requestsList}>
               {requests.map((request) => (
-                <View key={request._id} style={styles.requestCard}>
+                <View key={request._id} style={[styles.requestCard, { backgroundColor: theme.card }]}>
                   <View style={styles.requestHeader}>
-                    <View style={styles.iconCircle}>
-                      <Ionicons name="person-outline" size={24} color="#A2E884" />
+                    <View style={[styles.iconCircle, { backgroundColor: theme.primaryLight }]}>
+                      <Ionicons name="person-outline" size={24} color={theme.primary} />
                     </View>
                     <View style={styles.requestInfo}>
-                      <Text style={styles.requesterName}>{request.requesterName}</Text>
-                      <Text style={styles.requesterRole}>{request.requesterRole}</Text>
-                      <Text style={styles.requestTime}>{formatDate(request.createdAt)}</Text>
+                      <Text style={[styles.requesterName, { color: theme.text }]}>{request.requesterName}</Text>
+                      <Text style={[styles.requesterRole, { color: theme.textSecondary }]}>{request.requesterRole}</Text>
+                      <Text style={[styles.requestTime, { color: theme.textTertiary }]}>{formatDate(request.createdAt)}</Text>
                     </View>
                   </View>
 
                   {request.message && (
-                    <View style={styles.messageContainer}>
-                      <Text style={styles.messageLabel}>Message:</Text>
-                      <Text style={styles.messageText}>{request.message}</Text>
+                    <View style={[styles.messageContainer, { backgroundColor: theme.surface }]}>
+                      <Text style={[styles.messageLabel, { color: theme.textSecondary }]}>Message:</Text>
+                      <Text style={[styles.messageText, { color: theme.text }]}>{request.message}</Text>
                     </View>
                   )}
 

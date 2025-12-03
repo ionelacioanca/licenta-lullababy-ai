@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, TouchableOpacity, Image, StyleSheet } from "react-native";
-import { Ionicons } from "@expo/vector-icons"; // sau altă librărie de iconuri
+import { Ionicons } from "@expo/vector-icons";
+import { useTheme } from "../contexts/ThemeContext";
 
 type HeaderProps = {
   childInitial: string;
@@ -15,8 +16,10 @@ type HeaderProps = {
 };
 
 export default function Header({ childInitial,  babyName, avatarColor = "#00CFFF", avatarImage, onEditProfile, onNotifications, onMessages, unreadNotifications = 0, unreadMessages = 0 }: HeaderProps) {
+  const { theme } = useTheme();
+  
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
         <View style={styles.leftContainer}>
             <TouchableOpacity style={[styles.avatar, { backgroundColor: avatarColor }]} onPress={onEditProfile}>
                 {avatarImage ? (
@@ -25,16 +28,16 @@ export default function Header({ childInitial,  babyName, avatarColor = "#00CFFF
                   <Text style={styles.avatarText}>{childInitial}</Text>
                 )}
             </TouchableOpacity>
-            <Text style={styles.nameText}>{babyName}</Text>
+            <Text style={[styles.nameText, { color: theme.text }]}>{babyName}</Text>
         </View>
 
-      <Text style={styles.appName}>lullababy</Text>
+      <Text style={[styles.appName, { color: theme.primary }]}>lullababy</Text>
 
       {/* Right side: Notifications & Messages */}
       <View style={styles.rightContainer}>
         {/* Notifications Bell */}
         <TouchableOpacity style={styles.iconContainer} onPress={onNotifications}>
-          <Ionicons name="notifications-outline" size={24} color="#444" />
+          <Ionicons name="notifications-outline" size={24} color={theme.icon} />
           {unreadNotifications > 0 && (
             <View style={styles.badge}>
               <Text style={styles.badgeText}>{unreadNotifications}</Text>
@@ -44,7 +47,7 @@ export default function Header({ childInitial,  babyName, avatarColor = "#00CFFF
 
         {/* Messages Inbox */}
         <TouchableOpacity style={styles.iconContainer} onPress={onMessages}>
-          <Ionicons name="mail-outline" size={24} color="#444" />
+          <Ionicons name="mail-outline" size={24} color={theme.icon} />
           {unreadMessages > 0 && (
             <View style={styles.badge}>
               <Text style={styles.badgeText}>{unreadMessages}</Text>

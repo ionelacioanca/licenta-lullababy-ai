@@ -15,6 +15,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
+import { useTheme } from "../contexts/ThemeContext";
 
 interface AccountSettingsModalProps {
   visible: boolean;
@@ -26,6 +27,7 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
   onClose,
 }) => {
   const router = useRouter();
+  const { theme } = useTheme();
   const [loading, setLoading] = useState(false);
   const [userEmail, setUserEmail] = useState("");
   const [userRole, setUserRole] = useState("");
@@ -53,7 +55,7 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const [deletePassword, setDeletePassword] = useState("");
 
-  const API_URL = "http://192.168.1.16:5000/api";
+  const API_URL = "http://192.168.1.20:5000/api";
 
   useEffect(() => {
     if (visible) {
@@ -432,8 +434,8 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={0}
       >
-        <View style={styles.container}>
-          <View style={styles.header}>
+        <View style={[styles.container, { backgroundColor: theme.background }]}>
+          <View style={[styles.header, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
             <TouchableOpacity
               onPress={() => {
                 resetAllForms();
@@ -441,9 +443,9 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
               }}
               style={styles.backButton}
             >
-              <Ionicons name="arrow-back" size={24} color="#333" />
+              <Ionicons name="arrow-back" size={24} color={theme.icon} />
             </TouchableOpacity>
-            <Text style={styles.title}>Account Settings</Text>
+            <Text style={[styles.title, { color: theme.text }]}>Account Settings</Text>
             <View style={{ width: 24 }} />
           </View>
 
@@ -454,73 +456,73 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
             contentContainerStyle={{ paddingBottom: 40 }}
           >
             {/* User Info */}
-            <View style={styles.userInfoCard}>
-              <View style={styles.avatarContainer}>
-                <Ionicons name="person" size={40} color="#A2E884" />
+            <View style={[styles.userInfoCard, { backgroundColor: theme.card }]}>
+              <View style={[styles.avatarContainer, { backgroundColor: theme.primaryLight }]}>
+                <Ionicons name="person" size={40} color={theme.primary} />
               </View>
               <View style={styles.userInfo}>
-                <Text style={styles.userName}>{userName}</Text>
-                <Text style={styles.userEmail}>{userEmail}</Text>
-                <Text style={styles.userRole}>{userRole}</Text>
+                <Text style={[styles.userName, { color: theme.text }]}>{userName}</Text>
+                <Text style={[styles.userEmail, { color: theme.textSecondary }]}>{userEmail}</Text>
+                <Text style={[styles.userRole, { color: theme.textTertiary }]}>{userRole}</Text>
               </View>
             </View>
 
             {/* Change Password Section */}
             <TouchableOpacity
-              style={styles.settingCard}
+              style={[styles.settingCard, { backgroundColor: theme.card }]}
               onPress={() => setShowChangePassword(!showChangePassword)}
             >
               <View style={styles.settingHeader}>
-                <Ionicons name="lock-closed" size={24} color="#A2E884" />
-                <Text style={styles.settingTitle}>Change Password</Text>
+                <Ionicons name="lock-closed" size={24} color={theme.primary} />
+                <Text style={[styles.settingTitle, { color: theme.text }]}>Change Password</Text>
                 <Ionicons
                   name={showChangePassword ? "chevron-up" : "chevron-down"}
                   size={20}
-                  color="#999"
+                  color={theme.textSecondary}
                 />
               </View>
             </TouchableOpacity>
 
             {showChangePassword && (
-              <View style={styles.formContainer}>
-                <View style={styles.inputContainer}>
-                  <Ionicons name="lock-closed-outline" size={20} color="#A2E884" />
+              <View style={[styles.formContainer, { backgroundColor: theme.surface }]}>
+                <View style={[styles.inputContainer, { backgroundColor: theme.card }]}>
+                  <Ionicons name="lock-closed-outline" size={20} color={theme.primary} />
                   <TextInput
-                    style={styles.input}
+                    style={[styles.input, { color: theme.text }]}
                     placeholder="Current Password"
                     secureTextEntry
                     value={currentPassword}
                     onChangeText={setCurrentPassword}
-                    placeholderTextColor="#999"
+                    placeholderTextColor={theme.textTertiary}
                   />
                 </View>
 
-                <View style={styles.inputContainer}>
-                  <Ionicons name="key-outline" size={20} color="#A2E884" />
+                <View style={[styles.inputContainer, { backgroundColor: theme.card }]}>
+                  <Ionicons name="key-outline" size={20} color={theme.primary} />
                   <TextInput
-                    style={styles.input}
+                    style={[styles.input, { color: theme.text }]}
                     placeholder="New Password"
                     secureTextEntry
                     value={newPassword}
                     onChangeText={setNewPassword}
-                    placeholderTextColor="#999"
+                    placeholderTextColor={theme.textTertiary}
                   />
                 </View>
 
-                <View style={styles.inputContainer}>
-                  <Ionicons name="key-outline" size={20} color="#A2E884" />
+                <View style={[styles.inputContainer, { backgroundColor: theme.card }]}>
+                  <Ionicons name="key-outline" size={20} color={theme.primary} />
                   <TextInput
-                    style={styles.input}
+                    style={[styles.input, { color: theme.text }]}
                     placeholder="Confirm New Password"
                     secureTextEntry
                     value={confirmPassword}
                     onChangeText={setConfirmPassword}
-                    placeholderTextColor="#999"
+                    placeholderTextColor={theme.textTertiary}
                   />
                 </View>
 
                 <TouchableOpacity
-                  style={styles.submitButton}
+                  style={[styles.submitButton, { backgroundColor: theme.primary }]}
                   onPress={handleChangePassword}
                   disabled={loading}
                 >
@@ -535,49 +537,49 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
 
             {/* Change Email Section */}
             <TouchableOpacity
-              style={styles.settingCard}
+              style={[styles.settingCard, { backgroundColor: theme.card }]}
               onPress={() => setShowChangeEmail(!showChangeEmail)}
             >
               <View style={styles.settingHeader}>
-                <Ionicons name="mail" size={24} color="#A2E884" />
-                <Text style={styles.settingTitle}>Change Email</Text>
+                <Ionicons name="mail" size={24} color={theme.primary} />
+                <Text style={[styles.settingTitle, { color: theme.text }]}>Change Email</Text>
                 <Ionicons
                   name={showChangeEmail ? "chevron-up" : "chevron-down"}
                   size={20}
-                  color="#999"
+                  color={theme.textSecondary}
                 />
               </View>
             </TouchableOpacity>
 
             {showChangeEmail && (
-              <View style={styles.formContainer}>
-                <View style={styles.inputContainer}>
-                  <Ionicons name="mail-outline" size={20} color="#A2E884" />
+              <View style={[styles.formContainer, { backgroundColor: theme.surface }]}>
+                <View style={[styles.inputContainer, { backgroundColor: theme.card }]}>
+                  <Ionicons name="mail-outline" size={20} color={theme.primary} />
                   <TextInput
-                    style={styles.input}
+                    style={[styles.input, { color: theme.text }]}
                     placeholder="New Email Address"
                     keyboardType="email-address"
                     autoCapitalize="none"
                     value={newEmail}
                     onChangeText={setNewEmail}
-                    placeholderTextColor="#999"
+                    placeholderTextColor={theme.textTertiary}
                   />
                 </View>
 
-                <View style={styles.inputContainer}>
-                  <Ionicons name="lock-closed-outline" size={20} color="#A2E884" />
+                <View style={[styles.inputContainer, { backgroundColor: theme.card }]}>
+                  <Ionicons name="lock-closed-outline" size={20} color={theme.primary} />
                   <TextInput
-                    style={styles.input}
+                    style={[styles.input, { color: theme.text }]}
                     placeholder="Current Password"
                     secureTextEntry
                     value={passwordForEmail}
                     onChangeText={setPasswordForEmail}
-                    placeholderTextColor="#999"
+                    placeholderTextColor={theme.textTertiary}
                   />
                 </View>
 
                 <TouchableOpacity
-                  style={styles.submitButton}
+                  style={[styles.submitButton, { backgroundColor: theme.primary }]}
                   onPress={handleChangeEmail}
                   disabled={loading}
                 >
@@ -593,23 +595,23 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
             {/* Related Parent Section - For all roles */}
             <>
               <TouchableOpacity
-                style={styles.settingCard}
+                style={[styles.settingCard, { backgroundColor: theme.card }]}
                 onPress={() => setShowRelatedParent(!showRelatedParent)}
               >
                 <View style={styles.settingHeader}>
-                  <Ionicons name="people" size={24} color="#A2E884" />
-                  <Text style={styles.settingTitle}>Links</Text>
+                  <Ionicons name="people" size={24} color={theme.primary} />
+                  <Text style={[styles.settingTitle, { color: theme.text }]}>Links</Text>
                   <Ionicons
                     name={showRelatedParent ? "chevron-up" : "chevron-down"}
                       size={20}
-                      color="#999"
+                      color={theme.textSecondary}
                     />
                   </View>
                 </TouchableOpacity>
 
                 {showRelatedParent && (
-                  <View style={styles.formContainer}>
-                    <Text style={styles.helperText}>
+                  <View style={[styles.formContainer, { backgroundColor: theme.surface }]}>
+                    <Text style={[styles.helperText, { color: theme.textSecondary }]}>
                       {userRole !== "mother" && userRole !== "father"
                         ? "Your linked accounts. Send link requests from Settings → Request Parent Link"
                         : "Manage your linked accounts. You can link with partners, nannies, or other caregivers."}
@@ -623,23 +625,23 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                           <View style={{ marginBottom: 16 }}>
                             {relatedParents.map((parent) => (
                               <View key={parent.id} style={{ marginBottom: 12 }}>
-                                <View style={styles.linkedParentCard}>
-                                  <Ionicons name="checkmark-circle" size={24} color="#A2E884" />
-                                  <Text style={styles.linkedParentText}>
+                                <View style={[styles.linkedParentCard, { backgroundColor: theme.card }]}>
+                                  <Ionicons name="checkmark-circle" size={24} color={theme.success} />
+                                  <Text style={[styles.linkedParentText, { color: theme.text }]}>
                                     {parent.name}
                                   </Text>
                                 </View>
                                 <TouchableOpacity
-                                  style={styles.unlinkButton}
+                                  style={[styles.unlinkButton, { borderColor: theme.border }]}
                                   onPress={() => handleUnlinkParent(parent.id, parent.name)}
                                   disabled={loading}
                                 >
                                   {loading ? (
-                                    <ActivityIndicator color="#FF6B6B" />
+                                    <ActivityIndicator color={theme.error} />
                                   ) : (
                                     <>
-                                      <Ionicons name="unlink-outline" size={20} color="#FF6B6B" />
-                                      <Text style={styles.unlinkButtonText}>Unlink</Text>
+                                      <Ionicons name="unlink-outline" size={20} color={theme.error} />
+                                      <Text style={[styles.unlinkButtonText, { color: theme.error }]}>Unlink</Text>
                                     </>
                                   )}
                                 </TouchableOpacity>
@@ -648,9 +650,9 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                           </View>
                         ) : (
                           <View style={styles.emptyStateContainer}>
-                            <Ionicons name="people-outline" size={48} color="#CCC" />
-                            <Text style={styles.emptyStateText}>No linked accounts yet</Text>
-                            <Text style={styles.emptyStateSubtext}>
+                            <Ionicons name="people-outline" size={48} color={theme.textTertiary} />
+                            <Text style={[styles.emptyStateText, { color: theme.textSecondary }]}>No linked accounts yet</Text>
+                            <Text style={[styles.emptyStateSubtext, { color: theme.textTertiary }]}>
                               Go to Settings → Request Parent Link to send a link request
                             </Text>
                           </View>
@@ -664,14 +666,14 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                           <View style={{ marginBottom: 16 }}>
                             {relatedParents.map((parent) => (
                               <View key={parent.id} style={{ marginBottom: 12 }}>
-                                <View style={styles.linkedParentCard}>
-                                  <Ionicons name="checkmark-circle" size={24} color="#A2E884" />
-                                  <Text style={styles.linkedParentText}>
+                                <View style={[styles.linkedParentCard, { backgroundColor: theme.card }]}>
+                                  <Ionicons name="checkmark-circle" size={24} color={theme.success} />
+                                  <Text style={[styles.linkedParentText, { color: theme.text }]}>
                                     {parent.name}
                                   </Text>
                                 </View>
                                 <TouchableOpacity
-                                  style={styles.unlinkButton}
+                                  style={[styles.unlinkButton, { borderColor: theme.border }]}
                                   onPress={() => handleUnlinkParent(parent.id, parent.name)}
                                   disabled={loading}
                                 >
@@ -692,23 +694,23 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                         {/* Show old single parent link if exists */}
                         {relatedParentName && (
                           <View style={{ marginBottom: 16 }}>
-                            <View style={styles.linkedParentCard}>
-                              <Ionicons name="checkmark-circle" size={24} color="#A2E884" />
-                              <Text style={styles.linkedParentText}>
+                            <View style={[styles.linkedParentCard, { backgroundColor: theme.card }]}>
+                              <Ionicons name="checkmark-circle" size={24} color={theme.success} />
+                              <Text style={[styles.linkedParentText, { color: theme.text }]}>
                                 {relatedParentName}
                               </Text>
                             </View>
                             <TouchableOpacity
-                              style={styles.unlinkButton}
+                              style={[styles.unlinkButton, { borderColor: theme.border }]}
                               onPress={() => handleUnlinkParent()}
                               disabled={loading}
                             >
                               {loading ? (
-                                <ActivityIndicator color="#FF6B6B" />
+                                <ActivityIndicator color={theme.error} />
                               ) : (
                                 <>
-                                  <Ionicons name="unlink-outline" size={20} color="#FF6B6B" />
-                                  <Text style={styles.unlinkButtonText}>Unlink</Text>
+                                  <Ionicons name="unlink-outline" size={20} color={theme.error} />
+                                  <Text style={[styles.unlinkButtonText, { color: theme.error }]}>Unlink</Text>
                                 </>
                               )}
                             </TouchableOpacity>
@@ -716,21 +718,21 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                         )}
                         
                         {/* Add new link (for parents only - direct linking without request) */}
-                        <View style={styles.inputContainer}>
-                          <Ionicons name="mail-outline" size={20} color="#A2E884" />
+                        <View style={[styles.inputContainer, { backgroundColor: theme.card }]}>
+                          <Ionicons name="mail-outline" size={20} color={theme.primary} />
                           <TextInput
-                            style={styles.input}
+                            style={[styles.input, { color: theme.text }]}
                             placeholder="Partner's Email Address"
                             keyboardType="email-address"
                             autoCapitalize="none"
                             value={relatedParentEmail}
                             onChangeText={setRelatedParentEmail}
-                            placeholderTextColor="#999"
+                            placeholderTextColor={theme.textTertiary}
                           />
                         </View>
 
                         <TouchableOpacity
-                          style={styles.submitButton}
+                          style={[styles.submitButton, { backgroundColor: theme.primary }]}
                           onPress={handleAddRelatedParent}
                           disabled={loading}
                         >
@@ -750,7 +752,7 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
 
             {/* Delete Account Section */}
             <TouchableOpacity
-              style={[styles.settingCard, { marginTop: 20, borderColor: '#FFE5E5' }]}
+              style={[styles.settingCard, { marginTop: 20, backgroundColor: theme.card, borderColor: theme.error }]}
               onPress={() => setShowDeleteAccount(!showDeleteAccount)}
             >
               <View style={styles.settingHeader}>
@@ -759,26 +761,26 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                 <Ionicons
                   name={showDeleteAccount ? "chevron-up" : "chevron-down"}
                   size={20}
-                  color="#999"
+                  color={theme.textSecondary}
                 />
               </View>
             </TouchableOpacity>
 
             {showDeleteAccount && (
-              <View style={styles.formContainer}>
-                <Text style={styles.warningText}>
+              <View style={[styles.formContainer, { backgroundColor: theme.surface }]}>
+                <Text style={[styles.warningText, { color: theme.error }]}>
                   ⚠️ Warning: This will permanently delete your account and all associated baby data. This action cannot be undone.
                 </Text>
 
-                <View style={styles.inputContainer}>
+                <View style={[styles.inputContainer, { backgroundColor: theme.card }]}>
                   <Ionicons name="lock-closed-outline" size={20} color="#FF6B6B" />
                   <TextInput
-                    style={styles.input}
+                    style={[styles.input, { color: theme.text }]}
                     placeholder="Enter your password to confirm"
                     secureTextEntry
                     value={deletePassword}
                     onChangeText={setDeletePassword}
-                    placeholderTextColor="#999"
+                    placeholderTextColor={theme.textTertiary}
                   />
                 </View>
 
