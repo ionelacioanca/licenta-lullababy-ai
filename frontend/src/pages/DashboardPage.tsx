@@ -385,7 +385,7 @@ const DashboardPage: React.FC = () => {
           <View style={styles.activityHeader}>
             <View style={styles.titleRow}>
               <Ionicons name="fitness" size={18} color={theme.primary} />
-              <Text style={[styles.headerTitle, { color: theme.text }]}>Growth Tracking</Text>
+              <Text style={[styles.headerTitle, { color: theme.text }]}>{t('dashboard.growthTracking')}</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={theme.textTertiary} />
           </View>
@@ -397,8 +397,8 @@ const DashboardPage: React.FC = () => {
                   <Ionicons name="scale-outline" size={20} color="white" />
                 </View>
                 <View style={styles.timelineContent}>
-                  <Text style={styles.timelineLabel}>Weight</Text>
-                  <Text style={styles.timelineTime}>{currentWeight} kg</Text>
+                  <Text style={styles.timelineLabel}>{t('dashboard.weight')}</Text>
+                  <Text style={styles.timelineValue}>{currentWeight} kg</Text>
                 </View>
               </View>
               <View style={styles.activityDivider} />
@@ -407,7 +407,7 @@ const DashboardPage: React.FC = () => {
                   <Ionicons name="resize-outline" size={20} color="white" />
                 </View>
                 <View style={styles.timelineContent}>
-                  <Text style={styles.timelineLabel}>Length</Text>
+                  <Text style={styles.timelineLabel}>{t('dashboard.length')}</Text>
                   <Text style={styles.timelineTime}>{currentLength} cm</Text>
                 </View>
               </View>
@@ -476,14 +476,14 @@ const DashboardPage: React.FC = () => {
                               <Ionicons name="checkmark-circle" size={16} color="#A2E884" />
                             </View>
                           )}
-                          {isPast && !event.completed && (
+                          {isPast && !isToday && !event.completed && (
                             <View style={styles.overdueBadge}>
-                              <Text style={styles.overdueText}>Overdue</Text>
+                              <Text style={styles.overdueText}>{t('dashboard.overdue')}</Text>
                             </View>
                           )}
                           {isToday && !event.completed && (
                             <View style={styles.todayBadge}>
-                              <Text style={styles.todayBadgeText}>Today</Text>
+                              <Text style={styles.todayBadgeText}>{t('dashboard.today')}</Text>
                             </View>
                           )}
                         </View>
@@ -526,7 +526,7 @@ const DashboardPage: React.FC = () => {
           <View style={styles.activityHeader}>
             <View style={styles.titleRow}>
               <Ionicons name="book" size={18} color={theme.primary} />
-              <Text style={[styles.headerTitle, { color: theme.text }]}>Memories</Text>
+              <Text style={[styles.headerTitle, { color: theme.text }]}>{t('dashboard.memories')}</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color="#999" />
           </View>

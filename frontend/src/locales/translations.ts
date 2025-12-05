@@ -40,6 +40,17 @@ export const translations = {
       noEventsSubtext: 'Tap to add or generate schedules',
       generateSchedules: 'Generate Schedules',
       viewAll: 'View All',
+      growthTracking: 'Growth Tracking',
+      weight: 'Weight',
+      length: 'Length',
+      fellAsleep: 'Fell Asleep',
+      wokeUp: 'Woke Up',
+      lastSleep: 'Last Sleep',
+      duration: 'Duration',
+      ago: 'ago',
+      memories: 'Memories',
+      overdue: 'Overdue',
+      today: 'Today',
     },
     
     // Navigation
@@ -161,6 +172,10 @@ export const translations = {
       deleteWarning: '⚠️ Warning: This action cannot be undone. All your data will be permanently deleted.',
       confirmDelete: 'Type your password to confirm deletion',
       deleteButton: 'Delete My Account',
+      requestParentLink: 'Request Parent Link',
+      sendRequest: 'Send Request',
+      parentEmailAddress: "Parent's Email Address",
+      requestSent: 'Link request sent successfully!',
     },
     
     // Growth Tracking
@@ -250,6 +265,17 @@ export const translations = {
       noEventsSubtext: 'Apasă pentru a adăuga sau genera programe',
       generateSchedules: 'Generează Programe',
       viewAll: 'Vezi Toate',
+      growthTracking: 'Urmărire Creștere',
+      weight: 'Greutate',
+      length: 'Lungime',
+      fellAsleep: 'A Adormit',
+      wokeUp: 'S-a Trezit',
+      lastSleep: 'Ultimul Somn',
+      duration: 'Durată',
+      ago: 'în urmă',
+      memories: 'Amintiri',
+      overdue: 'Întârziat',
+      today: 'Astăzi',
     },
     
     // Navigation
@@ -371,6 +397,10 @@ export const translations = {
       deleteWarning: '⚠️ Atenție: Această acțiune nu poate fi anulată. Toate datele tale vor fi șterse permanent.',
       confirmDelete: 'Introdu parola pentru a confirma ștergerea',
       deleteButton: 'Șterge Contul Meu',
+      requestParentLink: 'Cere Legătură cu Părintele',
+      sendRequest: 'Trimite Cerere',
+      parentEmailAddress: 'Adresa Email a Părintelui',
+      requestSent: 'Cererea de legătură a fost trimisă cu succes!',
     },
     
     // Growth Tracking

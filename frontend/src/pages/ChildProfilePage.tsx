@@ -17,6 +17,7 @@ import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
+import { useLanguage } from "../contexts/LanguageContext";
 
 interface Baby {
   _id: string;
@@ -34,6 +35,7 @@ interface Baby {
 
 const ChildProfilePage: React.FC = () => {
   const router = useRouter();
+  const { t } = useLanguage();
   const [baby, setBaby] = useState<Baby | null>(null);
   const [loading, setLoading] = useState(true);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
