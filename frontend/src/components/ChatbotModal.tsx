@@ -4,6 +4,7 @@ import { ThemedText } from '../../components/ThemedText';
 import { ThemedView } from '../../components/ThemedView';
 import { sendChatMessage } from '../services/chatbotService';
 import { Colors } from '../../constants/Colors';
+import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 
 const TypingDots: React.FC = () => {
@@ -68,15 +69,16 @@ interface MessageItem {
   ts: number;
 }
 
-const INITIAL_SUGGESTIONS = [
-  'Baby crying a lot',
-  'Sleep routine help',
-  'Signs of fever',
-  'Teething pain tips',
-];
-
 export const ChatbotModal: React.FC<ChatbotModalProps> = ({ visible, onClose }) => {
   const { theme } = useTheme();
+  const { t } = useLanguage();
+  
+  const INITIAL_SUGGESTIONS = [
+    t('chat.suggestion1'),
+    t('chat.suggestion2'),
+    t('chat.suggestion3'),
+    t('chat.suggestion4'),
+  ];
   const [messages, setMessages] = useState<MessageItem[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -90,12 +92,12 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({ visible, onClose }) 
         {
           id: 'welcome',
           role: 'bot',
-          text: 'Hi! I am BabyCareBuddy. Ask me anything about sleep, crying, fever, teething or emotional support.',
+          text: t('chat.welcome'),
           ts: Date.now(),
         },
       ]);
     }
-  }, [visible]);
+  }, [visible, t]);
 
   const scrollToEnd = () => {
     setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 50);
@@ -135,7 +137,7 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({ visible, onClose }) 
     <Modal visible={visible} animationType="slide" presentationStyle="fullScreen" onRequestClose={onClose}>
       <ThemedView style={[styles.container, { backgroundColor: theme.background }]}>
         <View style={[styles.header, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
-          <ThemedText type="title" style={[styles.headerTitle, { color: theme.text }]}>BabyCareBuddy</ThemedText>
+          <ThemedText type="title" style={[styles.headerTitle, { color: theme.text }]}>{t('chat.title')}</ThemedText>
           <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
             <ThemedText style={[styles.closeText, { color: theme.text }]}>×</ThemedText>
           </TouchableOpacity>
@@ -180,7 +182,7 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({ visible, onClose }) 
           <View style={[styles.inputRow, { backgroundColor: theme.surface, borderTopColor: theme.border }]}>
             <TextInput
               style={[styles.input, { backgroundColor: theme.card, color: theme.text }]}
-              placeholder="Ask something about your baby…"
+              placeholder={t('chat.placeholder')}
               value={input}
               onChangeText={setInput}
               placeholderTextColor={theme.textTertiary}
@@ -188,7 +190,7 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({ visible, onClose }) 
               maxLength={500}
             />
             <TouchableOpacity style={[styles.sendBtn, { backgroundColor: theme.primary }, !input.trim() && styles.sendBtnDisabled]} disabled={!input.trim() || loading} onPress={send}>
-              <ThemedText style={styles.sendText}>{loading ? '...' : 'Send'}</ThemedText>
+              <ThemedText style={styles.sendText}>{loading ? '...' : t('chat.send')}</ThemedText>
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>

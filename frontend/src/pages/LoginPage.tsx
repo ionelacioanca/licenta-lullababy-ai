@@ -14,9 +14,11 @@ import Ionicons from "react-native-vector-icons/Ionicons";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import ForgotPasswordModal from "../components/ForgotPasswordModal";
+import { useLanguage } from "../contexts/LanguageContext";
 
 const LoginPage: React.FC = () => {
   const router = useRouter();
+  const { t } = useLanguage();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -30,7 +32,7 @@ const LoginPage: React.FC = () => {
       const token = await AsyncStorage.getItem("token");
       if (token) {
         try {
-          const res = await fetch("http://192.168.1.20:5000/api/verify-token", {
+          const res = await fetch("http://192.168.1.21:5000/api/verify-token", {
             headers: { Authorization: `Bearer ${token}` },
           });
           if (res.ok) {
@@ -101,7 +103,7 @@ const LoginPage: React.FC = () => {
     try {
       console.log("Attempting login with email:", email);
       
-  const response = await fetch("http://192.168.1.20:5000/api/login", {
+  const response = await fetch("http://192.168.1.21:5000/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -158,15 +160,15 @@ const LoginPage: React.FC = () => {
       contentContainerStyle={styles.container}
       keyboardShouldPersistTaps="handled"
     >
-      <Text style={styles.subheader}>Welcome Back</Text>
-      <Text style={styles.subtitle}>Log in with your email and password</Text>
+      <Text style={styles.subheader}>{t('auth.login')}</Text>
+      <Text style={styles.subtitle}>{t('auth.signIn')}</Text>
 
       <View style={{ height: 40 }} />
 
       <View style={styles.inputContainer}>
         <Ionicons name="mail-outline" size={20} color="#777" style={styles.icon} />
         <TextInput
-          placeholder="Email Address"
+          placeholder={t('auth.email')}
           placeholderTextColor="#777777"
           style={styles.input}
           keyboardType="email-address"
@@ -187,7 +189,7 @@ const LoginPage: React.FC = () => {
           style={styles.icon}
         />
         <TextInput
-          placeholder="Password"
+          placeholder={t('auth.password')}
           placeholderTextColor="#777777"
           style={styles.input}
           secureTextEntry
@@ -200,7 +202,7 @@ const LoginPage: React.FC = () => {
       </View>
 
       <TouchableOpacity onPress={() => setShowForgotPassword(true)}>
-        <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+        <Text style={styles.forgotPasswordText}>{t('auth.forgotPassword')}</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -209,7 +211,7 @@ const LoginPage: React.FC = () => {
         disabled={loading}
       >
         <Text style={styles.buttonText}>
-          {loading ? "Logging in..." : "Log In"}
+          {loading ? t('common.loading') : t('auth.login')}
         </Text>
       </TouchableOpacity>
 

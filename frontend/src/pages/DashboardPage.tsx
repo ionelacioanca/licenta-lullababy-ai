@@ -3,6 +3,7 @@ import { View, ScrollView, StyleSheet, TouchableOpacity, Text, Alert, Image } fr
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { useLanguage } from "../contexts/LanguageContext";
 import Header from "./Header";
 import Footer from "./Footer";
 import BabyMonitorStream from "../components/BabyMonitorStream";
@@ -28,6 +29,7 @@ import { useTheme } from "../contexts/ThemeContext";
 const DashboardPage: React.FC = () => {
   const router = useRouter();
   const { theme } = useTheme();
+  const { t } = useLanguage();
   const [babyName, setBabyName] = useState("");
   const [childInitial, setChildInitial] = useState("?");
   const [avatarColor, setAvatarColor] = useState("#00CFFF");
@@ -103,7 +105,7 @@ const DashboardPage: React.FC = () => {
     
     // Load user role and pending requests count
     try {
-      const userInfoResponse = await fetch(`http://192.168.1.20:5000/api/user-info`, {
+      const userInfoResponse = await fetch(`http://192.168.1.21:5000/api/user-info`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -126,7 +128,7 @@ const DashboardPage: React.FC = () => {
     }
 
     try {
-  const response = await fetch(`http://192.168.1.20:5000/api/baby/parent/${parentId}`, {
+  const response = await fetch(`http://192.168.1.21:5000/api/baby/parent/${parentId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -165,7 +167,7 @@ const DashboardPage: React.FC = () => {
           
           // Load avatar data from backend
           setAvatarColor(baby.avatarColor || "#00CFFF");
-          setAvatarImage(baby.avatarImage ? `http://192.168.1.20:5000${baby.avatarImage}` : null);
+          setAvatarImage(baby.avatarImage ? `http://192.168.1.21:5000${baby.avatarImage}` : null);
           
           // Store birth data
           console.log("Baby birth data - birthWeight:", baby.birthWeight, "birthLength:", baby.birthLength, "birthDate:", baby.birthDate);
@@ -280,7 +282,7 @@ const DashboardPage: React.FC = () => {
     if (!babyId) return;
     
     Alert.alert(
-      'Generate Schedules',
+      t('dashboard.generateSchedules'),
       'Generate vaccination and milestone schedules for your baby?',
       [
         { text: 'Cancel', style: 'cancel' },
@@ -427,7 +429,7 @@ const DashboardPage: React.FC = () => {
           <View style={styles.activityHeader}>
             <View style={styles.titleRow}>
               <Ionicons name="calendar" size={18} color={theme.primary} />
-              <Text style={[styles.headerTitle, { color: theme.text }]}>Upcoming Events</Text>
+              <Text style={[styles.headerTitle, { color: theme.text }]}>{t('dashboard.upcomingEvents')}</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color="#999" />
           </View>
@@ -497,8 +499,8 @@ const DashboardPage: React.FC = () => {
             ) : (
               <View style={styles.noEventsContainer}>
                 <Ionicons name="calendar-outline" size={32} color="#CCC" />
-                <Text style={styles.noEventsText}>No upcoming events</Text>
-                <Text style={styles.noEventsSubtext}>Tap to add or generate schedules</Text>
+                <Text style={styles.noEventsText}>{t('dashboard.noEvents')}</Text>
+                <Text style={styles.noEventsSubtext}>{t('dashboard.noEventsSubtext')}</Text>
               </View>
             )}
             
@@ -509,7 +511,7 @@ const DashboardPage: React.FC = () => {
                 activeOpacity={0.7}
               >
                 <Ionicons name="medical" size={18} color={theme.primary} />
-                <Text style={[styles.generateSchedulesText, { color: theme.primary }]}>Generate Schedules</Text>
+                <Text style={[styles.generateSchedulesText, { color: theme.primary }]}>{t('dashboard.generateSchedules')}</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -563,7 +565,7 @@ const DashboardPage: React.FC = () => {
                       </View>
                       {memory.photos.length > 0 && (
                         <Image
-                          source={{ uri: `http://192.168.1.20:5000${memory.photos[0]}` }}
+                          source={{ uri: `http://192.168.1.21:5000${memory.photos[0]}` }}
                           style={styles.memoryThumbnail}
                         />
                       )}

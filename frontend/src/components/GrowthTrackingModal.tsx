@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { GrowthRecord, updateGrowthRecord } from "../services/growthService";
+import { useLanguage } from "../contexts/LanguageContext";
 import { useTheme } from "../contexts/ThemeContext";
 
 type GrowthEntry = {
@@ -41,6 +42,7 @@ const GrowthTrackingModal: React.FC<GrowthTrackingModalProps> = ({
   birthDate,
 }) => {
   const { theme } = useTheme();
+  const { t } = useLanguage();
   const [showAddForm, setShowAddForm] = useState(false);
   const [newWeight, setNewWeight] = useState("");
   const [newLength, setNewLength] = useState("");
@@ -188,8 +190,8 @@ const GrowthTrackingModal: React.FC<GrowthTrackingModalProps> = ({
             <View style={styles.headerLeft}>
               <Ionicons name="fitness" size={24} color={theme.primary} />
               <View>
-                <Text style={[styles.title, { color: theme.text }]}>Growth Tracking</Text>
-                <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Weight & Length History</Text>
+                <Text style={[styles.title, { color: theme.text }]}>{t('growth.title')}</Text>
+                <Text style={[styles.subtitle, { color: theme.textSecondary }]}>{t('growth.history')}</Text>
               </View>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>

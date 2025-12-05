@@ -20,6 +20,7 @@ import {
   toggleEventCompleted,
   deleteCalendarEvent,
 } from '../services/calendarService';
+import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 
 interface CalendarModalProps {
@@ -49,6 +50,7 @@ const EVENT_TYPE_ICONS = {
 
 const CalendarModal: React.FC<CalendarModalProps> = ({ visible, onClose, babyId, onEventsUpdate }) => {
   const { theme } = useTheme();
+  const { t } = useLanguage();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -118,7 +120,7 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ visible, onClose, babyId,
 
   const handleAddEvent = async () => {
     if (!newEventTitle.trim() || !selectedDate) {
-      Alert.alert('Error', 'Please enter an event title');
+      Alert.alert(t('common.error'), 'Please enter an event title');
       return;
     }
 
@@ -156,7 +158,7 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ visible, onClose, babyId,
   };
 
   const handleDeleteEvent = async (eventId: string) => {
-    Alert.alert('Delete Event', 'Are you sure you want to delete this event?', [
+    Alert.alert(t('common.delete'), 'Are you sure you want to delete this event?', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete',

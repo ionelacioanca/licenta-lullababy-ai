@@ -18,6 +18,7 @@ import {
   CATEGORY_LABELS,
   CATEGORY_COLORS,
 } from "../services/soundService";
+import { useLanguage } from "../contexts/LanguageContext";
 import { useTheme } from "../contexts/ThemeContext";
 
 type SoundLibraryModalProps = {
@@ -32,6 +33,7 @@ const SoundLibraryModal: React.FC<SoundLibraryModalProps> = ({
   onSelectSound,
 }) => {
   const { theme } = useTheme();
+  const { t } = useLanguage();
   const [sounds, setSounds] = useState<Sound[]>([]);
   const [filteredSounds, setFilteredSounds] = useState<Sound[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -115,9 +117,9 @@ const SoundLibraryModal: React.FC<SoundLibraryModalProps> = ({
             <View style={styles.headerLeft}>
               <Ionicons name="musical-notes" size={24} color={theme.primary} />
               <View>
-                <Text style={[styles.headerTitle, { color: theme.text }]}>Sound Library</Text>
+                <Text style={[styles.headerTitle, { color: theme.text }]}>{t('sounds.title')}</Text>
                 <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>
-                  {isLoading ? "Loading..." : `${filteredSounds.length} sound${filteredSounds.length !== 1 ? "s" : ""} available`}
+                  {isLoading ? t('common.loading') : `${filteredSounds.length} sound${filteredSounds.length !== 1 ? "s" : ""} available`}
                 </Text>
               </View>
             </View>
@@ -131,7 +133,7 @@ const SoundLibraryModal: React.FC<SoundLibraryModalProps> = ({
           <Ionicons name="search" size={20} color={theme.textSecondary} />
           <TextInput
             style={[styles.searchInput, { color: theme.text }]}
-            placeholder="Search sounds..."
+            placeholder={t('sounds.search')}
             value={searchQuery}
             onChangeText={setSearchQuery}
             placeholderTextColor={theme.textTertiary}
@@ -165,7 +167,7 @@ const SoundLibraryModal: React.FC<SoundLibraryModalProps> = ({
                 selectedCategory === null && { color: '#FFF' },
               ]}
             >
-              All
+              {t('sounds.all')}
             </Text>
           </TouchableOpacity>
           {categories.map((cat) => (

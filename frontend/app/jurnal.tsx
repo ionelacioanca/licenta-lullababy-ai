@@ -27,6 +27,7 @@ import {
 } from "../src/services/journalService";
 import AddEntryModal from "@/src/components/AddEntryModal";
 import { useTheme } from "../src/contexts/ThemeContext";
+import { useLanguage } from "../src/contexts/LanguageContext";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -52,6 +53,7 @@ const TAG_COLORS: Record<string, string> = {
 const JournalPage: React.FC = () => {
   const router = useRouter();
   const { theme } = useTheme();
+  const { t } = useLanguage();
   const [babyId, setBabyId] = useState<string | null>(null);
   const [babyName, setBabyName] = useState("");
   const [childInitial, setChildInitial] = useState("?");
@@ -86,7 +88,7 @@ const JournalPage: React.FC = () => {
 
       if (!parentId) return;
 
-      const response = await fetch(`http://192.168.1.20:5000/api/baby/parent/${parentId}`, {
+      const response = await fetch(`http://192.168.1.21:5000/api/baby/parent/${parentId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -103,7 +105,7 @@ const JournalPage: React.FC = () => {
         setChildInitial(baby.name.charAt(0).toUpperCase());
         setBabyId(baby._id);
         setAvatarColor(baby.avatarColor || "#00CFFF");
-        setAvatarImage(baby.avatarImage ? `http://192.168.1.20:5000${baby.avatarImage}` : null);
+        setAvatarImage(baby.avatarImage ? `http://192.168.1.21:5000${baby.avatarImage}` : null);
         
         loadEntries(baby._id);
         loadGallery(baby._id);
@@ -132,7 +134,7 @@ const JournalPage: React.FC = () => {
   };
 
   const handleDeleteEntry = (entryId: string) => {
-    Alert.alert("Delete Entry", "Are you sure you want to delete this memory?", [
+    Alert.alert(t('journal.delete'), "Are you sure you want to delete this memory?", [
       { text: "Cancel", style: "cancel" },
       {
         text: "Delete",
@@ -228,7 +230,7 @@ const JournalPage: React.FC = () => {
             {entry.description.length > 150 && (
               <TouchableOpacity onPress={() => setExpandedEntry(isExpanded ? null : entry._id)}>
                 <Text style={[styles.readMoreText, { color: theme.primary }]}>
-                  {isExpanded ? "Show less" : "Read more"}
+                  {isExpanded ? t('journal.showLess') : t('journal.readMore')}
                 </Text>
               </TouchableOpacity>
             )}
@@ -258,7 +260,7 @@ const JournalPage: React.FC = () => {
                     onPress={() => openLightbox(entry.photos, index)}
                   >
                     <Image
-                      source={{ uri: `http://192.168.1.20:5000${photo}` }}
+                      source={{ uri: `http://192.168.1.21:5000${photo}` }}
                       style={styles.carouselPhoto}
                     />
                   </TouchableOpacity>
@@ -272,14 +274,14 @@ const JournalPage: React.FC = () => {
                 onPress={() => handleEditEntry(entry)}
               >
                 <Ionicons name="create-outline" size={18} color={theme.primary} />
-                <Text style={[styles.actionText, { color: theme.primary }]}>Edit</Text>
+                <Text style={[styles.actionText, { color: theme.primary }]}>{t('journal.edit')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.actionButton}
                 onPress={() => handleDeleteEntry(entry._id)}
               >
                 <Ionicons name="trash-outline" size={18} color={theme.error} />
-                <Text style={[styles.actionText, { color: theme.error }]}>Delete</Text>
+                <Text style={[styles.actionText, { color: theme.error }]}>{t('journal.delete')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -294,8 +296,8 @@ const JournalPage: React.FC = () => {
         {gallery.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="images-outline" size={64} color={theme.textTertiary} />
-            <Text style={[styles.emptyText, { color: theme.textSecondary }]}>No photos yet</Text>
-            <Text style={[styles.emptySubtext, { color: theme.textTertiary }]}>Add entries with photos to see them here</Text>
+            <Text style={[styles.emptyText, { color: theme.textSecondary }]}>{t('journal.noPhotos')}</Text>
+            <Text style={[styles.emptySubtext, { color: theme.textTertiary }]}>{t('journal.addPhotos')}</Text>
           </View>
         ) : (
           <View style={styles.galleryGrid}>
@@ -306,7 +308,7 @@ const JournalPage: React.FC = () => {
                 onPress={() => openLightbox([item.photoUrl], 0)}
               >
                 <Image
-                  source={{ uri: `http://192.168.1.20:5000${item.photoUrl}` }}
+                  source={{ uri: `http://192.168.1.21:5000${item.photoUrl}` }}
                   style={styles.galleryPhoto}
                 />
                 {item.caption && (
@@ -355,7 +357,7 @@ const JournalPage: React.FC = () => {
                   viewMode === "timeline" && { color: "#FFF" },
                 ]}
               >
-                Timeline
+                {t('journal.timeline')}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -370,7 +372,7 @@ const JournalPage: React.FC = () => {
               <Text
                 style={[styles.toggleText, { color: theme.text }, viewMode === "gallery" && { color: "#FFF" }]}
               >
-                Gallery
+                {t('journal.gallery')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -382,7 +384,7 @@ const JournalPage: React.FC = () => {
               <Ionicons name="search" size={20} color={theme.primary} />
               <TextInput
                 style={[styles.searchInput, { color: theme.text }]}
-                placeholder="Search memories..."
+                placeholder={t('journal.search')}
                 placeholderTextColor={theme.textTertiary}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
@@ -424,8 +426,8 @@ const JournalPage: React.FC = () => {
             filteredEntries.length === 0 ? (
               <View style={styles.emptyState}>
                 <Ionicons name="book-outline" size={64} color={theme.textTertiary} />
-                <Text style={[styles.emptyText, { color: theme.textSecondary }]}>No memories yet</Text>
-                <Text style={[styles.emptySubtext, { color: theme.textTertiary }]}>Start capturing precious moments</Text>
+                <Text style={[styles.emptyText, { color: theme.textSecondary }]}>{t('journal.noMemories')}</Text>
+                <Text style={[styles.emptySubtext, { color: theme.textTertiary }]}>{t('journal.startCapturing')}</Text>
               </View>
             ) : (
               filteredEntries.map(renderEntryCard)
@@ -467,7 +469,7 @@ const JournalPage: React.FC = () => {
           </TouchableOpacity>
           {lightboxPhotos.length > 0 && (
             <Image
-              source={{ uri: `http://192.168.1.20:5000${lightboxPhotos[lightboxIndex]}` }}
+              source={{ uri: `http://192.168.1.21:5000${lightboxPhotos[lightboxIndex]}` }}
               style={styles.lightboxImage}
               resizeMode="contain"
             />

@@ -15,6 +15,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
+import { useLanguage } from "../contexts/LanguageContext";
 import { useTheme } from "../contexts/ThemeContext";
 
 interface AccountSettingsModalProps {
@@ -28,6 +29,7 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
 }) => {
   const router = useRouter();
   const { theme } = useTheme();
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [userEmail, setUserEmail] = useState("");
   const [userRole, setUserRole] = useState("");
@@ -55,7 +57,7 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const [deletePassword, setDeletePassword] = useState("");
 
-  const API_URL = "http://192.168.1.20:5000/api";
+  const API_URL = "http://192.168.1.21:5000/api";
 
   useEffect(() => {
     if (visible) {
@@ -157,17 +159,17 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
 
   const handleChangePassword = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
-      Alert.alert("Error", "Please fill in all password fields");
+      Alert.alert(t('common.error'), "Please fill in all password fields");
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      Alert.alert("Error", "New passwords do not match");
+      Alert.alert(t('common.error'), "New passwords do not match");
       return;
     }
 
     if (newPassword.length < 6) {
-      Alert.alert("Error", "Password must be at least 6 characters");
+      Alert.alert(t('common.error'), "Password must be at least 6 characters");
       return;
     }
 

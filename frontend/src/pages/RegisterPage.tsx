@@ -15,9 +15,11 @@ import DropDownPicker from "react-native-dropdown-picker";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useLanguage } from "../contexts/LanguageContext";
 
 const RegisterPage: React.FC = () => {
   const router = useRouter();
+  const { t } = useLanguage();
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -30,10 +32,10 @@ const RegisterPage: React.FC = () => {
 
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState([
-    { label: "Mother", value: "mother" },
-    { label: "Father", value: "father" },
-    { label: "Nanny", value: "nanny" },
-    { label: "Other", value: "others" },
+    { label: t('auth.mother'), value: "mother" },
+    { label: t('auth.father'), value: "father" },
+    { label: t('auth.nanny'), value: "nanny" },
+    { label: t('auth.other'), value: "others" },
   ]);
 
   const handleRegister = async () => {
@@ -68,7 +70,7 @@ const RegisterPage: React.FC = () => {
         registrationData.relatedParentEmail = relatedParentEmail.trim();
       }
 
-      const response = await fetch("http://192.168.1.20:5000/api/register", {
+      const response = await fetch("http://192.168.1.21:5000/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(registrationData),

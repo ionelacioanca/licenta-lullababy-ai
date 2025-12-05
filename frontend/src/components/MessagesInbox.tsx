@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { getConversations, Conversation } from "../services/messageService";
+import { useLanguage } from "../contexts/LanguageContext";
 import { useTheme } from "../contexts/ThemeContext";
 
 interface MessagesInboxProps {
@@ -27,6 +28,7 @@ export default function MessagesInbox({
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(false);
   const { theme } = useTheme();
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (visible) {
@@ -118,7 +120,7 @@ export default function MessagesInbox({
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <Ionicons name="arrow-back" size={24} color={theme.icon} />
             </TouchableOpacity>
-            <Text style={[styles.headerTitle, { color: theme.text }]}>Messages</Text>
+            <Text style={[styles.headerTitle, { color: theme.text }]}>{t('messages.title')}</Text>
             <View style={styles.placeholder} />
           </View>
 
@@ -130,9 +132,9 @@ export default function MessagesInbox({
         ) : conversations.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Ionicons name="mail-outline" size={64} color={theme.textTertiary} />
-            <Text style={[styles.emptyText, { color: theme.textSecondary }]}>No conversations yet</Text>
+            <Text style={[styles.emptyText, { color: theme.textSecondary }]}>{t('messages.noConversations')}</Text>
             <Text style={[styles.emptySubtext, { color: theme.textTertiary }]}>
-              Messages with your linked users will appear here
+              {t('messages.startMessaging')}
             </Text>
           </View>
         ) : (

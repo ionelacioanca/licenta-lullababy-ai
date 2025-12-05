@@ -12,6 +12,7 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import AccountSettingsModal from "./AccountSettingsModal";
+import { useLanguage } from "../contexts/LanguageContext";
 import { useTheme } from "../contexts/ThemeContext";
 
 interface SettingsModalProps {
@@ -25,10 +26,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose, onReque
   const router = useRouter();
   const [accountSettingsOpen, setAccountSettingsOpen] = useState(false);
   const { theme, isDark, toggleTheme } = useTheme();
+  const { t } = useLanguage();
 
   const handleLogout = () => {
     Alert.alert(
-      "Logout",
+      t('settings.logout'),
       "Are you sure you want to logout?",
       [
         {
@@ -70,7 +72,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose, onReque
       <View style={styles.overlay}>
         <View style={[styles.container, { backgroundColor: theme.surface }]}>
           <View style={[styles.header, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
-            <Text style={[styles.title, { color: theme.text }]}>Settings</Text>
+            <Text style={[styles.title, { color: theme.text }]}>{t('settings.title')}</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <Ionicons name="close" size={28} color={theme.icon} />
             </TouchableOpacity>
@@ -84,7 +86,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose, onReque
               <View style={styles.settingIconContainer}>
                 <Ionicons name="person-outline" size={24} color={theme.textSecondary} />
               </View>
-              <Text style={[styles.settingText, { color: theme.text }]}>Account Settings</Text>
+              <Text style={[styles.settingText, { color: theme.text }]}>{t('settings.account')}</Text>
               <Ionicons name="chevron-forward" size={20} color={theme.textTertiary} />
             </TouchableOpacity>
 
@@ -126,7 +128,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose, onReque
               <View style={styles.settingIconContainer}>
                 <Ionicons name={isDark ? "moon" : "sunny"} size={24} color={theme.primary} />
               </View>
-              <Text style={[styles.settingText, { color: theme.text }]}>Dark Mode</Text>
+              <Text style={[styles.settingText, { color: theme.text }]}>{t('settings.theme')}</Text>
               <Switch
                 value={isDark}
                 onValueChange={toggleTheme}
@@ -155,7 +157,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose, onReque
               <View style={styles.settingIconContainer}>
                 <Ionicons name="information-circle-outline" size={24} color={theme.textSecondary} />
               </View>
-              <Text style={[styles.settingText, { color: theme.text }]}>About</Text>
+              <Text style={[styles.settingText, { color: theme.text }]}>{t('settings.about')}</Text>
               <Ionicons name="chevron-forward" size={20} color={theme.textTertiary} />
             </TouchableOpacity>
 
@@ -168,7 +170,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose, onReque
               <View style={[styles.settingIconContainer, styles.logoutIconContainer]}>
                 <Ionicons name="log-out-outline" size={24} color="#FF6B6B" />
               </View>
-              <Text style={[styles.settingText, styles.logoutText]}>Logout</Text>
+              <Text style={[styles.settingText, styles.logoutText]}>{ t('settings.logout')}</Text>
             </TouchableOpacity>
           </View>
         </View>
