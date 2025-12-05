@@ -94,6 +94,14 @@ export const translations = {
       birthWeight: 'Birth Weight (g)',
       birthLength: 'Birth Length (cm)',
       enterName: 'Enter name',
+      myBabies: 'My Babies',
+      add: 'Add',
+      editProfile: 'Edit profile',
+      yearsOld: 'years and',
+      monthsOld: 'months old',
+      ageUnknown: 'Age unknown',
+      noChildrenFound: 'No children profiles found',
+      addChildProfile: 'Add Child Profile',
       none: 'None',
       addPhoto: 'Add photo',
       changePhoto: 'Change photo',
@@ -205,6 +213,7 @@ export const translations = {
       noConversations: 'No conversations yet',
       startMessaging: 'Start messaging with linked parents',
       typeMessage: 'Type a message...',
+      you: 'You',
     },
     
     // Settings
@@ -395,6 +404,14 @@ export const translations = {
       addPhoto: 'Adaugă fotografie',
       changePhoto: 'Schimbă fotografia',
       deleteProfile: 'Șterge profilul acestui copil',
+      myBabies: 'Bebelușii Mei',
+      add: 'Adaugă',
+      editProfile: 'Editează profilul',
+      yearsOld: 'ani și',
+      monthsOld: 'luni',
+      ageUnknown: 'Vârstă necunoscută',
+      noChildrenFound: 'Nu există profiluri de copii',
+      addChildProfile: 'Adaugă Profil Copil',
     },
     
     // Calendar
@@ -502,6 +519,7 @@ export const translations = {
       noConversations: 'Încă nu există conversații',
       startMessaging: 'Începe să trimiți mesaje cu părinții conectați',
       typeMessage: 'Scrie un mesaj...',
+      you: 'Tu',
     },
     
     // Settings

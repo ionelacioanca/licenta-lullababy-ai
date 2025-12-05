@@ -99,7 +99,7 @@ export default function MessagesInbox({
             ]}
             numberOfLines={1}
           >
-            {item.lastMessage.sentByMe ? "You: " : ""}
+            {item.lastMessage.sentByMe ? `${t('messages.you')}: ` : ""}
             {item.lastMessage.content}
           </Text>
         ) : (

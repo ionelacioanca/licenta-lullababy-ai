@@ -12,6 +12,7 @@ import { useRouter, useFocusEffect } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../contexts/ThemeContext";
+import { useLanguage } from "../contexts/LanguageContext";
 
 interface Baby {
   _id: string;
@@ -33,6 +34,7 @@ interface BabyWithAvatar extends Baby {
 const BabiesListPage: React.FC = () => {
   const router = useRouter();
   const { theme } = useTheme();
+  const { t } = useLanguage();
   const [babies, setBabies] = useState<BabyWithAvatar[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -106,7 +108,7 @@ const BabiesListPage: React.FC = () => {
       months += 12;
     }
     
-    return `${years} years and ${months} months old`;
+    return `${years} ${t('baby.yearsOld')} ${months} ${t('baby.monthsOld')}`;
   };
 
   const handleSelectBaby = async (baby: Baby) => {
@@ -140,10 +142,10 @@ const BabiesListPage: React.FC = () => {
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={theme.icon} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: theme.text }]}>My Babies</Text>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>{t('baby.myBabies')}</Text>
         <TouchableOpacity onPress={handleAddChild} style={styles.addButton}>
           <Ionicons name="person-add" size={24} color={theme.primary} />
-          <Text style={[styles.addButtonText, { color: theme.primary }]}>Add</Text>
+          <Text style={[styles.addButtonText, { color: theme.primary }]}>{t('baby.add')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -170,7 +172,7 @@ const BabiesListPage: React.FC = () => {
                 <View style={styles.babyDetails}>
                   <Text style={[styles.babyName, { color: theme.text }]}>{baby.name || "Baby"}</Text>
                   <Text style={[styles.babyAge, { color: theme.textSecondary }]}>
-                    {baby.birthDate ? calculateAge(baby.birthDate) : "Age unknown"}
+                    {baby.birthDate ? calculateAge(baby.birthDate) : t('baby.ageUnknown')}
                   </Text>
                   
                   {/* Edit Profile Button */}
@@ -181,7 +183,7 @@ const BabiesListPage: React.FC = () => {
                       handleEditProfile(baby);
                     }}
                   >
-                    <Text style={[styles.editButtonText, { color: theme.primary }]}>Edit profile</Text>
+                    <Text style={[styles.editButtonText, { color: theme.primary }]}>{t('baby.editProfile')}</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -190,9 +192,9 @@ const BabiesListPage: React.FC = () => {
         ) : (
           <View style={styles.noChildrenContainer}>
             <Ionicons name="person-add-outline" size={80} color={theme.textTertiary} />
-            <Text style={[styles.noChildrenText, { color: theme.textSecondary }]}>No children profiles found</Text>
+            <Text style={[styles.noChildrenText, { color: theme.textSecondary }]}>{t('baby.noChildrenFound')}</Text>
             <TouchableOpacity style={[styles.addChildButton, { backgroundColor: theme.primary }]} onPress={handleAddChild}>
-              <Text style={styles.addChildButtonText}>Add Child Profile</Text>
+              <Text style={styles.addChildButtonText}>{t('baby.addChildProfile')}</Text>
             </TouchableOpacity>
           </View>
         )}
