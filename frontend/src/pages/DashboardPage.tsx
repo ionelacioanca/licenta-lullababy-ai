@@ -329,7 +329,7 @@ const DashboardPage: React.FC = () => {
           <View style={styles.activityHeader}>
             <View style={styles.titleRow}>
               <Ionicons name="moon" size={18} color={theme.primary} />
-              <Text style={[styles.headerTitle, { color: theme.text }]}>Sleep Activity</Text>
+              <Text style={[styles.headerTitle, { color: theme.text }]}>{t('dashboard.sleepActivity')}</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color="#999" />
           </View>
