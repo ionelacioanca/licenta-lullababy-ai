@@ -26,7 +26,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose, onReque
   const router = useRouter();
   const [accountSettingsOpen, setAccountSettingsOpen] = useState(false);
   const { theme, isDark, toggleTheme } = useTheme();
-  const { t } = useLanguage();
+  const { t, language, setLanguage } = useLanguage();
 
   const handleLogout = () => {
     Alert.alert(
@@ -137,6 +137,19 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose, onReque
               />
             </View>
 
+            <TouchableOpacity 
+              style={[styles.settingItem, { backgroundColor: theme.surface }]}
+              onPress={() => setLanguage(language === 'en' ? 'ro' : 'en')}
+            >
+              <View style={styles.settingIconContainer}>
+                <Ionicons name="language" size={24} color={theme.primary} />
+              </View>
+              <Text style={[styles.settingText, { color: theme.text }]}>{t('settings.language')}</Text>
+              <Text style={[styles.languageValue, { color: theme.textSecondary }]}>
+                {language === 'en' ? 'English 🇬🇧' : 'Română 🇷🇴'}
+              </Text>
+            </TouchableOpacity>
+
             <TouchableOpacity style={[styles.settingItem, { backgroundColor: theme.surface }]}>
               <View style={styles.settingIconContainer}>
                 <Ionicons name="lock-closed-outline" size={24} color={theme.textSecondary} />
@@ -241,6 +254,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#333",
     fontWeight: "500",
+  },
+  languageValue: {
+    fontSize: 16,
+    fontWeight: "500",
+    marginRight: 8,
   },
   divider: {
     height: 1,
