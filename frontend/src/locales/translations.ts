@@ -51,6 +51,12 @@ export const translations = {
       memories: 'Memories',
       overdue: 'Overdue',
       today: 'Today',
+      lastUpdated: 'Last updated',
+      noMemories: 'No memories yet',
+      tapToCapture: 'Tap to start capturing moments',
+      lullabySectionTitle: 'Lullaby Player',
+      lullabySectionEmpty: 'No lullaby selected',
+      lullabySectionTapBrowse: 'Tap to browse library',
     },
     
     // Navigation
@@ -276,6 +282,12 @@ export const translations = {
       memories: 'Amintiri',
       overdue: 'Întârziat',
       today: 'Astăzi',
+      lastUpdated: 'Ultima actualizare',
+      noMemories: 'Nu există amintiri încă',
+      tapToCapture: 'Apasă pentru a captura momente',
+      lullabySectionTitle: 'Player Cântece de Leagăn',
+      lullabySectionEmpty: 'Niciun cântec selectat',
+      lullabySectionTapBrowse: 'Apasă pentru a răsfoi biblioteca',
     },
     
     // Navigation

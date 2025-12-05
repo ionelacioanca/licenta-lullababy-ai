@@ -12,6 +12,7 @@ import { Audio } from "expo-av";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Sound, getDefaultSounds } from "../services/soundService";
 import { useTheme } from "../contexts/ThemeContext";
+import { useLanguage } from "../contexts/LanguageContext";
 
 type SoundPlayerProps = {
   onOpenLibrary: () => void;
@@ -27,6 +28,7 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
   const [currentSound, setCurrentSound] = useState<Sound | null>(null);
   const [volume, setVolume] = useState(0.7);
   const soundRef = useRef<Audio.Sound | null>(null);
+  const { t } = useLanguage();
 
   // Load last played sound from AsyncStorage on mount
   useEffect(() => {
@@ -188,8 +190,8 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
       <TouchableOpacity style={[styles.card, { backgroundColor: theme.card }]} activeOpacity={0.7} onPress={onOpenLibrary}>
         <View style={styles.emptyState}>
           <Ionicons name="musical-notes-outline" size={48} color={theme.textTertiary} />
-          <Text style={[styles.emptyText, { color: theme.textSecondary }]}>No sound selected</Text>
-          <Text style={[styles.emptySubtext, { color: theme.textTertiary }]}>Tap to browse library</Text>
+          <Text style={[styles.emptyText, { color: theme.textSecondary }]}>{t('dashboard.lullabySectionEmpty')}</Text>
+          <Text style={[styles.emptySubtext, { color: theme.textTertiary }]}>{t('dashboard.lullabySectionTapBrowse')}</Text>
         </View>
       </TouchableOpacity>
     );
@@ -200,7 +202,7 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
       <View style={styles.header}>
         <View style={styles.titleRow}>
           <Ionicons name="musical-notes" size={18} color={theme.primary} />
-          <Text style={[styles.headerTitle, { color: theme.text }]}>Lullaby Player</Text>
+          <Text style={[styles.headerTitle, { color: theme.text }]}>{t('dashboard.lullabySectionTitle')}</Text>
         </View>
         <Ionicons name="chevron-forward" size={20} color={theme.textTertiary} />
       </View>

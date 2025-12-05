@@ -341,7 +341,7 @@ const DashboardPage: React.FC = () => {
                   <Ionicons name="bed-outline" size={16} color="white" />
                 </View>
                 <View style={styles.timelineContent}>
-                  <Text style={styles.timelineLabel}>Fell Asleep</Text>
+                  <Text style={styles.timelineLabel}>{t('dashboard.fellAsleep')}</Text>
                   <Text style={styles.timelineTime}>14:30 PM</Text>
                 </View>
               </View>
@@ -351,7 +351,7 @@ const DashboardPage: React.FC = () => {
                   <Ionicons name="sunny-outline" size={16} color="white" />
                 </View>
                 <View style={styles.timelineContent}>
-                  <Text style={styles.timelineLabel}>Woke Up</Text>
+                  <Text style={styles.timelineLabel}>{t('dashboard.wokeUp')}</Text>
                   <Text style={styles.timelineTime}>16:15 PM</Text>
                 </View>
               </View>
@@ -359,12 +359,12 @@ const DashboardPage: React.FC = () => {
             
             <View style={styles.activitySummary}>
               <View style={styles.summaryItem}>
-                <Text style={styles.activityLabel}>Last Sleep</Text>
-                <Text style={styles.activityValue}>2h ago</Text>
+                <Text style={styles.activityLabel}>{t('dashboard.lastSleep')}</Text>
+                <Text style={styles.activityValue}>2h {t('dashboard.ago')}</Text>
               </View>
               <View style={styles.activityDivider} />
               <View style={styles.summaryItem}>
-                <Text style={styles.activityLabel}>Duration</Text>
+                <Text style={styles.activityLabel}>{t('dashboard.duration')}</Text>
                 <Text style={styles.activityValue}>1h 45m</Text>
               </View>
             </View>
@@ -415,7 +415,7 @@ const DashboardPage: React.FC = () => {
 
             <View style={styles.lastUpdated}>
               <Ionicons name="time-outline" size={14} color="#999" />
-              <Text style={styles.lastUpdatedText}>Last updated: Today</Text>
+              <Text style={styles.lastUpdatedText}>{t('dashboard.lastUpdated')}: {t('dashboard.today')}</Text>
             </View>
           </View>
         </TouchableOpacity>
@@ -576,8 +576,8 @@ const DashboardPage: React.FC = () => {
             ) : (
               <View style={styles.noEventsContainer}>
                 <Ionicons name="book-outline" size={32} color="#CCC" />
-                <Text style={styles.noEventsText}>No memories yet</Text>
-                <Text style={styles.noEventsSubtext}>Tap to start capturing moments</Text>
+                <Text style={styles.noEventsText}>{t('dashboard.noMemories')}</Text>
+                <Text style={styles.noEventsSubtext}>{t('dashboard.tapToCapture')}</Text>
               </View>
             )}
           </View>
