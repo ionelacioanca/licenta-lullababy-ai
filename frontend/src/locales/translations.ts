@@ -233,6 +233,10 @@ export const translations = {
       deleteAccountWarning: '⚠️ Warning: This will permanently delete your account and all associated baby data. This action cannot be undone.',
       enterPasswordConfirm: 'Enter your password to confirm',
       linkedAccountsInfo: 'Your linked accounts. Send link requests from Settings → Request Parent Link',
+      linkRequestInfo: 'Send a link request to the parent. They will see a notification in their app and can accept or decline. Once accepted, you\'ll be able to view and manage their baby\'s information.',
+      messageOptional: 'Message (Optional)',
+      messagePlaceholder: 'Add a personal message...',
+      cancel: 'Cancel',
     },
     
     // Growth Tracking
@@ -515,6 +519,10 @@ export const translations = {
       deleteAccountWarning: '⚠️ Atenție: Aceasta va șterge permanent contul tău și toate datele asociate bebelușului. Această acțiune nu poate fi anulată.',
       enterPasswordConfirm: 'Introdu parola pentru a confirma',
       linkedAccountsInfo: 'Conturile tale conectate. Trimite cereri de legătură din Setări → Cere Legătură cu Părintele',
+      linkRequestInfo: 'Trimite o cerere de legătură către părinte. Ei vor vedea o notificare în aplicația lor și pot accepta sau refuza. Odată acceptată, vei putea vizualiza și gestiona informațiile despre bebelușul lor.',
+      messageOptional: 'Mesaj (Opțional)',
+      messagePlaceholder: 'Adaugă un mesaj personal...',
+      cancel: 'Anulează',
     },
     
     // Growth Tracking

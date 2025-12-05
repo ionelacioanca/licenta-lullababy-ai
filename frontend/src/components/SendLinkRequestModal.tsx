@@ -91,7 +91,7 @@ export default function SendLinkRequestModal({
             <View style={[styles.infoBox, { backgroundColor: theme.primaryLight }]}>
               <Ionicons name="information-circle-outline" size={24} color={theme.primary} />
               <Text style={[styles.infoText, { color: theme.text }]}>
-                Send a link request to the parent. They will see a notification in their app and can accept or decline. Once accepted, you'll be able to view and manage their baby's information.
+                {t('settings.linkRequestInfo')}
               </Text>
             </View>
 
@@ -111,10 +111,10 @@ export default function SendLinkRequestModal({
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={[styles.label, { color: theme.text }]}>Message (Optional)</Text>
+              <Text style={[styles.label, { color: theme.text }]}>{t('settings.messageOptional')}</Text>
               <TextInput
                 style={[styles.input, styles.textArea, { backgroundColor: theme.surface, color: theme.text, borderColor: theme.border }]}
-                placeholder="Add a personal message..."
+                placeholder={t('settings.messagePlaceholder')}
                 placeholderTextColor={theme.textTertiary}
                 value={message}
                 onChangeText={setMessage}
@@ -142,7 +142,7 @@ export default function SendLinkRequestModal({
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.cancelButton} onPress={handleClose} disabled={loading}>
-              <Text style={[styles.cancelButtonText, { color: theme.textSecondary }]}>Cancel</Text>
+              <Text style={[styles.cancelButtonText, { color: theme.textSecondary }]}>{t('settings.cancel')}</Text>
             </TouchableOpacity>
           </View>
         </View>
