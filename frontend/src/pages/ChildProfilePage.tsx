@@ -537,24 +537,24 @@ const ChildProfilePage: React.FC = () => {
             )}
           </TouchableOpacity>
           <TouchableOpacity onPress={() => setShowAvatarModal(true)}>
-            <Text style={styles.addPhotoText}>{avatarImage ? "Change photo" : "Add photo"}</Text>
+            <Text style={styles.addPhotoText}>{avatarImage ? t('baby.changePhoto') : t('baby.addPhoto')}</Text>
           </TouchableOpacity>
         </View>
 
         {/* Profile Details - Simple List */}
         <View style={styles.detailsContainer}>
           <View style={styles.simpleRow}>
-            <Text style={styles.simpleLabel}>First Name:</Text>
+            <Text style={styles.simpleLabel}>{t('baby.firstName')}:</Text>
             <TextInput
               style={styles.simpleValue}
               value={editedName}
               onChangeText={setEditedName}
-              placeholder="Enter name"
+              placeholder={t('baby.enterName')}
             />
           </View>
 
           <View style={styles.simpleRow}>
-            <Text style={styles.simpleLabel}>Birthday:</Text>
+            <Text style={styles.simpleLabel}>{t('baby.birthday')}:</Text>
             <TextInput
               style={styles.simpleValue}
               value={editedBirthDate ? formatBirthDate(editedBirthDate) : ""}
@@ -567,7 +567,7 @@ const ChildProfilePage: React.FC = () => {
           </View>
 
           <View style={styles.simpleRow}>
-            <Text style={styles.simpleLabel}>Gestational Weeks:</Text>
+            <Text style={styles.simpleLabel}>{t('baby.gestationalWeeks')}:</Text>
             <TextInput
               style={styles.simpleValue}
               value={editedGestationalWeeks}
@@ -578,7 +578,7 @@ const ChildProfilePage: React.FC = () => {
           </View>
 
           <View style={styles.simpleRow}>
-            <Text style={styles.simpleLabel}>Birth Weight (g):</Text>
+            <Text style={styles.simpleLabel}>{t('baby.birthWeight')}:</Text>
             <TextInput
               style={styles.simpleValue}
               value={editedBirthWeight}
@@ -589,7 +589,7 @@ const ChildProfilePage: React.FC = () => {
           </View>
 
           <View style={styles.simpleRow}>
-            <Text style={styles.simpleLabel}>Birth Length (cm):</Text>
+            <Text style={styles.simpleLabel}>{t('baby.birthLength')}:</Text>
             <TextInput
               style={styles.simpleValue}
               value={editedBirthLength}
@@ -600,7 +600,7 @@ const ChildProfilePage: React.FC = () => {
           </View>
 
           <View style={styles.simpleRow}>
-            <Text style={styles.simpleLabel}>Sex:</Text>
+            <Text style={styles.simpleLabel}>{t('baby.sex')}:</Text>
             <View style={styles.sexButtons}>
               <TouchableOpacity
                 style={[
@@ -610,7 +610,7 @@ const ChildProfilePage: React.FC = () => {
                 onPress={() => setEditedSex("male")}
               >
                 <Ionicons name="male" size={20} color={editedSex === "male" ? "#333" : "#999"} />
-                <Text style={styles.sexButtonTextSmall}>Male</Text>
+                <Text style={styles.sexButtonTextSmall}>{t('baby.male')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[
@@ -620,18 +620,18 @@ const ChildProfilePage: React.FC = () => {
                 onPress={() => setEditedSex("female")}
               >
                 <Ionicons name="female" size={20} color={editedSex === "female" ? "#333" : "#999"} />
-                <Text style={styles.sexButtonTextSmall}>Female</Text>
+                <Text style={styles.sexButtonTextSmall}>{t('baby.female')}</Text>
               </TouchableOpacity>
             </View>
           </View>
 
           <View style={styles.simpleRow}>
-            <Text style={styles.simpleLabel}>Known Allergies:</Text>
+            <Text style={styles.simpleLabel}>{t('baby.knownAllergies')}:</Text>
             <TextInput
               style={styles.simpleValue}
               value={editedAllergies}
               onChangeText={setEditedAllergies}
-              placeholder="None"
+              placeholder={t('baby.none')}
               multiline
             />
           </View>
@@ -639,14 +639,14 @@ const ChildProfilePage: React.FC = () => {
 
         {/* Delete Button */}
         <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteProfile}>
-          <Text style={styles.deleteButtonText}>Delete this child profile</Text>
+          <Text style={styles.deleteButtonText}>{t('baby.deleteProfile')}</Text>
         </TouchableOpacity>
       </ScrollView>
 
       {/* Fixed Save Button at Bottom */}
       <View style={styles.fixedBottomButton}>
         <TouchableOpacity style={styles.saveButtonLarge} onPress={handleSaveProfile}>
-          <Text style={styles.saveButtonLargeText}>Save</Text>
+          <Text style={styles.saveButtonLargeText}>{t('baby.save')}</Text>
         </TouchableOpacity>
       </View>
 

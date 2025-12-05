@@ -102,7 +102,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose, onReque
                 <View style={styles.settingIconContainer}>
                   <Ionicons name="link-outline" size={24} color={theme.primary} />
                 </View>
-                <Text style={[styles.settingText, { color: theme.text }]}>Request Parent Link</Text>
+                <Text style={[styles.settingText, { color: theme.text }]}>{t('settings.requestParentLink')}</Text>
                 <Ionicons name="chevron-forward" size={20} color={theme.textTertiary} />
               </TouchableOpacity>
             )}
