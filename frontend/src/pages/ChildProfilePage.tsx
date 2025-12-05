@@ -17,6 +17,7 @@ import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
+import { useLanguage } from "../contexts/LanguageContext";
 
 interface Baby {
   _id: string;
@@ -34,6 +35,7 @@ interface Baby {
 
 const ChildProfilePage: React.FC = () => {
   const router = useRouter();
+  const { t } = useLanguage();
   const [baby, setBaby] = useState<Baby | null>(null);
   const [loading, setLoading] = useState(true);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
@@ -82,7 +84,7 @@ const ChildProfilePage: React.FC = () => {
       
       // Handle avatar image URL construction
       const newAvatarImage = baby.avatarImage 
-        ? (baby.avatarImage.startsWith('http') ? baby.avatarImage : `http://192.168.1.20:5000${baby.avatarImage}`)
+        ? (baby.avatarImage.startsWith('http') ? baby.avatarImage : `http://192.168.1.21:5000${baby.avatarImage}`)
         : null;
       
       console.log("Setting avatar image in useEffect:", newAvatarImage);
@@ -103,7 +105,7 @@ const ChildProfilePage: React.FC = () => {
       }
 
       const response = await fetch(
-        `http://192.168.1.20:5000/api/baby/parent/${parentId}`,
+        `http://192.168.1.21:5000/api/baby/parent/${parentId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -126,7 +128,7 @@ const ChildProfilePage: React.FC = () => {
           
           // Load avatar data from backend
           setSelectedColor(selectedBaby.avatarColor || "#00CFFF");
-          setAvatarImage(selectedBaby.avatarImage ? `http://192.168.1.20:5000${selectedBaby.avatarImage}` : null);
+          setAvatarImage(selectedBaby.avatarImage ? `http://192.168.1.21:5000${selectedBaby.avatarImage}` : null);
         } else {
           console.warn("Selected baby not found in data");
         }
@@ -181,7 +183,7 @@ const ChildProfilePage: React.FC = () => {
       formData.append('avatarColor', selectedColor);
 
       const response = await fetch(
-        `http://192.168.1.20:5000/api/baby/${selectedBabyId}/avatar`,
+        `http://192.168.1.21:5000/api/baby/${selectedBabyId}/avatar`,
         {
           method: "POST",
           headers: {
@@ -199,7 +201,7 @@ const ChildProfilePage: React.FC = () => {
       console.log("Updated baby from server:", updatedBaby);
       console.log("Avatar image path:", updatedBaby.avatarImage);
       
-      const fullImageUrl = updatedBaby.avatarImage ? `http://192.168.1.20:5000${updatedBaby.avatarImage}` : null;
+      const fullImageUrl = updatedBaby.avatarImage ? `http://192.168.1.21:5000${updatedBaby.avatarImage}` : null;
       console.log("Full image URL:", fullImageUrl);
       
       setBaby(updatedBaby);
@@ -279,7 +281,7 @@ const ChildProfilePage: React.FC = () => {
       formData.append('removeImage', 'true');
       
       const response = await fetch(
-        `http://192.168.1.20:5000/api/baby/${selectedBabyId}/avatar`,
+        `http://192.168.1.21:5000/api/baby/${selectedBabyId}/avatar`,
         {
           method: "POST",
           headers: {
@@ -322,7 +324,7 @@ const ChildProfilePage: React.FC = () => {
       formData.append('removeImage', 'true'); // Remove image when selecting color
       
       const response = await fetch(
-        `http://192.168.1.20:5000/api/baby/${selectedBabyId}/avatar`,
+        `http://192.168.1.21:5000/api/baby/${selectedBabyId}/avatar`,
         {
           method: "POST",
           headers: {
@@ -382,7 +384,7 @@ const ChildProfilePage: React.FC = () => {
       };
 
       const response = await fetch(
-        `http://192.168.1.20:5000/api/baby/${selectedBabyId}`,
+        `http://192.168.1.21:5000/api/baby/${selectedBabyId}`,
         {
           method: "PUT",
           headers: {
@@ -451,7 +453,7 @@ const ChildProfilePage: React.FC = () => {
               await AsyncStorage.removeItem(`baby_image_${selectedBabyId}`);
 
               const response = await fetch(
-                `http://192.168.1.20:5000/api/baby/${selectedBabyId}`,
+                `http://192.168.1.21:5000/api/baby/${selectedBabyId}`,
                 {
                   method: "DELETE",
                   headers: {
@@ -535,24 +537,24 @@ const ChildProfilePage: React.FC = () => {
             )}
           </TouchableOpacity>
           <TouchableOpacity onPress={() => setShowAvatarModal(true)}>
-            <Text style={styles.addPhotoText}>{avatarImage ? "Change photo" : "Add photo"}</Text>
+            <Text style={styles.addPhotoText}>{avatarImage ? t('baby.changePhoto') : t('baby.addPhoto')}</Text>
           </TouchableOpacity>
         </View>
 
         {/* Profile Details - Simple List */}
         <View style={styles.detailsContainer}>
           <View style={styles.simpleRow}>
-            <Text style={styles.simpleLabel}>First Name:</Text>
+            <Text style={styles.simpleLabel}>{t('baby.firstName')}:</Text>
             <TextInput
               style={styles.simpleValue}
               value={editedName}
               onChangeText={setEditedName}
-              placeholder="Enter name"
+              placeholder={t('baby.enterName')}
             />
           </View>
 
           <View style={styles.simpleRow}>
-            <Text style={styles.simpleLabel}>Birthday:</Text>
+            <Text style={styles.simpleLabel}>{t('baby.birthday')}:</Text>
             <TextInput
               style={styles.simpleValue}
               value={editedBirthDate ? formatBirthDate(editedBirthDate) : ""}
@@ -565,7 +567,7 @@ const ChildProfilePage: React.FC = () => {
           </View>
 
           <View style={styles.simpleRow}>
-            <Text style={styles.simpleLabel}>Gestational Weeks:</Text>
+            <Text style={styles.simpleLabel}>{t('baby.gestationalWeeks')}:</Text>
             <TextInput
               style={styles.simpleValue}
               value={editedGestationalWeeks}
@@ -576,7 +578,7 @@ const ChildProfilePage: React.FC = () => {
           </View>
 
           <View style={styles.simpleRow}>
-            <Text style={styles.simpleLabel}>Birth Weight (g):</Text>
+            <Text style={styles.simpleLabel}>{t('baby.birthWeight')}:</Text>
             <TextInput
               style={styles.simpleValue}
               value={editedBirthWeight}
@@ -587,7 +589,7 @@ const ChildProfilePage: React.FC = () => {
           </View>
 
           <View style={styles.simpleRow}>
-            <Text style={styles.simpleLabel}>Birth Length (cm):</Text>
+            <Text style={styles.simpleLabel}>{t('baby.birthLength')}:</Text>
             <TextInput
               style={styles.simpleValue}
               value={editedBirthLength}
@@ -598,7 +600,7 @@ const ChildProfilePage: React.FC = () => {
           </View>
 
           <View style={styles.simpleRow}>
-            <Text style={styles.simpleLabel}>Sex:</Text>
+            <Text style={styles.simpleLabel}>{t('baby.sex')}:</Text>
             <View style={styles.sexButtons}>
               <TouchableOpacity
                 style={[
@@ -608,7 +610,7 @@ const ChildProfilePage: React.FC = () => {
                 onPress={() => setEditedSex("male")}
               >
                 <Ionicons name="male" size={20} color={editedSex === "male" ? "#333" : "#999"} />
-                <Text style={styles.sexButtonTextSmall}>Male</Text>
+                <Text style={styles.sexButtonTextSmall}>{t('baby.male')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[
@@ -618,18 +620,18 @@ const ChildProfilePage: React.FC = () => {
                 onPress={() => setEditedSex("female")}
               >
                 <Ionicons name="female" size={20} color={editedSex === "female" ? "#333" : "#999"} />
-                <Text style={styles.sexButtonTextSmall}>Female</Text>
+                <Text style={styles.sexButtonTextSmall}>{t('baby.female')}</Text>
               </TouchableOpacity>
             </View>
           </View>
 
           <View style={styles.simpleRow}>
-            <Text style={styles.simpleLabel}>Known Allergies:</Text>
+            <Text style={styles.simpleLabel}>{t('baby.knownAllergies')}:</Text>
             <TextInput
               style={styles.simpleValue}
               value={editedAllergies}
               onChangeText={setEditedAllergies}
-              placeholder="None"
+              placeholder={t('baby.none')}
               multiline
             />
           </View>
@@ -637,14 +639,14 @@ const ChildProfilePage: React.FC = () => {
 
         {/* Delete Button */}
         <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteProfile}>
-          <Text style={styles.deleteButtonText}>Delete this child profile</Text>
+          <Text style={styles.deleteButtonText}>{t('baby.deleteProfile')}</Text>
         </TouchableOpacity>
       </ScrollView>
 
       {/* Fixed Save Button at Bottom */}
       <View style={styles.fixedBottomButton}>
         <TouchableOpacity style={styles.saveButtonLarge} onPress={handleSaveProfile}>
-          <Text style={styles.saveButtonLargeText}>Save</Text>
+          <Text style={styles.saveButtonLargeText}>{t('baby.save')}</Text>
         </TouchableOpacity>
       </View>
 

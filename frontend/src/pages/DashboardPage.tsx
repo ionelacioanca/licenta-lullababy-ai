@@ -3,6 +3,7 @@ import { View, ScrollView, StyleSheet, TouchableOpacity, Text, Alert, Image } fr
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { useLanguage } from "../contexts/LanguageContext";
 import Header from "./Header";
 import Footer from "./Footer";
 import BabyMonitorStream from "../components/BabyMonitorStream";
@@ -28,6 +29,7 @@ import { useTheme } from "../contexts/ThemeContext";
 const DashboardPage: React.FC = () => {
   const router = useRouter();
   const { theme } = useTheme();
+  const { t } = useLanguage();
   const [babyName, setBabyName] = useState("");
   const [childInitial, setChildInitial] = useState("?");
   const [avatarColor, setAvatarColor] = useState("#00CFFF");
@@ -103,7 +105,7 @@ const DashboardPage: React.FC = () => {
     
     // Load user role and pending requests count
     try {
-      const userInfoResponse = await fetch(`http://192.168.1.20:5000/api/user-info`, {
+      const userInfoResponse = await fetch(`http://192.168.1.21:5000/api/user-info`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -126,7 +128,7 @@ const DashboardPage: React.FC = () => {
     }
 
     try {
-  const response = await fetch(`http://192.168.1.20:5000/api/baby/parent/${parentId}`, {
+  const response = await fetch(`http://192.168.1.21:5000/api/baby/parent/${parentId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -165,7 +167,7 @@ const DashboardPage: React.FC = () => {
           
           // Load avatar data from backend
           setAvatarColor(baby.avatarColor || "#00CFFF");
-          setAvatarImage(baby.avatarImage ? `http://192.168.1.20:5000${baby.avatarImage}` : null);
+          setAvatarImage(baby.avatarImage ? `http://192.168.1.21:5000${baby.avatarImage}` : null);
           
           // Store birth data
           console.log("Baby birth data - birthWeight:", baby.birthWeight, "birthLength:", baby.birthLength, "birthDate:", baby.birthDate);
@@ -280,7 +282,7 @@ const DashboardPage: React.FC = () => {
     if (!babyId) return;
     
     Alert.alert(
-      'Generate Schedules',
+      t('dashboard.generateSchedules'),
       'Generate vaccination and milestone schedules for your baby?',
       [
         { text: 'Cancel', style: 'cancel' },
@@ -327,7 +329,7 @@ const DashboardPage: React.FC = () => {
           <View style={styles.activityHeader}>
             <View style={styles.titleRow}>
               <Ionicons name="moon" size={18} color={theme.primary} />
-              <Text style={[styles.headerTitle, { color: theme.text }]}>Sleep Activity</Text>
+              <Text style={[styles.headerTitle, { color: theme.text }]}>{t('dashboard.sleepActivity')}</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color="#999" />
           </View>
@@ -339,7 +341,7 @@ const DashboardPage: React.FC = () => {
                   <Ionicons name="bed-outline" size={16} color="white" />
                 </View>
                 <View style={styles.timelineContent}>
-                  <Text style={styles.timelineLabel}>Fell Asleep</Text>
+                  <Text style={styles.timelineLabel}>{t('dashboard.fellAsleep')}</Text>
                   <Text style={styles.timelineTime}>14:30 PM</Text>
                 </View>
               </View>
@@ -349,7 +351,7 @@ const DashboardPage: React.FC = () => {
                   <Ionicons name="sunny-outline" size={16} color="white" />
                 </View>
                 <View style={styles.timelineContent}>
-                  <Text style={styles.timelineLabel}>Woke Up</Text>
+                  <Text style={styles.timelineLabel}>{t('dashboard.wokeUp')}</Text>
                   <Text style={styles.timelineTime}>16:15 PM</Text>
                 </View>
               </View>
@@ -357,12 +359,12 @@ const DashboardPage: React.FC = () => {
             
             <View style={styles.activitySummary}>
               <View style={styles.summaryItem}>
-                <Text style={styles.activityLabel}>Last Sleep</Text>
-                <Text style={styles.activityValue}>2h ago</Text>
+                <Text style={styles.activityLabel}>{t('dashboard.lastSleep')}</Text>
+                <Text style={styles.activityValue}>2h {t('dashboard.ago')}</Text>
               </View>
               <View style={styles.activityDivider} />
               <View style={styles.summaryItem}>
-                <Text style={styles.activityLabel}>Duration</Text>
+                <Text style={styles.activityLabel}>{t('dashboard.duration')}</Text>
                 <Text style={styles.activityValue}>1h 45m</Text>
               </View>
             </View>
@@ -383,7 +385,7 @@ const DashboardPage: React.FC = () => {
           <View style={styles.activityHeader}>
             <View style={styles.titleRow}>
               <Ionicons name="fitness" size={18} color={theme.primary} />
-              <Text style={[styles.headerTitle, { color: theme.text }]}>Growth Tracking</Text>
+              <Text style={[styles.headerTitle, { color: theme.text }]}>{t('dashboard.growthTracking')}</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={theme.textTertiary} />
           </View>
@@ -395,8 +397,8 @@ const DashboardPage: React.FC = () => {
                   <Ionicons name="scale-outline" size={20} color="white" />
                 </View>
                 <View style={styles.timelineContent}>
-                  <Text style={styles.timelineLabel}>Weight</Text>
-                  <Text style={styles.timelineTime}>{currentWeight} kg</Text>
+                  <Text style={styles.timelineLabel}>{t('dashboard.weight')}</Text>
+                  <Text style={styles.timelineValue}>{currentWeight} kg</Text>
                 </View>
               </View>
               <View style={styles.activityDivider} />
@@ -405,7 +407,7 @@ const DashboardPage: React.FC = () => {
                   <Ionicons name="resize-outline" size={20} color="white" />
                 </View>
                 <View style={styles.timelineContent}>
-                  <Text style={styles.timelineLabel}>Length</Text>
+                  <Text style={styles.timelineLabel}>{t('dashboard.length')}</Text>
                   <Text style={styles.timelineTime}>{currentLength} cm</Text>
                 </View>
               </View>
@@ -413,7 +415,7 @@ const DashboardPage: React.FC = () => {
 
             <View style={styles.lastUpdated}>
               <Ionicons name="time-outline" size={14} color="#999" />
-              <Text style={styles.lastUpdatedText}>Last updated: Today</Text>
+              <Text style={styles.lastUpdatedText}>{t('dashboard.lastUpdated')}: {t('dashboard.today')}</Text>
             </View>
           </View>
         </TouchableOpacity>
@@ -427,7 +429,7 @@ const DashboardPage: React.FC = () => {
           <View style={styles.activityHeader}>
             <View style={styles.titleRow}>
               <Ionicons name="calendar" size={18} color={theme.primary} />
-              <Text style={[styles.headerTitle, { color: theme.text }]}>Upcoming Events</Text>
+              <Text style={[styles.headerTitle, { color: theme.text }]}>{t('dashboard.upcomingEvents')}</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color="#999" />
           </View>
@@ -474,14 +476,14 @@ const DashboardPage: React.FC = () => {
                               <Ionicons name="checkmark-circle" size={16} color="#A2E884" />
                             </View>
                           )}
-                          {isPast && !event.completed && (
+                          {isPast && !isToday && !event.completed && (
                             <View style={styles.overdueBadge}>
-                              <Text style={styles.overdueText}>Overdue</Text>
+                              <Text style={styles.overdueText}>{t('dashboard.overdue')}</Text>
                             </View>
                           )}
                           {isToday && !event.completed && (
                             <View style={styles.todayBadge}>
-                              <Text style={styles.todayBadgeText}>Today</Text>
+                              <Text style={styles.todayBadgeText}>{t('dashboard.today')}</Text>
                             </View>
                           )}
                         </View>
@@ -497,8 +499,8 @@ const DashboardPage: React.FC = () => {
             ) : (
               <View style={styles.noEventsContainer}>
                 <Ionicons name="calendar-outline" size={32} color="#CCC" />
-                <Text style={styles.noEventsText}>No upcoming events</Text>
-                <Text style={styles.noEventsSubtext}>Tap to add or generate schedules</Text>
+                <Text style={styles.noEventsText}>{t('dashboard.noEvents')}</Text>
+                <Text style={styles.noEventsSubtext}>{t('dashboard.noEventsSubtext')}</Text>
               </View>
             )}
             
@@ -509,7 +511,7 @@ const DashboardPage: React.FC = () => {
                 activeOpacity={0.7}
               >
                 <Ionicons name="medical" size={18} color={theme.primary} />
-                <Text style={[styles.generateSchedulesText, { color: theme.primary }]}>Generate Schedules</Text>
+                <Text style={[styles.generateSchedulesText, { color: theme.primary }]}>{t('dashboard.generateSchedules')}</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -524,7 +526,7 @@ const DashboardPage: React.FC = () => {
           <View style={styles.activityHeader}>
             <View style={styles.titleRow}>
               <Ionicons name="book" size={18} color={theme.primary} />
-              <Text style={[styles.headerTitle, { color: theme.text }]}>Memories</Text>
+              <Text style={[styles.headerTitle, { color: theme.text }]}>{t('dashboard.memories')}</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color="#999" />
           </View>
@@ -563,7 +565,7 @@ const DashboardPage: React.FC = () => {
                       </View>
                       {memory.photos.length > 0 && (
                         <Image
-                          source={{ uri: `http://192.168.1.20:5000${memory.photos[0]}` }}
+                          source={{ uri: `http://192.168.1.21:5000${memory.photos[0]}` }}
                           style={styles.memoryThumbnail}
                         />
                       )}
@@ -574,8 +576,8 @@ const DashboardPage: React.FC = () => {
             ) : (
               <View style={styles.noEventsContainer}>
                 <Ionicons name="book-outline" size={32} color="#CCC" />
-                <Text style={styles.noEventsText}>No memories yet</Text>
-                <Text style={styles.noEventsSubtext}>Tap to start capturing moments</Text>
+                <Text style={styles.noEventsText}>{t('dashboard.noMemories')}</Text>
+                <Text style={styles.noEventsSubtext}>{t('dashboard.tapToCapture')}</Text>
               </View>
             )}
           </View>

@@ -20,6 +20,7 @@ import {
   toggleEventCompleted,
   deleteCalendarEvent,
 } from '../services/calendarService';
+import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 
 interface CalendarModalProps {
@@ -49,6 +50,7 @@ const EVENT_TYPE_ICONS = {
 
 const CalendarModal: React.FC<CalendarModalProps> = ({ visible, onClose, babyId, onEventsUpdate }) => {
   const { theme } = useTheme();
+  const { t } = useLanguage();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -118,7 +120,7 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ visible, onClose, babyId,
 
   const handleAddEvent = async () => {
     if (!newEventTitle.trim() || !selectedDate) {
-      Alert.alert('Error', 'Please enter an event title');
+      Alert.alert(t('common.error'), 'Please enter an event title');
       return;
     }
 
@@ -156,7 +158,7 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ visible, onClose, babyId,
   };
 
   const handleDeleteEvent = async (eventId: string) => {
-    Alert.alert('Delete Event', 'Are you sure you want to delete this event?', [
+    Alert.alert(t('common.delete'), 'Are you sure you want to delete this event?', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete',
@@ -352,14 +354,14 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ visible, onClose, babyId,
                         style={styles.editButton}
                       >
                         <Ionicons name="create-outline" size={16} color="#A2E884" />
-                        <Text style={styles.editText}>Edit</Text>
+                        <Text style={styles.editText}>{t('calendar.edit')}</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
                         onPress={() => handleDeleteEvent(event._id)}
                         style={styles.deleteButton}
                       >
                         <Ionicons name="trash-outline" size={16} color="#FF6B6B" />
-                        <Text style={styles.deleteText}>Delete</Text>
+                        <Text style={styles.deleteText}>{t('calendar.delete')}</Text>
                       </TouchableOpacity>
                     </View>
                   )}
@@ -373,7 +375,7 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ visible, onClose, babyId,
           <View style={styles.emptyState}>
             <Ionicons name="calendar-outline" size={48} color="#CCC" />
             <Text style={styles.emptyText}>
-              {selectedDate ? 'No events on this day' : 'No events this month'}
+              {selectedDate ? t('calendar.noEventsDay') : t('calendar.noEventsMonth')}
             </Text>
           </View>
         )}
@@ -385,7 +387,7 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ visible, onClose, babyId,
             activeOpacity={0.85}
           >
             <Ionicons name="add-circle" size={20} color="#A2E884" />
-            <Text style={styles.addEventButtonInlineText}>Add Event</Text>
+            <Text style={styles.addEventButtonInlineText}>{t('calendar.addEvent')}</Text>
           </TouchableOpacity>
         )}
       </ScrollView>
@@ -400,7 +402,7 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ visible, onClose, babyId,
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <Ionicons name="close" size={28} color={theme.icon} />
             </TouchableOpacity>
-            <Text style={[styles.title, { color: theme.text }]}>Calendar</Text>
+            <Text style={[styles.title, { color: theme.text }]}>{t('calendar.title')}</Text>
             <View style={styles.headerButton} />
           </View>
 
@@ -417,7 +419,7 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ visible, onClose, babyId,
           </View>
 
           <View style={styles.weekDays}>
-            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+            {[t('calendar.sun'), t('calendar.mon'), t('calendar.tue'), t('calendar.wed'), t('calendar.thu'), t('calendar.fri'), t('calendar.sat')].map((day) => (
               <Text key={day} style={styles.weekDayText}>
                 {day}
               </Text>
@@ -431,11 +433,11 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ visible, onClose, babyId,
               <Text style={styles.sectionTitle}>
                 {selectedDate 
                   ? selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-                  : 'Events'}
+                  : t('calendar.events')}
               </Text>
               {selectedDate && (
                 <TouchableOpacity onPress={() => setSelectedDate(null)}>
-                  <Text style={styles.clearFilterText}>Show Month</Text>
+                  <Text style={styles.clearFilterText}>{t('calendar.showMonth')}</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -465,7 +467,7 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ visible, onClose, babyId,
                 >
                   <View style={styles.formHeader}>
                     <Text style={[styles.formTitle, { color: theme.text }]}>
-                      Add Event - {selectedDate.toLocaleDateString()}
+                      {t('calendar.addEventTitle')} - {selectedDate.toLocaleDateString()}
                     </Text>
                     <TouchableOpacity 
                       onPress={() => {
@@ -481,14 +483,14 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ visible, onClose, babyId,
                   </View>
                 <TextInput
                   style={[styles.input, { backgroundColor: theme.surface, color: theme.text }]}
-                  placeholder="Event title"
+                  placeholder={t('calendar.eventTitlePlaceholder')}
                   value={newEventTitle}
                   onChangeText={setNewEventTitle}
                   placeholderTextColor={theme.textTertiary}
                 />
                 <TextInput
                   style={[styles.input, styles.textArea, { backgroundColor: theme.surface, color: theme.text }]}
-                  placeholder="Description (optional)"
+                  placeholder={t('calendar.descriptionPlaceholder')}
                   value={newEventDescription}
                   onChangeText={setNewEventDescription}
                   multiline
@@ -509,7 +511,7 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ visible, onClose, babyId,
                       <Text style={[
                         styles.typeButtonText,
                         newEventType === type && styles.typeButtonTextActive
-                      ]}>{type}</Text>
+                      ]}>{t(`calendar.${type}`)}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -522,13 +524,13 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ visible, onClose, babyId,
                       setNewEventDescription('');
                     }}
                   >
-                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                    <Text style={styles.cancelButtonText}>{t('calendar.cancel')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.formButton, styles.saveButton]}
                     onPress={handleAddEvent}
                   >
-                    <Text style={styles.saveButtonText}>Add Event</Text>
+                    <Text style={styles.saveButtonText}>{t('calendar.addEvent')}</Text>
                   </TouchableOpacity>
                 </View>
               </ScrollView>
@@ -560,7 +562,7 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ visible, onClose, babyId,
                 >
                   <View style={styles.formHeader}>
                     <Text style={styles.formTitle}>
-                      Edit Event
+                      {t('calendar.editEventTitle')}
                     </Text>
                     <TouchableOpacity 
                       onPress={() => {
@@ -577,14 +579,14 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ visible, onClose, babyId,
                   </View>
                 <TextInput
                   style={styles.input}
-                  placeholder="Event title"
+                  placeholder={t('calendar.eventTitlePlaceholder')}
                   value={newEventTitle}
                   onChangeText={setNewEventTitle}
                   placeholderTextColor="#999"
                 />
                 <TextInput
                   style={[styles.input, styles.textArea]}
-                  placeholder="Description (optional)"
+                  placeholder={t('calendar.descriptionPlaceholder')}
                   value={newEventDescription}
                   onChangeText={setNewEventDescription}
                   multiline
@@ -605,7 +607,7 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ visible, onClose, babyId,
                       <Text style={[
                         styles.typeButtonText,
                         newEventType === type && styles.typeButtonTextActive
-                      ]}>{type}</Text>
+                      ]}>{t(`calendar.${type}`)}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -620,13 +622,13 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ visible, onClose, babyId,
                       setNewEventType('other');
                     }}
                   >
-                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                    <Text style={styles.cancelButtonText}>{t('calendar.cancel')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.formButton, styles.saveButton]}
                     onPress={handleUpdateEvent}
                   >
-                    <Text style={styles.saveButtonText}>Update Event</Text>
+                    <Text style={styles.saveButtonText}>{t('calendar.updateEvent')}</Text>
                   </TouchableOpacity>
                 </View>
               </ScrollView>

@@ -14,10 +14,12 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import DropDownPicker from "react-native-dropdown-picker";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { useRouter } from "expo-router";
+import { useLanguage } from "../contexts/LanguageContext";
 import { useTheme } from "../contexts/ThemeContext";
 
 const BabyDetailsPage: React.FC = () => {
   const { theme } = useTheme();
+  const { t } = useLanguage();
   const [parentName, setParentName] = useState("");
 
   useEffect(() => {
@@ -115,7 +117,7 @@ const BabyDetailsPage: React.FC = () => {
 
     try {
       console.log("👉 Trimitem parentId:", parentId);
-  const response = await fetch("http://192.168.1.20:5000/api/babyDetails", {
+  const response = await fetch("http://192.168.1.21:5000/api/babyDetails", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -171,7 +173,7 @@ const BabyDetailsPage: React.FC = () => {
       <View style={[styles.inputContainer, { backgroundColor: theme.surface }]}>
         <Ionicons name="person-outline" size={20} color={theme.textSecondary} style={styles.icon} />
         <TextInput
-          placeholder="Baby's Name"
+          placeholder={t('baby.name')}
           placeholderTextColor={theme.textTertiary}
           style={[styles.input, { color: theme.text }]}
           value={name}
@@ -191,7 +193,7 @@ const BabyDetailsPage: React.FC = () => {
       >
         <Ionicons name="man-outline" size={20} color={sexValue === "Boy" ? "#fff" : theme.text} />
         <Text style={[styles.sexButtonText, { color: sexValue === "Boy" ? "#fff" : theme.text }]}>
-          Male
+          {t('baby.male')}
         </Text>
       </TouchableOpacity>
 
@@ -205,7 +207,7 @@ const BabyDetailsPage: React.FC = () => {
       >
         <Ionicons name="woman-outline" size={20} color={sexValue === "Girl" ? "#fff" : theme.text} />
         <Text style={[styles.sexButtonText, { color: sexValue === "Girl" ? "#fff" : theme.text }]}>
-          Female
+          {t('baby.female')}
         </Text>
       </TouchableOpacity>
     </View>
@@ -237,7 +239,7 @@ const BabyDetailsPage: React.FC = () => {
         <View style={[styles.inputContainer, { backgroundColor: theme.surface }]}>
            <Ionicons name="calendar-outline" size={20} color={theme.textSecondary} style={styles.icon} />
               <Text style={[styles.input, { color: theme.text }]}>
-                {birthDate ? formatDate(birthDate) : "Select Birth Date"}
+                {birthDate ? formatDate(birthDate) : t('baby.selectDate')}
               </Text>
         </View>
       </TouchableOpacity>
@@ -255,7 +257,7 @@ const BabyDetailsPage: React.FC = () => {
         <View style={[styles.inputContainer, { backgroundColor: theme.surface }]}>
           <Ionicons name="time-outline" size={20} color={theme.textSecondary} style={styles.icon} />
           <Text style={[styles.input, { color: theme.text }]}>
-            {birthTime ? formatTime(birthTime) : "Select Birth Time"}
+            {birthTime ? formatTime(birthTime) : t('baby.selectTime')}
           </Text>
         </View>
       </TouchableOpacity>
@@ -309,7 +311,7 @@ const BabyDetailsPage: React.FC = () => {
       <View style={[styles.inputContainer, { backgroundColor: theme.surface }]}>
         <Ionicons name="alert-circle-outline" size={20} color={theme.textSecondary} style={styles.icon} />
         <TextInput
-          placeholder="Known Allergies"
+          placeholder={t('baby.allergies')}
           placeholderTextColor={theme.textTertiary}
           style={[styles.input, { color: theme.text }]}
           value={knownAllergies}
@@ -318,7 +320,7 @@ const BabyDetailsPage: React.FC = () => {
       </View>
 
       <TouchableOpacity style={[styles.button, { backgroundColor: theme.primary }]} onPress={handleSave}>
-        <Text style={styles.buttonText}>Save Baby Details</Text>
+        <Text style={styles.buttonText}>{t('baby.save')}</Text>
       </TouchableOpacity>
     </KeyboardAwareScrollView>
   );

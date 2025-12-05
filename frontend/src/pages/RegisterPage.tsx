@@ -15,9 +15,11 @@ import DropDownPicker from "react-native-dropdown-picker";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useLanguage } from "../contexts/LanguageContext";
 
 const RegisterPage: React.FC = () => {
   const router = useRouter();
+  const { t } = useLanguage();
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -30,10 +32,10 @@ const RegisterPage: React.FC = () => {
 
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState([
-    { label: "Mother", value: "mother" },
-    { label: "Father", value: "father" },
-    { label: "Nanny", value: "nanny" },
-    { label: "Other", value: "others" },
+    { label: t('auth.mother'), value: "mother" },
+    { label: t('auth.father'), value: "father" },
+    { label: t('auth.nanny'), value: "nanny" },
+    { label: t('auth.other'), value: "others" },
   ]);
 
   const handleRegister = async () => {
@@ -68,7 +70,7 @@ const RegisterPage: React.FC = () => {
         registrationData.relatedParentEmail = relatedParentEmail.trim();
       }
 
-      const response = await fetch("http://192.168.1.20:5000/api/register", {
+      const response = await fetch("http://192.168.1.21:5000/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(registrationData),
@@ -131,16 +133,16 @@ const RegisterPage: React.FC = () => {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-      <Text style={styles.subheader}>Let’s Get Started</Text>
+      <Text style={styles.subheader}>{t('auth.letsGetStarted')}</Text>
       <Text style={styles.subtitle}>
-        Create an account with email to log in from anywhere.
+        {t('auth.createAccountSubtitle')}
       </Text>
 
       <View style={{ height: 40 }} />
       <View style={styles.inputContainer}>
         <Ionicons name="person-outline" size={20} color="#777" style={styles.icon} />
         <TextInput
-          placeholder="First Name"
+          placeholder={t('auth.firstNamePlaceholder')}
           placeholderTextColor="#777777"
           style={styles.input}
           value={name}
@@ -151,7 +153,7 @@ const RegisterPage: React.FC = () => {
       <View style={styles.inputContainer}>
         <Ionicons name="mail-outline" size={20} color="#777" style={styles.icon} />
         <TextInput
-          placeholder="Email Address"
+          placeholder={t('auth.emailPlaceholder')}
           placeholderTextColor="#777777"
           style={styles.input}
           keyboardType="email-address"
@@ -164,7 +166,7 @@ const RegisterPage: React.FC = () => {
       <View style={styles.inputContainer}>
         <Ionicons name="lock-closed-outline" size={20} color="#777" style={styles.icon} />
         <TextInput
-          placeholder="Password"
+          placeholder={t('auth.passwordPlaceholder')}
           placeholderTextColor="#777777"
           style={styles.input}
           secureTextEntry
@@ -181,7 +183,7 @@ const RegisterPage: React.FC = () => {
           setOpen={setOpen}
           setValue={setRole}
           setItems={setItems}
-          placeholder="Select Role"
+          placeholder={t('auth.selectRole')}
           style={styles.dropdown}
           dropDownContainerStyle={styles.dropdownContainer}
           zIndex={1000}
@@ -208,7 +210,7 @@ const RegisterPage: React.FC = () => {
         <View style={styles.inputContainer}>
           <Ionicons name="create-outline" size={20} color="#777" style={styles.icon} />
           <TextInput
-            placeholder="Your role (e.g., aunt, uncle, grandma)"
+            placeholder={t('auth.yourRolePlaceholder')}
             placeholderTextColor="#777777"
             style={styles.input}
             value={customRole}
@@ -227,14 +229,14 @@ const RegisterPage: React.FC = () => {
             <View style={[styles.checkbox, hasRelatedParent && styles.checkboxChecked]}>
               {hasRelatedParent && <Ionicons name="checkmark" size={16} color="#FFF" />}
             </View>
-            <Text style={styles.checkboxLabel}>I have a related parent</Text>
+            <Text style={styles.checkboxLabel}>{t('auth.haveRelatedParent')}</Text>
           </TouchableOpacity>
 
           {hasRelatedParent && (
             <View style={styles.inputContainer}>
               <Ionicons name="mail-outline" size={20} color="#777" style={styles.icon} />
               <TextInput
-                placeholder="Parent's Email Address"
+                placeholder={t('auth.parentEmailPlaceholder')}
                 placeholderTextColor="#777777"
                 style={styles.input}
                 keyboardType="email-address"
@@ -248,10 +250,10 @@ const RegisterPage: React.FC = () => {
       )}
 
       <TouchableOpacity style={styles.button} onPress={handleRegister}>
-        <Text style={styles.buttonText}>Create Account</Text>
+        <Text style={styles.buttonText}>{t('auth.createAccount')}</Text>
       </TouchableOpacity>
 
-      <Text style={styles.orText}>Or continue with</Text>
+      <Text style={styles.orText}>{t('auth.orContinueWith')}</Text>
 
       <View style={styles.authButtons}>
         <TouchableOpacity style={styles.circleButton}>
@@ -266,10 +268,10 @@ const RegisterPage: React.FC = () => {
       </View>
 
       <Text style={styles.termsText}>
-        By joining, you agree with our{" "}
-        <Text style={styles.link} onPress={() => Linking.openURL("#")}>Terms of Use</Text>,{" "}
-        <Text style={styles.link} onPress={() => Linking.openURL("#")}>Disclaimer</Text> and{" "}
-        <Text style={styles.link} onPress={() => Linking.openURL("#")}>Privacy Policy</Text>.
+        {t('auth.termsAgree')}{" "}
+        <Text style={styles.link} onPress={() => Linking.openURL("#")}>{t('auth.termsOfUse')}</Text>,{" "}
+        <Text style={styles.link} onPress={() => Linking.openURL("#")}>{t('auth.disclaimer')}</Text> {t('auth.and')}{" "}
+        <Text style={styles.link} onPress={() => Linking.openURL("#")}>{t('auth.privacyPolicy')}</Text>.
       </Text>
 
       {message ? <Text style={styles.message}>{message}</Text> : null}

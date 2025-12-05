@@ -12,6 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { sendLinkRequest } from '../services/linkRequestService';
 import { useTheme } from '../contexts/ThemeContext';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface SendLinkRequestModalProps {
   visible: boolean;
@@ -25,6 +26,7 @@ export default function SendLinkRequestModal({
   onSuccess,
 }: SendLinkRequestModalProps) {
   const { theme } = useTheme();
+  const { t } = useLanguage();
   const [parentEmail, setParentEmail] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -79,7 +81,7 @@ export default function SendLinkRequestModal({
       <View style={styles.overlay}>
         <View style={[styles.container, { backgroundColor: theme.background }]}>
           <View style={[styles.header, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
-            <Text style={[styles.title, { color: theme.text }]}>Request Parent Link</Text>
+            <Text style={[styles.title, { color: theme.text }]}>{t('settings.requestParentLink')}</Text>
             <TouchableOpacity onPress={handleClose}>
               <Ionicons name="close" size={28} color={theme.icon} />
             </TouchableOpacity>
@@ -89,12 +91,12 @@ export default function SendLinkRequestModal({
             <View style={[styles.infoBox, { backgroundColor: theme.primaryLight }]}>
               <Ionicons name="information-circle-outline" size={24} color={theme.primary} />
               <Text style={[styles.infoText, { color: theme.text }]}>
-                Send a link request to the parent. They will see a notification in their app and can accept or decline. Once accepted, you'll be able to view and manage their baby's information.
+                {t('settings.linkRequestInfo')}
               </Text>
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={[styles.label, { color: theme.text }]}>Parent Email Address *</Text>
+              <Text style={[styles.label, { color: theme.text }]}>{t('settings.parentEmailAddress')} *</Text>
               <TextInput
                 style={[styles.input, { backgroundColor: theme.surface, color: theme.text, borderColor: theme.border }]}
                 placeholder="parent@example.com"
@@ -109,10 +111,10 @@ export default function SendLinkRequestModal({
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={[styles.label, { color: theme.text }]}>Message (Optional)</Text>
+              <Text style={[styles.label, { color: theme.text }]}>{t('settings.messageOptional')}</Text>
               <TextInput
                 style={[styles.input, styles.textArea, { backgroundColor: theme.surface, color: theme.text, borderColor: theme.border }]}
-                placeholder="Add a personal message..."
+                placeholder={t('settings.messagePlaceholder')}
                 placeholderTextColor={theme.textTertiary}
                 value={message}
                 onChangeText={setMessage}
@@ -134,13 +136,13 @@ export default function SendLinkRequestModal({
               ) : (
                 <>
                   <Ionicons name="send-outline" size={20} color="#FFF" />
-                  <Text style={styles.sendButtonText}>Send Link Request</Text>
+                  <Text style={styles.sendButtonText}>{t('settings.sendRequest')}</Text>
                 </>
               )}
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.cancelButton} onPress={handleClose} disabled={loading}>
-              <Text style={[styles.cancelButtonText, { color: theme.textSecondary }]}>Cancel</Text>
+              <Text style={[styles.cancelButtonText, { color: theme.textSecondary }]}>{t('settings.cancel')}</Text>
             </TouchableOpacity>
           </View>
         </View>
