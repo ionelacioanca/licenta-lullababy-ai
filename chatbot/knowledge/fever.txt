@@ -22,23 +22,23 @@ Seek medical help if:
 
 
 === ROMÂNĂ ===
-Noțiuni de bază despre febră:
-- febra = peste 38°C
-- la bebelușii sub 3 luni → urgență medicală
-- la cei mai mari: urmărește comportamentul, hidratarea, starea generală
+Ce trebuie să știi despre febră:
+- febră înseamnă temperatura peste 38°C
+- la bebelușii sub 3 luni → e URGENȚĂ, mergi imediat la medic
+- la cei mai mari: urmărește cum se comportă, dacă bea apă, dacă e treaz
 
-Ce să verifici:
-- scutece ude
-- dacă mănâncă normal
-- alert și responsabil la stimuli
-- respirația
+La ce să fii atent:
+- are scutecele ude (face pipi normal)
+- mănâncă sau bea ca de obicei
+- e treaz și reactionează când îi vorbești
+- respiră normal
 
-NU:
-- administra antitermice fără recomandarea medicului
-- ignora febra la bebelușii mici
+NU face NICIODATĂ:
+- nu-i da medicamente pentru febră fără să vorbești cu medicul
+- nu ignora febra la bebeluși mici
 
-Cere ajutor medical dacă:
-- febra persistă peste 24 ore
-- bebelușul este greu de trezit
-- apar convulsii
-- apar dificultăți de respirație
+Du-te urgent la medic dacă:
+- febra durează mai mult de 24 de ore
+- e greu să-l trezești, e prea somnoros
+- face convulsii
+- respiră greu
