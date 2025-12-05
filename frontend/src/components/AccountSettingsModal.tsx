@@ -465,7 +465,7 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
               <View style={styles.userInfo}>
                 <Text style={[styles.userName, { color: theme.text }]}>{userName}</Text>
                 <Text style={[styles.userEmail, { color: theme.textSecondary }]}>{userEmail}</Text>
-                <Text style={[styles.userRole, { color: theme.textTertiary }]}>{userRole}</Text>
+                <Text style={[styles.userRole, { color: theme.textTertiary }]}>{t(`auth.${userRole}`)}</Text>
               </View>
             </View>
 
@@ -476,7 +476,7 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
             >
               <View style={styles.settingHeader}>
                 <Ionicons name="lock-closed" size={24} color={theme.primary} />
-                <Text style={[styles.settingTitle, { color: theme.text }]}>Change Password</Text>
+                <Text style={[styles.settingTitle, { color: theme.text }]}>{t('settings.changePassword')}</Text>
                 <Ionicons
                   name={showChangePassword ? "chevron-up" : "chevron-down"}
                   size={20}
@@ -491,7 +491,7 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                   <Ionicons name="lock-closed-outline" size={20} color={theme.primary} />
                   <TextInput
                     style={[styles.input, { color: theme.text }]}
-                    placeholder="Current Password"
+                    placeholder={t('settings.currentPassword')}
                     secureTextEntry
                     value={currentPassword}
                     onChangeText={setCurrentPassword}
@@ -503,7 +503,7 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                   <Ionicons name="key-outline" size={20} color={theme.primary} />
                   <TextInput
                     style={[styles.input, { color: theme.text }]}
-                    placeholder="New Password"
+                    placeholder={t('settings.newPassword')}
                     secureTextEntry
                     value={newPassword}
                     onChangeText={setNewPassword}
@@ -515,7 +515,7 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                   <Ionicons name="key-outline" size={20} color={theme.primary} />
                   <TextInput
                     style={[styles.input, { color: theme.text }]}
-                    placeholder="Confirm New Password"
+                    placeholder={t('settings.confirmPassword')}
                     secureTextEntry
                     value={confirmPassword}
                     onChangeText={setConfirmPassword}
@@ -531,7 +531,7 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                   {loading ? (
                     <ActivityIndicator color="#FFF" />
                   ) : (
-                    <Text style={styles.submitButtonText}>Update Password</Text>
+                    <Text style={styles.submitButtonText}>{t('settings.updatePassword')}</Text>
                   )}
                 </TouchableOpacity>
               </View>
@@ -544,7 +544,7 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
             >
               <View style={styles.settingHeader}>
                 <Ionicons name="mail" size={24} color={theme.primary} />
-                <Text style={[styles.settingTitle, { color: theme.text }]}>Change Email</Text>
+                <Text style={[styles.settingTitle, { color: theme.text }]}>{t('settings.changeEmail')}</Text>
                 <Ionicons
                   name={showChangeEmail ? "chevron-up" : "chevron-down"}
                   size={20}
@@ -559,7 +559,7 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                   <Ionicons name="mail-outline" size={20} color={theme.primary} />
                   <TextInput
                     style={[styles.input, { color: theme.text }]}
-                    placeholder="New Email Address"
+                    placeholder={t('settings.newEmail')}
                     keyboardType="email-address"
                     autoCapitalize="none"
                     value={newEmail}
@@ -572,7 +572,7 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                   <Ionicons name="lock-closed-outline" size={20} color={theme.primary} />
                   <TextInput
                     style={[styles.input, { color: theme.text }]}
-                    placeholder="Current Password"
+                    placeholder={t('settings.currentPassword')}
                     secureTextEntry
                     value={passwordForEmail}
                     onChangeText={setPasswordForEmail}
@@ -588,7 +588,7 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                   {loading ? (
                     <ActivityIndicator color="#FFF" />
                   ) : (
-                    <Text style={styles.submitButtonText}>Update Email</Text>
+                    <Text style={styles.submitButtonText}>{t('settings.updateEmail')}</Text>
                   )}
                 </TouchableOpacity>
               </View>
@@ -602,7 +602,7 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
               >
                 <View style={styles.settingHeader}>
                   <Ionicons name="people" size={24} color={theme.primary} />
-                  <Text style={[styles.settingTitle, { color: theme.text }]}>Links</Text>
+                  <Text style={[styles.settingTitle, { color: theme.text }]}>{t('settings.links')}</Text>
                   <Ionicons
                     name={showRelatedParent ? "chevron-up" : "chevron-down"}
                       size={20}
@@ -615,8 +615,8 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                   <View style={[styles.formContainer, { backgroundColor: theme.surface }]}>
                     <Text style={[styles.helperText, { color: theme.textSecondary }]}>
                       {userRole !== "mother" && userRole !== "father"
-                        ? "Your linked accounts. Send link requests from Settings → Request Parent Link"
-                        : "Manage your linked accounts. You can link with partners, nannies, or other caregivers."}
+                        ? t('settings.linkedAccountsInfo')
+                        : t('settings.manageLinks')}
                     </Text>
 
                     {/* Check actual role, not isNanny flag */}
@@ -643,7 +643,7 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                                   ) : (
                                     <>
                                       <Ionicons name="unlink-outline" size={20} color={theme.error} />
-                                      <Text style={[styles.unlinkButtonText, { color: theme.error }]}>Unlink</Text>
+                                      <Text style={[styles.unlinkButtonText, { color: theme.error }]}>{t('settings.unlink')}</Text>
                                     </>
                                   )}
                                 </TouchableOpacity>
@@ -724,7 +724,7 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                           <Ionicons name="mail-outline" size={20} color={theme.primary} />
                           <TextInput
                             style={[styles.input, { color: theme.text }]}
-                            placeholder="Partner's Email Address"
+                            placeholder={t('settings.partnerEmail')}
                             keyboardType="email-address"
                             autoCapitalize="none"
                             value={relatedParentEmail}
@@ -742,7 +742,7 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                             <ActivityIndicator color="#FFF" />
                           ) : (
                             <Text style={styles.submitButtonText}>
-                              {relatedParents.length > 0 || relatedParentName ? "Add Another Link" : "Link Partner"}
+                              {relatedParents.length > 0 || relatedParentName ? t('settings.addAnotherLink') : t('settings.linkPartner')}
                             </Text>
                           )}
                         </TouchableOpacity>
@@ -759,7 +759,7 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
             >
               <View style={styles.settingHeader}>
                 <Ionicons name="trash" size={24} color="#FF6B6B" />
-                <Text style={[styles.settingTitle, { color: '#FF6B6B' }]}>Delete Account</Text>
+                <Text style={[styles.settingTitle, { color: '#FF6B6B' }]}>{t('settings.deleteAccount')}</Text>
                 <Ionicons
                   name={showDeleteAccount ? "chevron-up" : "chevron-down"}
                   size={20}
@@ -771,14 +771,14 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
             {showDeleteAccount && (
               <View style={[styles.formContainer, { backgroundColor: theme.surface }]}>
                 <Text style={[styles.warningText, { color: theme.error }]}>
-                  ⚠️ Warning: This will permanently delete your account and all associated baby data. This action cannot be undone.
+                  {t('settings.deleteAccountWarning')}
                 </Text>
 
                 <View style={[styles.inputContainer, { backgroundColor: theme.card }]}>
                   <Ionicons name="lock-closed-outline" size={20} color="#FF6B6B" />
                   <TextInput
                     style={[styles.input, { color: theme.text }]}
-                    placeholder="Enter your password to confirm"
+                    placeholder={t('settings.enterPasswordConfirm')}
                     secureTextEntry
                     value={deletePassword}
                     onChangeText={setDeletePassword}
@@ -794,7 +794,7 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                   {loading ? (
                     <ActivityIndicator color="#FFF" />
                   ) : (
-                    <Text style={styles.submitButtonText}>Delete My Account</Text>
+                    <Text style={styles.submitButtonText}>{t('settings.deleteButton')}</Text>
                   )}
                 </TouchableOpacity>
               </View>

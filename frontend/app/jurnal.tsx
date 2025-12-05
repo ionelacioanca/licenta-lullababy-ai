@@ -413,7 +413,7 @@ const JournalPage: React.FC = () => {
                       selectedTags.includes(tag) && styles.filterTagTextActive,
                     ]}
                   >
-                    {tag}
+                    {t(`journal.${tag === 'first-moments' ? 'firstMoments' : tag}`)}
                   </Text>
                 </TouchableOpacity>
               ))}

@@ -20,6 +20,7 @@ import {
   updateJournalEntry,
   JournalEntry,
 } from "../services/journalService";
+import { useLanguage } from "../contexts/LanguageContext";
 
 interface AddEntryModalProps {
   visible: boolean;
@@ -55,6 +56,7 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({
   babyId,
   editEntry,
 }) => {
+  const { t } = useLanguage();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [date, setDate] = useState(new Date());
@@ -206,7 +208,7 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({
             disabled={isSubmitting}
           >
             <Text style={[styles.saveText, isSubmitting && styles.saveTextDisabled]}>
-              {isSubmitting ? "Saving..." : "Save"}
+              {isSubmitting ? t('journal.saving') : t('journal.save')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -214,10 +216,10 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           {/* Title Input */}
           <View style={styles.section}>
-            <Text style={styles.label}>Title (Optional)</Text>
+            <Text style={styles.label}>{t('journal.titleOptional')}</Text>
             <TextInput
               style={styles.titleInput}
-              placeholder="e.g., First Smile"
+              placeholder={t('journal.titlePlaceholder')}
               value={title}
               onChangeText={setTitle}
               maxLength={100}
@@ -227,11 +229,11 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({
           {/* Description Input */}
           <View style={styles.section}>
             <Text style={styles.label}>
-              Description <Text style={styles.required}>*</Text>
+              {t('journal.descriptionRequired')} <Text style={styles.required}>*</Text>
             </Text>
             <TextInput
               style={styles.descriptionInput}
-              placeholder="Write about this moment..."
+              placeholder={t('journal.descriptionPlaceholder')}
               value={description}
               onChangeText={setDescription}
               multiline
@@ -242,7 +244,7 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({
 
           {/* Date Picker */}
           <View style={styles.section}>
-            <Text style={styles.label}>Date & Time</Text>
+            <Text style={styles.label}>{t('journal.dateTime')}</Text>
             <TouchableOpacity
               style={styles.datePicker}
               onPress={() => setShowDatePicker(true)}
@@ -274,7 +276,7 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({
 
           {/* Mood Selector */}
           <View style={styles.section}>
-            <Text style={styles.label}>Mood</Text>
+            <Text style={styles.label}>{t('journal.mood')}</Text>
             <View style={styles.moodSelector}>
               {MOODS.map((mood) => (
                 <TouchableOpacity
@@ -295,7 +297,7 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({
                       color={selectedMood === mood.key ? "#A2E884" : "#999"}
                     />
                   </View>
-                  <Text style={styles.moodLabel}>{mood.label}</Text>
+                  <Text style={styles.moodLabel}>{t(`journal.${mood.key}`)}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -303,7 +305,7 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({
 
           {/* Tags Selector */}
           <View style={styles.section}>
-            <Text style={styles.label}>Tags</Text>
+            <Text style={styles.label}>{t('journal.tags')}</Text>
             <View style={styles.tagsContainer}>
               {TAGS.map((tag) => (
                 <TouchableOpacity
@@ -325,7 +327,7 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({
                       selectedTags.includes(tag.key) && styles.tagButtonTextActive,
                     ]}
                   >
-                    {tag.label}
+                    {t(`journal.${tag.key === 'first-moments' ? 'firstMoments' : tag.key}`)}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -335,7 +337,7 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({
           {/* Photo Picker */}
           <View style={styles.section}>
             <View style={styles.photoHeader}>
-              <Text style={styles.label}>Photos ({photos.length}/5)</Text>
+              <Text style={styles.label}>{t('journal.photos')} ({photos.length}/5)</Text>
               <TouchableOpacity
                 style={styles.addPhotoButton}
                 onPress={pickImages}
@@ -352,7 +354,7 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({
                     photos.length >= 5 && styles.addPhotoTextDisabled,
                   ]}
                 >
-                  Add Photos
+                  {t('journal.addPhotosButton')}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -370,7 +372,7 @@ const AddEntryModal: React.FC<AddEntryModalProps> = ({
                     </TouchableOpacity>
                     <TextInput
                       style={styles.photoCaptionInput}
-                      placeholder="Add caption..."
+                      placeholder={t('journal.addCaption')}
                       value={photoCaptions[index] || ""}
                       onChangeText={(text) => updateCaption(index, text)}
                     />
