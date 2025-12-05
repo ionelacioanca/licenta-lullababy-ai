@@ -17,6 +17,7 @@ import {
   LinkRequest,
 } from '../services/linkRequestService';
 import { useTheme } from '../contexts/ThemeContext';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface LinkRequestNotificationsProps {
   visible: boolean;
@@ -30,6 +31,7 @@ export default function LinkRequestNotifications({
   onRequestProcessed,
 }: LinkRequestNotificationsProps) {
   const { theme } = useTheme();
+  const { t } = useLanguage();
   const [requests, setRequests] = useState<LinkRequest[]>([]);
   const [loading, setLoading] = useState(false);
   const [processing, setProcessing] = useState<string | null>(null);
@@ -128,7 +130,7 @@ export default function LinkRequestNotifications({
       <View style={styles.overlay}>
         <View style={[styles.container, { backgroundColor: theme.background }]}>
           <View style={[styles.header, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
-            <Text style={[styles.title, { color: theme.text }]}>Link Requests</Text>
+            <Text style={[styles.title, { color: theme.text }]}>{t('notifications.title')}</Text>
             <TouchableOpacity onPress={onClose}>
               <Ionicons name="close" size={28} color={theme.icon} />
             </TouchableOpacity>
@@ -141,7 +143,7 @@ export default function LinkRequestNotifications({
           ) : requests.length === 0 ? (
             <View style={styles.emptyContainer}>
               <Ionicons name="notifications-off-outline" size={64} color={theme.textTertiary} />
-              <Text style={[styles.emptyText, { color: theme.textSecondary }]}>No pending link requests</Text>
+              <Text style={[styles.emptyText, { color: theme.textSecondary }]}>{t('notifications.noNotifications')}</Text>
             </View>
           ) : (
             <ScrollView style={styles.requestsList}>

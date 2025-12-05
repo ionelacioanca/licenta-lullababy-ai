@@ -216,6 +216,12 @@ export const translations = {
       you: 'You',
     },
     
+    // Notifications
+    notifications: {
+      title: 'Notifications',
+      noNotifications: 'No notifications yet',
+    },
+    
     // Settings
     settings: {
       title: 'Settings',
@@ -520,6 +526,12 @@ export const translations = {
       startMessaging: 'Începe să trimiți mesaje cu părinții conectați',
       typeMessage: 'Scrie un mesaj...',
       you: 'Tu',
+    },
+    
+    // Notifications
+    notifications: {
+      title: 'Notificări',
+      noNotifications: 'Încă nu există notificări',
     },
     
     // Settings
