@@ -4,13 +4,13 @@ import { getChatbotReply } from '../ai/chatbotService.js';
 
 export const chatWithBot = async (req, res, next) => {
   try {
-    const { message } = req.body; // ⬅️ mesajul trimis din aplicația mobilă
+    const { message, language } = req.body; // ⬅️ mesajul și limba trimise din aplicația mobilă
 
     if (!message || typeof message !== "string") {
       return res.status(400).json({ error: "Field 'message' is required and must be a string." });
     }
 
-    const reply = await getChatbotReply(message);
+    const reply = await getChatbotReply(message, language);
 
     return res.json({ reply }); // ⬅️ răspunsul din BabyCareBuddy
   } catch (err) {

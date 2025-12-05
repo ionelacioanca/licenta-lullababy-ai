@@ -80,10 +80,13 @@ Answer in English, in a warm and supportive tone.
 
   const baseInstructionRo = `
 Ești BabyCareBuddy — un asistent calm, empatic și prietenos pentru părinți de bebeluși.
-Folosește contextul oferit dacă este util, dar nu inventa informații medicale.
-Nu pui diagnostice, recomanzi consultarea medicului când simptomele sunt serioase.
-Răspunde în limba română, cu un ton blând și încurajator.
+Răspunde DOAR în limba română naturală și conversațională (nu formal sau robotizat).
+Folosește un ton cald, blând și plin de înțelegere, ca și cum ai vorbi cu un prieten.
+Evită limbajul tehnic sau medical excesiv - vorbește simplu și natural.
+Folosește contextul oferit când e relevant, dar nu inventa niciodată informații medicale.
+Nu diagnostica - recomandă părinților să consulte medicul când simptomele sunt îngrijorătoare.
 `;
+
 
   const baseInstruction = lang === "ro" ? baseInstructionRo : baseInstructionEn;
 
@@ -97,9 +100,10 @@ Assistant:`;
 }
 
 // Funcția principală apelată din controller
-async function getChatbotReply(message) {
+async function getChatbotReply(message, userLanguage) {
   try {
-    const lang = detectLanguage(message); // en / ro
+    // Use explicit language preference if provided, otherwise detect from message
+    const lang = userLanguage === 'ro' || userLanguage === 'en' ? userLanguage : detectLanguage(message);
     const knowledge = getKnowledge(message);
     const prompt = buildPrompt(message, lang, knowledge);
 
