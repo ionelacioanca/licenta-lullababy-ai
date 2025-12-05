@@ -7,6 +7,7 @@ import {
   Modal,
   Alert,
   Switch,
+  ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -78,7 +79,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose, onReque
             </TouchableOpacity>
           </View>
 
-          <View style={styles.content}>
+          <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
             <TouchableOpacity
               style={[styles.settingItem, { backgroundColor: theme.surface }]}
               onPress={() => setAccountSettingsOpen(true)}
@@ -154,7 +155,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose, onReque
               <View style={styles.settingIconContainer}>
                 <Ionicons name="lock-closed-outline" size={24} color={theme.textSecondary} />
               </View>
-              <Text style={[styles.settingText, { color: theme.text }]}>Privacy & Security</Text>
+              <Text style={[styles.settingText, { color: theme.text }]}>{t('settings.privacySecurity')}</Text>
               <Ionicons name="chevron-forward" size={20} color={theme.textTertiary} />
             </TouchableOpacity>
 
@@ -162,7 +163,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose, onReque
               <View style={styles.settingIconContainer}>
                 <Ionicons name="help-circle-outline" size={24} color={theme.textSecondary} />
               </View>
-              <Text style={[styles.settingText, { color: theme.text }]}>Help & Support</Text>
+              <Text style={[styles.settingText, { color: theme.text }]}>{t('settings.helpSupport')}</Text>
               <Ionicons name="chevron-forward" size={20} color={theme.textTertiary} />
             </TouchableOpacity>
 
@@ -185,7 +186,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose, onReque
               </View>
               <Text style={[styles.settingText, styles.logoutText]}>{ t('settings.logout')}</Text>
             </TouchableOpacity>
-          </View>
+          </ScrollView>
         </View>
       </View>
 
