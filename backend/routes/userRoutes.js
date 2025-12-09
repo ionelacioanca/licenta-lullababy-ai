@@ -121,6 +121,115 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// Google OAuth - Check if user exists
+router.post('/auth/google/check', async (req, res) => {
+  const { email, name, googleId, picture } = req.body;
+
+  try {
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+    
+    // Check if user exists
+    const user = await User.findOne({ email });
+
+    if (user) {
+      // User exists - proceed with login
+      const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+      
+      return res.json({
+        exists: true,
+        token,
+        name: user.name,
+        parentId: user._id.toString(),
+        email: user.email,
+        role: user.customRole || user.role,
+        user: {
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.customRole || user.role
+        }
+      });
+    } else {
+      // User doesn't exist - need to register
+      return res.json({
+        exists: false,
+        googleData: {
+          email,
+          name,
+          googleId,
+          picture
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Google auth check error:', error);
+    res.status(500).json({ message: 'Google authentication failed', error: error.message });
+  }
+});
+
+// Google OAuth Registration - with role
+router.post('/auth/google/register', async (req, res) => {
+  const { email, name, googleId, picture, role, customRole } = req.body;
+
+  try {
+    if (!email || !role) {
+      return res.status(400).json({ message: 'Email and role are required' });
+    }
+    
+    // Check if user already exists
+    let user = await User.findOne({ email });
+    if (user) {
+      return res.status(400).json({ message: 'User already exists' });
+    }
+
+    // Determine actual role
+    const validRoles = ["mother", "father", "nanny", "others"];
+    let actualRole = role;
+    let userCustomRole = null;
+    
+    if (!validRoles.includes(role)) {
+      userCustomRole = role;
+      actualRole = "others";
+    } else if (customRole) {
+      userCustomRole = customRole;
+    }
+
+    // Create new user
+    user = new User({
+      name: name || email.split('@')[0],
+      email,
+      password: await bcrypt.hash(Math.random().toString(36), 10), // Random password for OAuth users
+      role: actualRole,
+      customRole: userCustomRole,
+      googleId,
+    });
+    await user.save();
+    console.log('New Google user created:', user.email);
+
+    // Generate JWT token
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+    res.json({
+      token,
+      name: user.name,
+      parentId: user._id.toString(),
+      email: user.email,
+      role: user.customRole || user.role,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.customRole || user.role
+      }
+    });
+  } catch (error) {
+    console.error('Google registration error:', error);
+    res.status(500).json({ message: 'Google registration failed', error: error.message });
+  }
+});
+
 
 router.get('/verify-token', auth, (req, res) => {
   res.json({ message: 'Token valid', user: req.user });

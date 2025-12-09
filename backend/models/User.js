@@ -36,7 +36,12 @@ const userSchema = new mongoose.Schema({
     relatedParentIds: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
-    }]
+    }],
+    googleId: {
+        type: String,
+        unique: true,
+        sparse: true // Allows null values while maintaining uniqueness
+    }
 }, {timestamps: true});
 
 userSchema.pre("save", async function (next) {
