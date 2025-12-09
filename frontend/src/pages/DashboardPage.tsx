@@ -520,7 +520,7 @@ const DashboardPage: React.FC = () => {
                       </View>
                       <View style={styles.eventDetails}>
                         <View style={styles.eventTitleRow}>
-                          <Text style={[styles.eventTitle, isPast && styles.pastEventText]}>
+                          <Text style={[styles.eventTitle, { color: theme.text }, isPast && styles.pastEventText]}>
                             {event.title}
                           </Text>
                           {event.completed && (
@@ -539,7 +539,7 @@ const DashboardPage: React.FC = () => {
                             </View>
                           )}
                         </View>
-                        <Text style={[styles.eventDateText, isPast && styles.pastEventText]}>
+                        <Text style={[styles.eventDateText, { color: theme.textSecondary }, isPast && styles.pastEventText]}>
                           {eventDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                           {event.time && ` at ${event.time}`}
                         </Text>
