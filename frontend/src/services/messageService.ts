@@ -19,6 +19,7 @@ export interface Conversation {
   userId: string;
   name: string;
   email: string;
+  profilePicture?: string | null;
   lastMessage: {
     content: string;
     createdAt: string;
