@@ -13,6 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import AccountSettingsModal from "./AccountSettingsModal";
+import AboutModal from "./AboutModal";
 import { useLanguage } from "../contexts/LanguageContext";
 import { useTheme } from "../contexts/ThemeContext";
 
@@ -26,6 +27,7 @@ interface SettingsModalProps {
 const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose, onRequestLink, userRole }) => {
   const router = useRouter();
   const [accountSettingsOpen, setAccountSettingsOpen] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(false);
   const { theme, isDark, toggleTheme } = useTheme();
   const { t, language, setLanguage } = useLanguage();
 
@@ -167,7 +169,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose, onReque
               <Ionicons name="chevron-forward" size={20} color={theme.textTertiary} />
             </TouchableOpacity>
 
-            <TouchableOpacity style={[styles.settingItem, { backgroundColor: theme.surface }]}>
+            <TouchableOpacity 
+              style={[styles.settingItem, { backgroundColor: theme.surface }]}
+              onPress={() => setAboutOpen(true)}
+            >
               <View style={styles.settingIconContainer}>
                 <Ionicons name="information-circle-outline" size={24} color={theme.textSecondary} />
               </View>
@@ -193,6 +198,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose, onReque
       <AccountSettingsModal
         visible={accountSettingsOpen}
         onClose={() => setAccountSettingsOpen(false)}
+      />
+
+      <AboutModal
+        visible={aboutOpen}
+        onClose={() => setAboutOpen(false)}
       />
     </Modal>
   );
