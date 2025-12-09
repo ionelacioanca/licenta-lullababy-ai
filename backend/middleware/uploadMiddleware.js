@@ -11,12 +11,16 @@ const __dirname = path.dirname(__filename);
 // Ensure upload directories exist
 const uploadsDir = path.join(__dirname, '..', 'uploads');
 const journalDir = path.join(uploadsDir, 'journal');
+const profileDir = path.join(uploadsDir, 'profiles');
 
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir);
 }
 if (!fs.existsSync(journalDir)) {
   fs.mkdirSync(journalDir);
+}
+if (!fs.existsSync(profileDir)) {
+  fs.mkdirSync(profileDir);
 }
 
 // Configure storage for baby profile images
@@ -75,7 +79,31 @@ const journalUpload = multer({
   fileFilter: fileFilter
 });
 
+// Configure storage for profile pictures
+const profileStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, profileDir);
+  },
+  filename: function (req, file, cb) {
+    // Generate unique filename: profile_userId_timestamp.ext
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'profile-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+// Configure multer for profile pictures (single file)
+const profileUpload = multer({
+  storage: profileStorage,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  },
+  fileFilter: fileFilter
+});
+
 export default upload;
 
 // Export journal photo upload middleware
 export const uploadJournalPhotos = journalUpload.array('photos', 5);
+
+// Export profile picture upload middleware
+export const uploadProfilePicture = profileUpload.single('profilePicture');

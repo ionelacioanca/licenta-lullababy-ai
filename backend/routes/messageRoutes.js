@@ -58,7 +58,7 @@ router.get('/conversations', authMiddleware, async (req, res) => {
     console.log('[Conversations] User:', userId);
 
     // Get current user with linked users
-    const currentUser = await User.findById(userId).populate('relatedParentIds', 'name email');
+    const currentUser = await User.findById(userId).populate('relatedParentIds', 'name email profilePicture');
 
     if (!currentUser) {
       return res.status(404).json({ message: 'User not found' });
@@ -91,6 +91,7 @@ router.get('/conversations', authMiddleware, async (req, res) => {
           userId: linkedUser._id,
           name: linkedUser.name,
           email: linkedUser.email,
+          profilePicture: linkedUser.profilePicture || null,
           lastMessage: lastMessage ? {
             content: lastMessage.content,
             createdAt: lastMessage.createdAt,

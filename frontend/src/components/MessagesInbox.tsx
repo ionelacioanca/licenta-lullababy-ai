@@ -13,6 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { getConversations, Conversation } from "../services/messageService";
 import { useLanguage } from "../contexts/LanguageContext";
 import { useTheme } from "../contexts/ThemeContext";
+import UserAvatar from "./UserAvatar";
 
 interface MessagesInboxProps {
   visible: boolean;
@@ -70,9 +71,12 @@ export default function MessagesInbox({
       }}
     >
       <View style={styles.avatarContainer}>
-        <View style={[styles.avatar, { backgroundColor: theme.primary }]}>
-          <Text style={styles.avatarText}>{item.name.charAt(0).toUpperCase()}</Text>
-        </View>
+        <UserAvatar
+          profilePicture={item.profilePicture}
+          userName={item.name}
+          size={50}
+          backgroundColor={theme.primary}
+        />
         {item.unreadCount > 0 && (
           <View style={[styles.unreadBadge, { backgroundColor: theme.error }]}>
             <Text style={styles.unreadBadgeText}>{item.unreadCount}</Text>

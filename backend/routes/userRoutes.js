@@ -4,6 +4,8 @@ import LinkRequest from '../models/LinkRequest.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import auth from '../middleware/authMiddleware.js';
+import UserController from '../controllers/userController.js';
+import { uploadProfilePicture } from '../middleware/uploadMiddleware.js';
 
 const router = express.Router();
 
@@ -112,7 +114,8 @@ router.post('/login', async (req, res) => {
       name: user.name,
       parentId: user._id.toString(),
       email: user.email,
-      role: user.customRole || user.role // Return custom role if exists
+      role: user.customRole || user.role, // Return custom role if exists
+      profilePicture: user.profilePicture || null
     });
   } catch (error) {
     console.error('Login error details:', error);
@@ -246,7 +249,8 @@ router.get('/user-info', auth, async (req, res) => {
     res.json({
       name: user.name,
       email: user.email,
-      role: user.customRole || user.role // Return custom role if exists
+      role: user.customRole || user.role, // Return custom role if exists
+      profilePicture: user.profilePicture || null
     });
   } catch (error) {
     console.error('Get user info error:', error);
@@ -738,5 +742,9 @@ router.delete('/delete-account', auth, async (req, res) => {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
+
+// Profile picture routes
+router.post('/profile-picture', auth, uploadProfilePicture, UserController.uploadProfilePicture);
+router.delete('/profile-picture', auth, UserController.deleteProfilePicture);
 
 export default router;
