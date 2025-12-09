@@ -11,12 +11,14 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { useLanguage } from "../contexts/LanguageContext";
 import { useTheme } from "../contexts/ThemeContext";
+import * as ImagePicker from 'expo-image-picker';
 
 interface AccountSettingsModalProps {
   visible: boolean;
@@ -34,6 +36,7 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
   const [userEmail, setUserEmail] = useState("");
   const [userRole, setUserRole] = useState("");
   const [userName, setUserName] = useState("");
+  const [profilePicture, setProfilePicture] = useState<string | null>(null);
   
   // Change Password
   const [showChangePassword, setShowChangePassword] = useState(false);
@@ -61,6 +64,8 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
 
   useEffect(() => {
     if (visible) {
+      // Reset state when opening modal
+      setProfilePicture(null);
       loadUserInfo();
     }
   }, [visible]);
@@ -70,6 +75,7 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
       const email = await AsyncStorage.getItem("userEmail");
       const role = await AsyncStorage.getItem("userRole");
       const name = await AsyncStorage.getItem("parentName");
+      const storedProfilePicture = await AsyncStorage.getItem("profilePicture");
       
       // If role or email not in storage, fetch from backend
       if (!email || !role) {
@@ -96,6 +102,10 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
                 setUserName(data.name);
                 await AsyncStorage.setItem("parentName", data.name);
               }
+              if (data.profilePicture) {
+                setProfilePicture(`${API_URL.replace('/api', '')}${data.profilePicture}`);
+                await AsyncStorage.setItem("profilePicture", data.profilePicture);
+              }
               return;
             }
           } catch (error) {
@@ -107,6 +117,9 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
       if (email) setUserEmail(email);
       if (role) setUserRole(role);
       if (name) setUserName(name);
+      if (storedProfilePicture) {
+        setProfilePicture(`${API_URL.replace('/api', '')}${storedProfilePicture}`);
+      }
       
       // Load linked parent info
       await loadLinkedParent();
@@ -155,6 +168,160 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
       setRelatedParentName("");
       setRelatedParents([]);
     }
+  };
+
+  const handleProfilePicturePress = () => {
+    Alert.alert(
+      "Profile Picture",
+      "Choose an option",
+      [
+        {
+          text: "Take Photo",
+          onPress: () => pickImage(true),
+        },
+        {
+          text: "Choose from Gallery",
+          onPress: () => pickImage(false),
+        },
+        ...(profilePicture ? [{
+          text: "Delete Photo",
+          style: "destructive" as const,
+          onPress: deleteProfilePicture,
+        }] : []),
+        {
+          text: "Cancel",
+          style: "cancel" as const,
+        },
+      ]
+    );
+  };
+
+  const pickImage = async (useCamera: boolean) => {
+    try {
+      const permissionResult = useCamera
+        ? await ImagePicker.requestCameraPermissionsAsync()
+        : await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (!permissionResult.granted) {
+        Alert.alert("Permission Required", "Please grant permission to access photos");
+        return;
+      }
+
+      const result = useCamera
+        ? await ImagePicker.launchCameraAsync({
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.7,
+          })
+        : await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.7,
+          });
+
+      if (!result.canceled && result.assets[0]) {
+        await uploadProfilePicture(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error("Error picking image:", error);
+      Alert.alert("Error", "Failed to pick image");
+    }
+  };
+
+  const uploadProfilePicture = async (uri: string) => {
+    setLoading(true);
+    try {
+      const token = await AsyncStorage.getItem("token");
+      
+      const formData = new FormData();
+      const filename = uri.split('/').pop() || 'profile.jpg';
+      const match = /\.([\w]+)$/.exec(filename);
+      const type = match ? `image/${match[1]}` : 'image/jpeg';
+      
+      formData.append('profilePicture', {
+        uri,
+        type,
+        name: filename,
+      } as any);
+
+      const response = await fetch(`${API_URL}/profile-picture`, {
+        method: "POST",
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json',
+        },
+        body: formData,
+      });
+
+      const text = await response.text();
+      console.log('Profile picture response:', text);
+      
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        console.error('Failed to parse response:', text);
+        throw new Error('Server returned invalid response');
+      }
+
+      if (response.ok) {
+        setProfilePicture(`${API_URL.replace('/api', '')}${data.profilePicture}`);
+        await AsyncStorage.setItem("profilePicture", data.profilePicture);
+        Alert.alert("Success", "Profile picture updated successfully");
+      } else {
+        Alert.alert("Error", data.message || "Failed to upload profile picture");
+      }
+    } catch (error) {
+      console.error("Error uploading profile picture:", error);
+      Alert.alert("Error", "Failed to upload profile picture");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteProfilePicture = async () => {
+    Alert.alert(
+      "Delete Profile Picture",
+      "Are you sure you want to delete your profile picture?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            setLoading(true);
+            try {
+              const token = await AsyncStorage.getItem("token");
+              
+              const response = await fetch(`${API_URL}/profile-picture`, {
+                method: "DELETE",
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              });
+
+              if (response.ok) {
+                setProfilePicture(null);
+                await AsyncStorage.removeItem("profilePicture");
+                Alert.alert("Success", "Profile picture deleted successfully");
+              } else {
+                const data = await response.json();
+                Alert.alert("Error", data.message || "Failed to delete profile picture");
+              }
+            } catch (error) {
+              console.error("Error deleting profile picture:", error);
+              Alert.alert("Error", "Failed to delete profile picture");
+            } finally {
+              setLoading(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleChangePassword = async () => {
@@ -459,13 +626,31 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
           >
             {/* User Info */}
             <View style={[styles.userInfoCard, { backgroundColor: theme.card }]}>
-              <View style={[styles.avatarContainer, { backgroundColor: theme.primaryLight }]}>
-                <Ionicons name="person" size={40} color={theme.primary} />
-              </View>
+              <TouchableOpacity 
+                style={[styles.avatarContainer, { backgroundColor: profilePicture ? 'transparent' : theme.primaryLight }]}
+                onPress={handleProfilePicturePress}
+                activeOpacity={0.7}
+              >
+                {profilePicture ? (
+                  <Image 
+                    source={{ uri: profilePicture }} 
+                    style={styles.profileImage}
+                  />
+                ) : (
+                  <>
+                    <Ionicons name="person" size={40} color={theme.primary} />
+                    <View style={[styles.cameraIconBadge, { backgroundColor: theme.primary }]}>
+                      <Ionicons name="camera" size={14} color="white" />
+                    </View>
+                  </>
+                )}
+              </TouchableOpacity>
               <View style={styles.userInfo}>
                 <Text style={[styles.userName, { color: theme.text }]}>{userName}</Text>
                 <Text style={[styles.userEmail, { color: theme.textSecondary }]}>{userEmail}</Text>
-                <Text style={[styles.userRole, { color: theme.textTertiary }]}>{t(`auth.${userRole}`)}</Text>
+                {userRole && (
+                  <Text style={[styles.userRole, { color: theme.textTertiary }]}>{t(`auth.${userRole}`)}</Text>
+                )}
               </View>
             </View>
 
@@ -859,6 +1044,25 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginRight: 16,
+    position: 'relative',
+  },
+  profileImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+  },
+  cameraIconBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#A2E884',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: 'white',
   },
   userInfo: {
     flex: 1,

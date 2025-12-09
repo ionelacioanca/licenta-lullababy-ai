@@ -50,6 +50,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onClose, onReque
               await AsyncStorage.removeItem("parentId");
               await AsyncStorage.removeItem("parentName");
               await AsyncStorage.removeItem("selectedBabyId");
+              await AsyncStorage.removeItem("userEmail");
+              await AsyncStorage.removeItem("userRole");
+              await AsyncStorage.removeItem("profilePicture");
               
               onClose();
               

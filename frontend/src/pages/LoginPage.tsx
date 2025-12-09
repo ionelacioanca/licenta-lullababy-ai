@@ -41,6 +41,9 @@ const LoginPage: React.FC = () => {
             await AsyncStorage.removeItem("token");
             await AsyncStorage.removeItem("parentId");
             await AsyncStorage.removeItem("parentName");
+            await AsyncStorage.removeItem("userEmail");
+            await AsyncStorage.removeItem("userRole");
+            await AsyncStorage.removeItem("profilePicture");
             setChecking(false);
           }
         } catch (error) {
@@ -48,6 +51,9 @@ const LoginPage: React.FC = () => {
           await AsyncStorage.removeItem("token");
           await AsyncStorage.removeItem("parentId");
           await AsyncStorage.removeItem("parentName");
+          await AsyncStorage.removeItem("userEmail");
+          await AsyncStorage.removeItem("userRole");
+          await AsyncStorage.removeItem("profilePicture");
           setChecking(false);
         }
       } else {
@@ -79,6 +85,10 @@ const LoginPage: React.FC = () => {
 
       if (data.role) {
         await AsyncStorage.setItem("userRole", data.role);
+      }
+
+      if (data.profilePicture) {
+        await AsyncStorage.setItem("profilePicture", data.profilePicture);
       }
     } catch (e) {
       console.error("Error saving user data:", e);
