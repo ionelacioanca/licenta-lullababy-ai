@@ -9,11 +9,28 @@ const alertSchema = new mongoose.Schema({
     vitalDataId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "VitalData",
-        required: true
+        required: false // Made optional for calendar notifications
+    },
+    calendarEventId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "CalendarEvent",
+        required: false
+    },
+    type: {
+        type: String,
+        enum: ['vital', 'calendar', 'system'],
+        default: 'vital'
     },
     message: {
         type: String,
         required: true
+    },
+    title: {
+        type: String
+    },
+    isRead: {
+        type: Boolean,
+        default: false
     },
     timestamp: {
         type: Date,

@@ -15,6 +15,7 @@ import CalendarModal from "../components/CalendarModal";
 import { Sound } from "../services/soundService";
 import ChatbotModal from "../components/ChatbotModal";
 import SettingsModal from "../components/SettingsModal";
+import NotificationsPanel from "../components/NotificationsPanel";
 import LinkRequestNotifications from "../components/LinkRequestNotifications";
 import SendLinkRequestModal from "../components/SendLinkRequestModal";
 import MessagesInbox from "../components/MessagesInbox";
@@ -51,9 +52,11 @@ const DashboardPage: React.FC = () => {
   const [birthLength, setBirthLength] = useState<number | null>(null);
   const [birthDate, setBirthDate] = useState<Date | null>(null);
   const [recentMemories, setRecentMemories] = useState<JournalEntry[]>([]);
+  const [notificationsPanelOpen, setNotificationsPanelOpen] = useState(false);
   const [linkRequestsOpen, setLinkRequestsOpen] = useState(false);
   const [sendLinkRequestOpen, setSendLinkRequestOpen] = useState(false);
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+  const [notificationsCount, setNotificationsCount] = useState(0);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [messagesInboxOpen, setMessagesInboxOpen] = useState(false);
   const [conversationOpen, setConversationOpen] = useState(false);
@@ -74,6 +77,29 @@ const DashboardPage: React.FC = () => {
     const result = await getUnreadCount();
     if (result.success && result.count !== undefined) {
       setUnreadMessagesCount(result.count);
+    }
+  };
+
+  const loadNotificationsCount = async () => {
+    if (!babyId) return;
+    
+    try {
+      const token = await AsyncStorage.getItem('token');
+      const response = await fetch(
+        `http://192.168.1.27:5000/api/alerts/baby/${babyId}/unread-count`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      
+      if (response.ok) {
+        const data = await response.json();
+        setNotificationsCount(data.count || 0);
+      }
+    } catch (error) {
+      console.log('Error loading notifications count:', error);
     }
   };
 
@@ -201,8 +227,34 @@ const DashboardPage: React.FC = () => {
   useFocusEffect(
     React.useCallback(() => {
       loadBabyForParent();
-    }, [])
+      
+      // Automatically check for calendar notifications
+      const checkNotifications = async () => {
+        try {
+          await fetch('http://192.168.1.27:5000/api/calendar/trigger-notifications', {
+            method: 'POST',
+          });
+          console.log('Auto-checked for calendar notifications');
+          
+          // Load notification count after checking
+          setTimeout(() => {
+            loadNotificationsCount();
+          }, 500);
+        } catch (error) {
+          console.log('Error auto-checking notifications:', error);
+        }
+      };
+      
+      checkNotifications();
+    }, [babyId])
   );
+
+  // Load notification count when babyId changes
+  useEffect(() => {
+    if (babyId) {
+      loadNotificationsCount();
+    }
+  }, [babyId]);
 
   const loadUpcomingEvents = async (babyId: string) => {
     try {
@@ -311,9 +363,9 @@ const DashboardPage: React.FC = () => {
         avatarColor={avatarColor}
         avatarImage={avatarImage}
         onEditProfile={() => router.push("/babiesList")}
-        onNotifications={() => setLinkRequestsOpen(true)}
+        onNotifications={() => setNotificationsPanelOpen(true)}
         onMessages={() => setMessagesInboxOpen(true)}
-        unreadNotifications={pendingRequestsCount}
+        unreadNotifications={notificationsCount + pendingRequestsCount}
         unreadMessages={unreadMessagesCount}
       />
       
@@ -641,6 +693,13 @@ const DashboardPage: React.FC = () => {
           }
         }}
         userRole={userRole || undefined}
+      />
+
+      <NotificationsPanel
+        visible={notificationsPanelOpen}
+        onClose={() => setNotificationsPanelOpen(false)}
+        babyId={babyId || ''}
+        onNotificationCountChange={setNotificationsCount}
       />
 
       <LinkRequestNotifications
