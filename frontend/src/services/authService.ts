@@ -5,7 +5,7 @@ const authService = {
     password: string,
     role: string
   ): Promise<void> => {
-  const response = await fetch("http://192.168.1.21:5000/api/register", {
+  const response = await fetch("http://192.168.1.27:5000/api/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, email, password, role }),
@@ -21,7 +21,7 @@ const authService = {
     email: string,
     password: string
   ): Promise<{ token: string; user: any }> => {
-  const response = await fetch("http://192.168.1.21:5000/api/login", {
+  const response = await fetch("http://192.168.1.27:5000/api/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),

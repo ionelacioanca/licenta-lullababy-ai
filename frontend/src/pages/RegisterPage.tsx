@@ -29,6 +29,7 @@ const RegisterPage: React.FC = () => {
   const [message, setMessage] = useState("");
   const [hasRelatedParent, setHasRelatedParent] = useState(false);
   const [relatedParentEmail, setRelatedParentEmail] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState([
@@ -70,7 +71,7 @@ const RegisterPage: React.FC = () => {
         registrationData.relatedParentEmail = relatedParentEmail.trim();
       }
 
-      const response = await fetch("http://192.168.1.21:5000/api/register", {
+      const response = await fetch("http://192.168.1.27:5000/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(registrationData),
@@ -255,17 +256,13 @@ const RegisterPage: React.FC = () => {
 
       <Text style={styles.orText}>{t('auth.orContinueWith')}</Text>
 
-      <View style={styles.authButtons}>
-        <TouchableOpacity style={styles.circleButton}>
-          <Ionicons name="logo-apple" size={24} color="#fff" />
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.circleButton, { backgroundColor: "#1877F2" }]}>
-          <Ionicons name="logo-facebook" size={24} color="#fff" />
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.circleButton, { backgroundColor: "#DB4437" }]}>
-          <Ionicons name="logo-google" size={24} color="#fff" />
-        </TouchableOpacity>
-      </View>
+      <TouchableOpacity
+        style={[styles.googleButton, { opacity: 0.5 }]}
+        onPress={() => Alert.alert('Coming Soon', 'Google Sign-In will be available in the production version.')}
+      >
+        <Ionicons name="logo-google" size={24} color="#DB4437" />
+        <Text style={styles.googleButtonText}>Google</Text>
+      </TouchableOpacity>
 
       <Text style={styles.termsText}>
         {t('auth.termsAgree')}{" "}
@@ -351,19 +348,23 @@ const styles = StyleSheet.create({
     color: "#777",
     marginBottom: 12,
   },
-  authButtons: {
+  googleButton: {
     flexDirection: "row",
-    justifyContent: "center",
-    gap: 16,
-    marginBottom: 24,
-  },
-  circleButton: {
-    backgroundColor: "#000",
-    width: 48,
-    height: 48,
-    borderRadius: 24,
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: "#fff",
+    borderRadius: 32,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    gap: 12,
+  },
+  googleButtonText: {
+    color: "#333",
+    fontSize: 16,
+    fontWeight: "600",
   },
   termsText: {
     textAlign: "center",

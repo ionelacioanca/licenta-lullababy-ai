@@ -32,7 +32,7 @@ const LoginPage: React.FC = () => {
       const token = await AsyncStorage.getItem("token");
       if (token) {
         try {
-          const res = await fetch("http://192.168.1.21:5000/api/verify-token", {
+          const res = await fetch("http://192.168.1.27:5000/api/verify-token", {
             headers: { Authorization: `Bearer ${token}` },
           });
           if (res.ok) {
@@ -103,7 +103,7 @@ const LoginPage: React.FC = () => {
     try {
       console.log("Attempting login with email:", email);
       
-  const response = await fetch("http://192.168.1.21:5000/api/login", {
+  const response = await fetch("http://192.168.1.27:5000/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -215,23 +215,15 @@ const LoginPage: React.FC = () => {
         </Text>
       </TouchableOpacity>
 
-      <Text style={styles.orText}>Or continue with</Text>
+      <Text style={styles.orText}>{t('auth.orContinueWith')}</Text>
 
-      <View style={styles.authButtons}>
-        <TouchableOpacity style={styles.circleButton}>
-          <Ionicons name="logo-apple" size={24} color="#fff" />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.circleButton, { backgroundColor: "#1877F2" }]}
-        >
-          <Ionicons name="logo-facebook" size={24} color="#fff" />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.circleButton, { backgroundColor: "#DB4437" }]}
-        >
-          <Ionicons name="logo-google" size={24} color="#fff" />
-        </TouchableOpacity>
-      </View>
+      <TouchableOpacity
+        style={[styles.googleButton, { opacity: 0.5 }]}
+        onPress={() => Alert.alert('Coming Soon', 'Google Sign-In will be available in the production version.')}
+      >
+        <Ionicons name="logo-google" size={24} color="#DB4437" />
+        <Text style={styles.googleButtonText}>Google</Text>
+      </TouchableOpacity>
 
       {message ? <Text style={styles.message}>{message}</Text> : null}
 
@@ -308,19 +300,23 @@ const styles = StyleSheet.create({
     color: "#777",
     marginBottom: 12,
   },
-  authButtons: {
+  googleButton: {
     flexDirection: "row",
-    justifyContent: "center",
-    gap: 16,
-    marginBottom: 24,
-  },
-  circleButton: {
-    backgroundColor: "#000",
-    width: 48,
-    height: 48,
-    borderRadius: 24,
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: "#fff",
+    borderRadius: 32,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    gap: 8,
+  },
+  googleButtonText: {
+    color: "#333",
+    fontSize: 16,
+    fontWeight: "600",
   },
   message: {
     marginTop: 16,

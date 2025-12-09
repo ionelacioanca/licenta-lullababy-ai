@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_BASE_URL = 'http://192.168.1.21:5000/api';
+const API_BASE_URL = 'http://192.168.1.27:5000/api';
 
 export interface CalendarEvent {
   _id: string;
@@ -55,7 +55,20 @@ export const addCalendarEvent = async (eventData: AddEventData): Promise<Calenda
       throw new Error(errorData.message || 'Failed to add calendar event');
     }
 
-    return await response.json();
+    const event = await response.json();
+    
+    // Automatically check for notifications after adding event
+    try {
+      await fetch(`${API_BASE_URL}/calendar/trigger-notifications`, {
+        method: 'POST',
+      });
+      console.log('Auto-triggered notification check after adding event');
+    } catch (notifError) {
+      console.log('Error triggering notifications:', notifError);
+      // Don't fail the whole operation if notification check fails
+    }
+    
+    return event;
   } catch (error) {
     console.error('Error adding calendar event:', error);
     throw error;

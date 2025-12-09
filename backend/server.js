@@ -12,9 +12,11 @@ import calendarRouter from './routes/calendarRoutes.js';
 import journalRouter from './routes/journalRoutes.js';
 import linkRequestRouter from './routes/linkRequestRoutes.js';
 import messageRouter from './routes/messageRoutes.js';
+import alertRouter from './routes/alertRoutes.js';
 import auth from './middleware/authMiddleware.js';
 import cors from 'cors';
 import emailService from './services/emailService.js';
+import { startEventCheckScheduler } from './services/calendarNotificationService.js';
 
 dotenv.config(); 
 const app = express();
@@ -35,12 +37,14 @@ app.use('/api/calendar', calendarRouter);
 app.use('/api/journal', journalRouter);
 app.use('/api/link-request', linkRequestRouter);
 app.use('/api/messages', messageRouter);
+app.use('/api/alerts', alertRouter);
 console.log('Chatbot routes registered at /api');
 console.log('Growth routes registered at /api/growth');
 console.log('Calendar routes registered at /api/calendar');
 console.log('Journal routes registered at /api/journal');
 console.log('Link request routes registered at /api/link-request');
 console.log('Message routes registered at /api/messages');
+console.log('Alert routes registered at /api/alerts');
 app.get('/api/private', auth, (req, res) => {
     res.json({ message: 'This is a private route' });
 });
@@ -54,11 +58,14 @@ async function main() {
         // Verify email service connection
         await emailService.verifyConnection();
         
+        // Start calendar notification scheduler
+        startEventCheckScheduler();
+        
         const server = app.listen(PORT, () => {
             console.log(`Server running on port ${PORT}`);
             console.log(`Server accessible at:`);
             console.log(`  - http://localhost:${PORT}`);
-            console.log(`  - http://192.168.1.21:${PORT} (WiFi)`);
+            console.log(`  - http://192.168.1.27:${PORT} (WiFi)`);
         });
 
         server.on('error', (err) => {

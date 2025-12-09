@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const API_URL = "http://192.168.1.21:5000/api/journal";
+const API_URL = "http://192.168.1.27:5000/api/journal";
 
 export interface JournalEntry {
   _id: string;

@@ -244,7 +244,8 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ visible, onClose, babyId,
           onPress={() => handleDatePress(day)}
         >
           <Text style={[
-            styles.dayText, 
+            styles.dayText,
+            { color: theme.text },
             isToday && !isSelected && styles.todayText,
             isSelected && styles.selectedDayText
           ]}>{day}</Text>
@@ -282,7 +283,7 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ visible, onClose, babyId,
           return (
             <TouchableOpacity
               key={event._id}
-              style={styles.eventItem}
+              style={[styles.eventItem, { backgroundColor: theme.card }]}
               onPress={() => setExpandedEvent(isExpanded ? null : event._id)}
               activeOpacity={0.7}
             >
@@ -303,10 +304,10 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ visible, onClose, babyId,
                 </View>
 
                 <View style={styles.eventInfo}>
-                  <Text style={[styles.eventTitle, event.completed && styles.completedText]}>
+                  <Text style={[styles.eventTitle, { color: theme.text }, event.completed && styles.completedText]}>
                     {event.title}
                   </Text>
-                  <Text style={styles.eventDate}>
+                  <Text style={[styles.eventDate, { color: theme.textSecondary }]}>
                     {eventDate.toLocaleDateString('en-US', {
                       weekday: 'short',
                       month: 'short',
@@ -553,7 +554,7 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ visible, onClose, babyId,
               />
               <KeyboardAvoidingView 
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                style={styles.addForm}
+                style={[styles.addForm, { backgroundColor: theme.card }]}
               >
                 <ScrollView 
                   keyboardShouldPersistTaps="handled"
@@ -771,7 +772,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   eventItem: {
-    backgroundColor: 'white',
     borderRadius: 12,
     padding: 12,
     marginBottom: 8,
@@ -889,7 +889,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'white',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: '70%',
@@ -1019,7 +1018,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'white',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 20,

@@ -15,6 +15,7 @@ import CalendarModal from "../components/CalendarModal";
 import { Sound } from "../services/soundService";
 import ChatbotModal from "../components/ChatbotModal";
 import SettingsModal from "../components/SettingsModal";
+import NotificationsPanel from "../components/NotificationsPanel";
 import LinkRequestNotifications from "../components/LinkRequestNotifications";
 import SendLinkRequestModal from "../components/SendLinkRequestModal";
 import MessagesInbox from "../components/MessagesInbox";
@@ -51,9 +52,11 @@ const DashboardPage: React.FC = () => {
   const [birthLength, setBirthLength] = useState<number | null>(null);
   const [birthDate, setBirthDate] = useState<Date | null>(null);
   const [recentMemories, setRecentMemories] = useState<JournalEntry[]>([]);
+  const [notificationsPanelOpen, setNotificationsPanelOpen] = useState(false);
   const [linkRequestsOpen, setLinkRequestsOpen] = useState(false);
   const [sendLinkRequestOpen, setSendLinkRequestOpen] = useState(false);
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+  const [notificationsCount, setNotificationsCount] = useState(0);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [messagesInboxOpen, setMessagesInboxOpen] = useState(false);
   const [conversationOpen, setConversationOpen] = useState(false);
@@ -74,6 +77,29 @@ const DashboardPage: React.FC = () => {
     const result = await getUnreadCount();
     if (result.success && result.count !== undefined) {
       setUnreadMessagesCount(result.count);
+    }
+  };
+
+  const loadNotificationsCount = async () => {
+    if (!babyId) return;
+    
+    try {
+      const token = await AsyncStorage.getItem('token');
+      const response = await fetch(
+        `http://192.168.1.27:5000/api/alerts/baby/${babyId}/unread-count`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      
+      if (response.ok) {
+        const data = await response.json();
+        setNotificationsCount(data.count || 0);
+      }
+    } catch (error) {
+      console.log('Error loading notifications count:', error);
     }
   };
 
@@ -105,7 +131,7 @@ const DashboardPage: React.FC = () => {
     
     // Load user role and pending requests count
     try {
-      const userInfoResponse = await fetch(`http://192.168.1.21:5000/api/user-info`, {
+      const userInfoResponse = await fetch(`http://192.168.1.27:5000/api/user-info`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -128,7 +154,7 @@ const DashboardPage: React.FC = () => {
     }
 
     try {
-  const response = await fetch(`http://192.168.1.21:5000/api/baby/parent/${parentId}`, {
+  const response = await fetch(`http://192.168.1.27:5000/api/baby/parent/${parentId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -167,7 +193,7 @@ const DashboardPage: React.FC = () => {
           
           // Load avatar data from backend
           setAvatarColor(baby.avatarColor || "#00CFFF");
-          setAvatarImage(baby.avatarImage ? `http://192.168.1.21:5000${baby.avatarImage}` : null);
+          setAvatarImage(baby.avatarImage ? `http://192.168.1.27:5000${baby.avatarImage}` : null);
           
           // Store birth data
           console.log("Baby birth data - birthWeight:", baby.birthWeight, "birthLength:", baby.birthLength, "birthDate:", baby.birthDate);
@@ -201,8 +227,34 @@ const DashboardPage: React.FC = () => {
   useFocusEffect(
     React.useCallback(() => {
       loadBabyForParent();
-    }, [])
+      
+      // Automatically check for calendar notifications
+      const checkNotifications = async () => {
+        try {
+          await fetch('http://192.168.1.27:5000/api/calendar/trigger-notifications', {
+            method: 'POST',
+          });
+          console.log('Auto-checked for calendar notifications');
+          
+          // Load notification count after checking
+          setTimeout(() => {
+            loadNotificationsCount();
+          }, 500);
+        } catch (error) {
+          console.log('Error auto-checking notifications:', error);
+        }
+      };
+      
+      checkNotifications();
+    }, [babyId])
   );
+
+  // Load notification count when babyId changes
+  useEffect(() => {
+    if (babyId) {
+      loadNotificationsCount();
+    }
+  }, [babyId]);
 
   const loadUpcomingEvents = async (babyId: string) => {
     try {
@@ -311,9 +363,9 @@ const DashboardPage: React.FC = () => {
         avatarColor={avatarColor}
         avatarImage={avatarImage}
         onEditProfile={() => router.push("/babiesList")}
-        onNotifications={() => setLinkRequestsOpen(true)}
+        onNotifications={() => setNotificationsPanelOpen(true)}
         onMessages={() => setMessagesInboxOpen(true)}
-        unreadNotifications={pendingRequestsCount}
+        unreadNotifications={notificationsCount + pendingRequestsCount}
         unreadMessages={unreadMessagesCount}
       />
       
@@ -338,11 +390,11 @@ const DashboardPage: React.FC = () => {
             <View style={styles.activityRow}>
               <View style={styles.activityItem}>
                 <View style={styles.timelineDot}>
-                  <Ionicons name="bed-outline" size={16} color="white" />
+                  <Ionicons name="moon-outline" size={16} color="white" />
                 </View>
                 <View style={styles.timelineContent}>
-                  <Text style={styles.timelineLabel}>{t('dashboard.fellAsleep')}</Text>
-                  <Text style={styles.timelineTime}>14:30 PM</Text>
+                  <Text style={[styles.timelineLabel, { color: theme.textSecondary }]}>{t('dashboard.fellAsleep')}</Text>
+                  <Text style={[styles.timelineTime, { color: theme.text }]}>14:30 PM</Text>
                 </View>
               </View>
               <View style={styles.activityDivider} />
@@ -351,21 +403,21 @@ const DashboardPage: React.FC = () => {
                   <Ionicons name="sunny-outline" size={16} color="white" />
                 </View>
                 <View style={styles.timelineContent}>
-                  <Text style={styles.timelineLabel}>{t('dashboard.wokeUp')}</Text>
-                  <Text style={styles.timelineTime}>16:15 PM</Text>
+                  <Text style={[styles.timelineLabel, { color: theme.textSecondary }]}>{t('dashboard.wokeUp')}</Text>
+                  <Text style={[styles.timelineTime, { color: theme.text }]}>16:15 PM</Text>
                 </View>
               </View>
             </View>
             
             <View style={styles.activitySummary}>
               <View style={styles.summaryItem}>
-                <Text style={styles.activityLabel}>{t('dashboard.lastSleep')}</Text>
-                <Text style={styles.activityValue}>2h {t('dashboard.ago')}</Text>
+                <Text style={[styles.activityLabel, { color: theme.textSecondary }]}>{t('dashboard.lastSleep')}</Text>
+                <Text style={[styles.activityValue, { color: theme.text }]}>2h {t('dashboard.ago')}</Text>
               </View>
               <View style={styles.activityDivider} />
               <View style={styles.summaryItem}>
-                <Text style={styles.activityLabel}>{t('dashboard.duration')}</Text>
-                <Text style={styles.activityValue}>1h 45m</Text>
+                <Text style={[styles.activityLabel, { color: theme.textSecondary }]}>{t('dashboard.duration')}</Text>
+                <Text style={[styles.activityValue, { color: theme.text }]}>1h 45m</Text>
               </View>
             </View>
           </View>
@@ -397,8 +449,8 @@ const DashboardPage: React.FC = () => {
                   <Ionicons name="scale-outline" size={20} color="white" />
                 </View>
                 <View style={styles.timelineContent}>
-                  <Text style={styles.timelineLabel}>{t('dashboard.weight')}</Text>
-                  <Text style={styles.timelineValue}>{currentWeight} kg</Text>
+                  <Text style={[styles.timelineLabel, { color: theme.textSecondary }]}>{t('dashboard.weight')}</Text>
+                  <Text style={[styles.timelineValue, { color: theme.text }]}>{currentWeight} kg</Text>
                 </View>
               </View>
               <View style={styles.activityDivider} />
@@ -407,15 +459,15 @@ const DashboardPage: React.FC = () => {
                   <Ionicons name="resize-outline" size={20} color="white" />
                 </View>
                 <View style={styles.timelineContent}>
-                  <Text style={styles.timelineLabel}>{t('dashboard.length')}</Text>
-                  <Text style={styles.timelineTime}>{currentLength} cm</Text>
+                  <Text style={[styles.timelineLabel, { color: theme.textSecondary }]}>{t('dashboard.length')}</Text>
+                  <Text style={[styles.timelineTime, { color: theme.text }]}>{currentLength} cm</Text>
                 </View>
               </View>
             </View>
 
             <View style={styles.lastUpdated}>
-              <Ionicons name="time-outline" size={14} color="#999" />
-              <Text style={styles.lastUpdatedText}>{t('dashboard.lastUpdated')}: {t('dashboard.today')}</Text>
+              <Ionicons name="time-outline" size={14} color={theme.textSecondary} />
+              <Text style={[styles.lastUpdatedText, { color: theme.textSecondary }]}>{t('dashboard.lastUpdated')}: {t('dashboard.today')}</Text>
             </View>
           </View>
         </TouchableOpacity>
@@ -468,7 +520,7 @@ const DashboardPage: React.FC = () => {
                       </View>
                       <View style={styles.eventDetails}>
                         <View style={styles.eventTitleRow}>
-                          <Text style={[styles.eventTitle, isPast && styles.pastEventText]}>
+                          <Text style={[styles.eventTitle, { color: theme.text }, isPast && styles.pastEventText]}>
                             {event.title}
                           </Text>
                           {event.completed && (
@@ -487,7 +539,7 @@ const DashboardPage: React.FC = () => {
                             </View>
                           )}
                         </View>
-                        <Text style={[styles.eventDateText, isPast && styles.pastEventText]}>
+                        <Text style={[styles.eventDateText, { color: theme.textSecondary }, isPast && styles.pastEventText]}>
                           {eventDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                           {event.time && ` at ${event.time}`}
                         </Text>
@@ -552,20 +604,20 @@ const DashboardPage: React.FC = () => {
                       </View>
                       <View style={styles.memoryDetails}>
                         {memory.title && (
-                          <Text style={styles.memoryTitle} numberOfLines={1}>
+                          <Text style={[styles.memoryTitle, { color: theme.text }]} numberOfLines={1}>
                             {memory.title}
                           </Text>
                         )}
-                        <Text style={styles.memoryDescription} numberOfLines={2}>
+                        <Text style={[styles.memoryDescription, { color: theme.textSecondary }]} numberOfLines={2}>
                           {memory.description}
                         </Text>
-                        <Text style={styles.memoryDate}>
+                        <Text style={[styles.memoryDate, { color: theme.textTertiary }]}>
                           {memoryDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                         </Text>
                       </View>
                       {memory.photos.length > 0 && (
                         <Image
-                          source={{ uri: `http://192.168.1.21:5000${memory.photos[0]}` }}
+                          source={{ uri: `http://192.168.1.27:5000${memory.photos[0]}` }}
                           style={styles.memoryThumbnail}
                         />
                       )}
@@ -641,6 +693,13 @@ const DashboardPage: React.FC = () => {
           }
         }}
         userRole={userRole || undefined}
+      />
+
+      <NotificationsPanel
+        visible={notificationsPanelOpen}
+        onClose={() => setNotificationsPanelOpen(false)}
+        babyId={babyId || ''}
+        onNotificationCountChange={setNotificationsCount}
       />
 
       <LinkRequestNotifications
