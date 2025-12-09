@@ -105,7 +105,7 @@ const DashboardPage: React.FC = () => {
     
     // Load user role and pending requests count
     try {
-      const userInfoResponse = await fetch(`http://192.168.1.21:5000/api/user-info`, {
+      const userInfoResponse = await fetch(`http://192.168.1.27:5000/api/user-info`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -128,7 +128,7 @@ const DashboardPage: React.FC = () => {
     }
 
     try {
-  const response = await fetch(`http://192.168.1.21:5000/api/baby/parent/${parentId}`, {
+  const response = await fetch(`http://192.168.1.27:5000/api/baby/parent/${parentId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -167,7 +167,7 @@ const DashboardPage: React.FC = () => {
           
           // Load avatar data from backend
           setAvatarColor(baby.avatarColor || "#00CFFF");
-          setAvatarImage(baby.avatarImage ? `http://192.168.1.21:5000${baby.avatarImage}` : null);
+          setAvatarImage(baby.avatarImage ? `http://192.168.1.27:5000${baby.avatarImage}` : null);
           
           // Store birth data
           console.log("Baby birth data - birthWeight:", baby.birthWeight, "birthLength:", baby.birthLength, "birthDate:", baby.birthDate);
@@ -338,11 +338,11 @@ const DashboardPage: React.FC = () => {
             <View style={styles.activityRow}>
               <View style={styles.activityItem}>
                 <View style={styles.timelineDot}>
-                  <Ionicons name="bed-outline" size={16} color="white" />
+                  <Ionicons name="moon-outline" size={16} color="white" />
                 </View>
                 <View style={styles.timelineContent}>
-                  <Text style={styles.timelineLabel}>{t('dashboard.fellAsleep')}</Text>
-                  <Text style={styles.timelineTime}>14:30 PM</Text>
+                  <Text style={[styles.timelineLabel, { color: theme.textSecondary }]}>{t('dashboard.fellAsleep')}</Text>
+                  <Text style={[styles.timelineTime, { color: theme.text }]}>14:30 PM</Text>
                 </View>
               </View>
               <View style={styles.activityDivider} />
@@ -351,21 +351,21 @@ const DashboardPage: React.FC = () => {
                   <Ionicons name="sunny-outline" size={16} color="white" />
                 </View>
                 <View style={styles.timelineContent}>
-                  <Text style={styles.timelineLabel}>{t('dashboard.wokeUp')}</Text>
-                  <Text style={styles.timelineTime}>16:15 PM</Text>
+                  <Text style={[styles.timelineLabel, { color: theme.textSecondary }]}>{t('dashboard.wokeUp')}</Text>
+                  <Text style={[styles.timelineTime, { color: theme.text }]}>16:15 PM</Text>
                 </View>
               </View>
             </View>
             
             <View style={styles.activitySummary}>
               <View style={styles.summaryItem}>
-                <Text style={styles.activityLabel}>{t('dashboard.lastSleep')}</Text>
-                <Text style={styles.activityValue}>2h {t('dashboard.ago')}</Text>
+                <Text style={[styles.activityLabel, { color: theme.textSecondary }]}>{t('dashboard.lastSleep')}</Text>
+                <Text style={[styles.activityValue, { color: theme.text }]}>2h {t('dashboard.ago')}</Text>
               </View>
               <View style={styles.activityDivider} />
               <View style={styles.summaryItem}>
-                <Text style={styles.activityLabel}>{t('dashboard.duration')}</Text>
-                <Text style={styles.activityValue}>1h 45m</Text>
+                <Text style={[styles.activityLabel, { color: theme.textSecondary }]}>{t('dashboard.duration')}</Text>
+                <Text style={[styles.activityValue, { color: theme.text }]}>1h 45m</Text>
               </View>
             </View>
           </View>
@@ -397,8 +397,8 @@ const DashboardPage: React.FC = () => {
                   <Ionicons name="scale-outline" size={20} color="white" />
                 </View>
                 <View style={styles.timelineContent}>
-                  <Text style={styles.timelineLabel}>{t('dashboard.weight')}</Text>
-                  <Text style={styles.timelineValue}>{currentWeight} kg</Text>
+                  <Text style={[styles.timelineLabel, { color: theme.textSecondary }]}>{t('dashboard.weight')}</Text>
+                  <Text style={[styles.timelineValue, { color: theme.text }]}>{currentWeight} kg</Text>
                 </View>
               </View>
               <View style={styles.activityDivider} />
@@ -407,15 +407,15 @@ const DashboardPage: React.FC = () => {
                   <Ionicons name="resize-outline" size={20} color="white" />
                 </View>
                 <View style={styles.timelineContent}>
-                  <Text style={styles.timelineLabel}>{t('dashboard.length')}</Text>
-                  <Text style={styles.timelineTime}>{currentLength} cm</Text>
+                  <Text style={[styles.timelineLabel, { color: theme.textSecondary }]}>{t('dashboard.length')}</Text>
+                  <Text style={[styles.timelineTime, { color: theme.text }]}>{currentLength} cm</Text>
                 </View>
               </View>
             </View>
 
             <View style={styles.lastUpdated}>
-              <Ionicons name="time-outline" size={14} color="#999" />
-              <Text style={styles.lastUpdatedText}>{t('dashboard.lastUpdated')}: {t('dashboard.today')}</Text>
+              <Ionicons name="time-outline" size={14} color={theme.textSecondary} />
+              <Text style={[styles.lastUpdatedText, { color: theme.textSecondary }]}>{t('dashboard.lastUpdated')}: {t('dashboard.today')}</Text>
             </View>
           </View>
         </TouchableOpacity>
@@ -552,20 +552,20 @@ const DashboardPage: React.FC = () => {
                       </View>
                       <View style={styles.memoryDetails}>
                         {memory.title && (
-                          <Text style={styles.memoryTitle} numberOfLines={1}>
+                          <Text style={[styles.memoryTitle, { color: theme.text }]} numberOfLines={1}>
                             {memory.title}
                           </Text>
                         )}
-                        <Text style={styles.memoryDescription} numberOfLines={2}>
+                        <Text style={[styles.memoryDescription, { color: theme.textSecondary }]} numberOfLines={2}>
                           {memory.description}
                         </Text>
-                        <Text style={styles.memoryDate}>
+                        <Text style={[styles.memoryDate, { color: theme.textTertiary }]}>
                           {memoryDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                         </Text>
                       </View>
                       {memory.photos.length > 0 && (
                         <Image
-                          source={{ uri: `http://192.168.1.21:5000${memory.photos[0]}` }}
+                          source={{ uri: `http://192.168.1.27:5000${memory.photos[0]}` }}
                           style={styles.memoryThumbnail}
                         />
                       )}
