@@ -27,6 +27,11 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [currentSound, setCurrentSound] = useState<Sound | null>(null);
   const [volume, setVolume] = useState(0.7);
+  const [position, setPosition] = useState(0); // Current playback position in ms
+  const [duration, setDuration] = useState(0); // Total duration in ms
+  const [isSeeking, setIsSeeking] = useState(false);
+  const [playlist, setPlaylist] = useState<Sound[]>([]); // Available sounds
+  const [currentIndex, setCurrentIndex] = useState(0); // Current sound index in playlist
   const soundRef = useRef<Audio.Sound | null>(null);
   const { t } = useLanguage();
 
@@ -40,9 +45,14 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
     if (externalSelectedSound) {
       setCurrentSound(externalSelectedSound);
       saveLastPlayedSound(externalSelectedSound);
+      // Update index if sound is in playlist
+      const index = playlist.findIndex(s => s._id === externalSelectedSound._id);
+      if (index !== -1) {
+        setCurrentIndex(index);
+      }
       playSound(externalSelectedSound);
     }
-  }, [externalSelectedSound]);
+  }, [externalSelectedSound, playlist]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -55,6 +65,9 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
 
   const loadLastPlayedSound = async () => {
     try {
+      // Always load playlist first
+      await loadPlaylist();
+      
       const savedSound = await AsyncStorage.getItem("lastPlayedSound");
       if (savedSound) {
         const sound: Sound = JSON.parse(savedSound);
@@ -69,15 +82,30 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
     }
   };
 
+  const loadPlaylist = async () => {
+    try {
+      const token = await AsyncStorage.getItem("token");
+      if (!token) return;
+
+      const sounds = await getDefaultSounds(token);
+      setPlaylist(sounds); // Store all sounds for prev/next navigation
+    } catch (error) {
+      console.error("Error loading playlist:", error);
+    }
+  };
+
   const loadDefaultSound = async () => {
     try {
       const token = await AsyncStorage.getItem("token");
       if (!token) return;
 
       const sounds = await getDefaultSounds(token);
+      setPlaylist(sounds); // Store all sounds for prev/next navigation
       if (sounds.length > 0) {
         const firstLullaby = sounds.find((s) => s.category === "lullaby") || sounds[0];
+        const index = sounds.findIndex((s) => s._id === firstLullaby._id);
         setCurrentSound(firstLullaby);
+        setCurrentIndex(index);
       }
     } catch (error) {
       console.error("Error loading default sound:", error);
@@ -102,6 +130,10 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
         soundRef.current = null;
       }
 
+      // Reset position and duration when loading new sound
+      setPosition(0);
+      setDuration(0);
+
       // Set audio mode for playback
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: false,
@@ -120,10 +152,17 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
       setIsPlaying(true);
       setIsLoading(false);
 
-      // Listen for playback status
+      // Listen for playback status and update position/duration
       audioSound.setOnPlaybackStatusUpdate((status) => {
-        if (status.isLoaded && status.didJustFinish && !status.isLooping) {
-          setIsPlaying(false);
+        if (status.isLoaded) {
+          if (!isSeeking) {
+            setPosition(status.positionMillis);
+            setDuration(status.durationMillis || 0);
+          }
+          if (status.didJustFinish && !status.isLooping) {
+            setIsPlaying(false);
+            setPosition(0);
+          }
         }
       });
     } catch (error) {
@@ -183,6 +222,43 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
     }
   };
 
+  const handleSeek = async (value: number) => {
+    if (soundRef.current && duration > 0) {
+      setIsSeeking(true);
+      const newPosition = value * duration;
+      await soundRef.current.setPositionAsync(newPosition);
+      setPosition(newPosition);
+      setIsSeeking(false);
+    }
+  };
+
+  const formatTime = (millis: number): string => {
+    const totalSeconds = Math.floor(millis / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  const handlePrevious = () => {
+    if (playlist.length === 0) return;
+    const newIndex = currentIndex > 0 ? currentIndex - 1 : playlist.length - 1;
+    const prevSound = playlist[newIndex];
+    setCurrentIndex(newIndex);
+    setCurrentSound(prevSound);
+    saveLastPlayedSound(prevSound);
+    playSound(prevSound);
+  };
+
+  const handleNext = () => {
+    if (playlist.length === 0) return;
+    const newIndex = currentIndex < playlist.length - 1 ? currentIndex + 1 : 0;
+    const nextSound = playlist[newIndex];
+    setCurrentIndex(newIndex);
+    setCurrentSound(nextSound);
+    saveLastPlayedSound(nextSound);
+    playSound(nextSound);
+  };
+
   const { theme } = useTheme();
 
   if (!currentSound) {
@@ -228,13 +304,14 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
         {/* Controls */}
         <View style={styles.controls}>
           <TouchableOpacity
-            style={[styles.volumeBtn, { backgroundColor: theme.surface }]}
+            style={[styles.controlBtn, { backgroundColor: theme.surface }]}
             onPress={(e) => {
               e.stopPropagation();
-              handleVolumeDown();
+              handlePrevious();
             }}
+            disabled={playlist.length === 0}
           >
-            <Ionicons name="volume-low" size={20} color={theme.textSecondary} />
+            <Ionicons name="play-skip-back" size={24} color={theme.text} />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -257,24 +334,81 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
           </TouchableOpacity>
 
           <TouchableOpacity
+            style={[styles.controlBtn, { backgroundColor: theme.surface }]}
+            onPress={(e) => {
+              e.stopPropagation();
+              handleNext();
+            }}
+            disabled={playlist.length === 0}
+          >
+            <Ionicons name="play-skip-forward" size={24} color={theme.text} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Volume Controls */}
+        <View style={styles.volumeControls}>
+          <TouchableOpacity
+            style={[styles.volumeBtn, { backgroundColor: theme.surface }]}
+            onPress={(e) => {
+              e.stopPropagation();
+              handleVolumeDown();
+            }}
+          >
+            <Ionicons name="volume-low" size={18} color={theme.textSecondary} />
+          </TouchableOpacity>
+
+          <View style={styles.volumeIndicator}>
+            <View style={[styles.volumeBarBg, { backgroundColor: theme.border }]}>
+              <View
+                style={[styles.volumeBarFill, { width: `${volume * 100}%`, backgroundColor: theme.primary }]}
+              />
+            </View>
+            <Text style={[styles.volumeText, { color: theme.textSecondary }]}>{Math.round(volume * 100)}%</Text>
+          </View>
+
+          <TouchableOpacity
             style={[styles.volumeBtn, { backgroundColor: theme.surface }]}
             onPress={(e) => {
               e.stopPropagation();
               handleVolumeUp();
             }}
           >
-            <Ionicons name="volume-high" size={20} color={theme.textSecondary} />
+            <Ionicons name="volume-high" size={18} color={theme.textSecondary} />
           </TouchableOpacity>
         </View>
 
-        {/* Volume Indicator */}
-        <View style={styles.volumeIndicator}>
-          <View style={[styles.volumeBarBg, { backgroundColor: theme.border }]}>
-            <View
-              style={[styles.volumeBarFill, { width: `${volume * 100}%`, backgroundColor: theme.primary }]}
-            />
-          </View>
-          <Text style={[styles.volumeText, { color: theme.textSecondary }]}>{Math.round(volume * 100)}%</Text>
+        {/* Seek Bar with Time */}
+        <View style={styles.seekContainer}>
+          <Text style={[styles.timeText, { color: theme.textSecondary }]}>
+            {formatTime(position)}
+          </Text>
+          <TouchableOpacity
+            style={styles.seekBarWrapper}
+            activeOpacity={1}
+            onPress={(e) => {
+              e.stopPropagation();
+              const { locationX } = e.nativeEvent;
+              const seekBarWidth = e.currentTarget.measure((x, y, width) => {
+                const percentage = locationX / width;
+                handleSeek(percentage);
+              });
+            }}
+          >
+            <View style={[styles.seekBarBg, { backgroundColor: theme.border }]}>
+              <View
+                style={[
+                  styles.seekBarFill,
+                  {
+                    width: duration > 0 ? `${(position / duration) * 100}%` : '0%',
+                    backgroundColor: theme.primary,
+                  },
+                ]}
+              />
+            </View>
+          </TouchableOpacity>
+          <Text style={[styles.timeText, { color: theme.textSecondary }]}>
+            {formatTime(duration)}
+          </Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -346,15 +480,15 @@ const styles = StyleSheet.create({
   controls: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
+    justifyContent: "center",
+    gap: 16,
   },
-  volumeBtn: {
+  controlBtn: {
     padding: 8,
     backgroundColor: "#f5f5f5",
-    borderRadius: 20,
-    width: 40,
-    height: 40,
+    borderRadius: 25,
+    width: 50,
+    height: 50,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -369,7 +503,48 @@ const styles = StyleSheet.create({
   playBtnActive: {
     backgroundColor: "#36c261",
   },
+  volumeControls: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  volumeBtn: {
+    padding: 6,
+    backgroundColor: "#f5f5f5",
+    borderRadius: 20,
+    width: 36,
+    height: 36,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  seekContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  timeText: {
+    fontSize: 11,
+    color: "#666",
+    width: 40,
+    textAlign: "center",
+  },
+  seekBarWrapper: {
+    flex: 1,
+    paddingVertical: 4,
+  },
+  seekBarBg: {
+    height: 4,
+    backgroundColor: "#eee",
+    borderRadius: 2,
+    overflow: "hidden",
+  },
+  seekBarFill: {
+    height: 4,
+    backgroundColor: "#A2E884",
+    borderRadius: 2,
+  },
   volumeIndicator: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     gap: 10,

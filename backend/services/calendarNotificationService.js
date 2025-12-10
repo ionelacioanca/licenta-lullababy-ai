@@ -24,10 +24,12 @@ export const checkUpcomingEvents = async () => {
     }).populate('babyId');
     
     for (const event of upcomingEvents) {
-      // Check if notification already exists for this event
+      // Check if notification already exists for this event (created within last 24 hours)
+      const last24Hours = new Date(now.getTime() - 24 * 60 * 60 * 1000);
       const existingAlert = await Alert.findOne({
         calendarEventId: event._id,
-        type: 'calendar'
+        type: 'calendar',
+        timestamp: { $gte: last24Hours }
       });
       
       if (!existingAlert) {
@@ -75,11 +77,11 @@ export const checkTodayEvents = async () => {
     }).populate('babyId');
     
     for (const event of todayEvents) {
-      // Check if "today" notification already exists
+      // Check if "today" notification already exists (created today)
       const existingAlert = await Alert.findOne({
         calendarEventId: event._id,
         type: 'calendar',
-        message: { $regex: /^Today:/ }
+        timestamp: { $gte: today }
       });
       
       if (!existingAlert) {
