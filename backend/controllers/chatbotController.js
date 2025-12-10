@@ -33,7 +33,8 @@ export const chatWithBot = async (req, res, next) => {
           let displayRole = user.role;
           if (user.role === 'others' && user.customRole) {
             // Map custom roles like 'aunt', 'uncle', 'grandma', 'grandpa'
-            displayRole = user.customRole;
+            // Convert to lowercase to match role translations
+            displayRole = user.customRole.toLowerCase();
           }
           
           userContext = {
