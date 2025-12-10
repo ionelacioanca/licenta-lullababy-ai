@@ -183,8 +183,16 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({ visible, onClose }) 
   };
 
   const renderItem = ({ item }: { item: MessageItem }) => (
-    <View style={[styles.bubble, item.role === 'user' ? { backgroundColor: theme.userBubble } : { backgroundColor: theme.otherBubble }]}>
-      <ThemedText style={[styles.bubbleText, { color: theme.text }]}>{item.text}</ThemedText>
+    <View style={[
+      styles.messageContainer,
+      item.role === 'user' ? styles.userMessageContainer : styles.botMessageContainer
+    ]}>
+      <View style={[
+        styles.bubble,
+        item.role === 'user' ? { backgroundColor: theme.userBubble } : { backgroundColor: theme.otherBubble }
+      ]}>
+        <ThemedText style={[styles.bubbleText, { color: theme.text }]}>{item.text}</ThemedText>
+      </View>
     </View>
   );
 
@@ -273,20 +281,27 @@ const styles = StyleSheet.create({
   closeText: { fontSize: 28, fontWeight: '600' },
   list: { flex: 1 },
   listContent: { padding: 16, paddingBottom: 20 },
+  messageContainer: {
+    width: '100%',
+    marginBottom: 10,
+  },
+  userMessageContainer: {
+    alignItems: 'flex-end',
+  },
+  botMessageContainer: {
+    alignItems: 'flex-start',
+  },
   bubble: {
     maxWidth: '80%',
     paddingVertical: 10,
     paddingHorizontal: 14,
-    marginBottom: 10,
     borderRadius: 20,
   },
   userBubble: {
     backgroundColor: '#D4F1C5',
-    marginLeft: 'auto',
   },
   botBubble: {
     backgroundColor: '#FFF3E0',
-    marginRight: 'auto',
   },
   bubbleText: { color: '#333' },
   loadingRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, marginBottom: 8 },
