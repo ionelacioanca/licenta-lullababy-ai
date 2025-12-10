@@ -42,6 +42,8 @@ function getKnowledge(question) {
     { keywords: ["fever", "temperature", "febră", "febra", "temp"], file: "fever.txt" },
     { keywords: ["heart", "pulse", "puls", "vital"], file: "vital.txt" },
     { keywords: ["parent", "părinte", "parinte", "guilty", "bad mom", "bad dad"], file: "emotional_support.txt" },
+    { keywords: ["postpartum", "post partum", "recovery", "healing", "baby blues", "depression", "ppd", "after birth", "dupa nastere", "după naștere", "depresie postpartum"], file: "postpartum.txt" },
+    { keywords: ["breastfeed", "breast feed", "breastfeeding", "nursing", "latch", "milk", "pump", "pumping", "weaning", "alăptare", "alaptare", "lapte matern", "sân"], file: "breastfeeding.txt" },
   ];
 
   let selectedFiles = new Set();
@@ -78,7 +80,11 @@ You CAN answer direct questions about the baby's information (name, age, weight,
 For example, colic typically occurs in babies under 3-4 months and is rare in older babies.
 Use the provided context if helpful, but do NOT invent medical facts.
 Never diagnose, always suggest contacting a doctor when symptoms are serious.
-If user information is provided, you may address them by name naturally, but if not provided, simply respond without mentioning it.
+
+CRITICAL: Pay attention to WHO you are talking to:
+- If user information is provided below, address THE PARENT by their name (not the baby's name).
+- When the question is about the PARENT'S health (postpartum, breastfeeding, recovery), talk to THE PARENT directly.
+- When the question is about the BABY's health, you can refer to the baby by name.
 Answer in English, in a warm and supportive tone.
 `;
 
@@ -92,7 +98,11 @@ Folosește un ton cald, blând și plin de înțelegere, ca și cum ai vorbi cu 
 Evită limbajul tehnic sau medical excesiv - vorbește simplu și natural.
 Folosește contextul oferit când e relevant, dar nu inventa niciodată informații medicale.
 Nu diagnostica - recomandă părinților să consulte medicul când simptomele sunt îngrijorătoare.
-Dacă sunt furnizate informații despre utilizator, poți să îi spui pe nume în mod natural, dar dacă nu, răspunde fără să menționezi acest lucru.
+
+ESENȚIAL: Fii atent CU CINE vorbești:
+- Dacă sunt furnizate informații despre utilizator mai jos, adresează-te PĂRINTELUI cu numele lor (NU cu numele bebelușului).
+- Când întrebarea este despre sănătatea PĂRINTELUI (postpartum, alăptare, recuperare), vorbește direct cu PĂRINTELE.
+- Când întrebarea este despre sănătatea BEBELUȘULUI, poți referi bebelușul cu numele lui.
 `;
 
   const baseInstruction = lang === "ro" ? baseInstructionRo : baseInstructionEn;
@@ -115,9 +125,15 @@ Dacă sunt furnizate informații despre utilizator, poți să îi spui pe nume �
     const translatedRole = roleTranslations[role]?.[lang === 'ro' ? 'ro' : 'en'] || (lang === 'ro' ? 'părinte' : 'parent');
     
     if (lang === "ro") {
-      userInfo = `\nVorbești cu ${name}, ${translatedRole === 'părinte' ? 'un părinte' : translatedRole} al bebelușului.`;
+      userInfo = `\n${"=".repeat(50)}\nPERSOANA CU CARE VORBEȘTI (THE PARENT YOU'RE TALKING TO):\n`;
+      userInfo += `Nume părintelui: ${name}\n`;
+      userInfo += `Rolul: ${translatedRole === 'părinte' ? 'un părinte' : translatedRole}\n`;
+      userInfo += `${"=".repeat(50)}`;
     } else {
-      userInfo = `\nYou are talking to ${name}, the baby's ${translatedRole}.`;
+      userInfo = `\n${"=".repeat(50)}\nTHE PARENT YOU ARE TALKING TO:\n`;
+      userInfo += `Parent's name: ${name}\n`;
+      userInfo += `Role: ${translatedRole}\n`;
+      userInfo += `${"=".repeat(50)}`;
     }
     console.log('[Chatbot Prompt] Generated userInfo string:', userInfo);
   } else {
@@ -127,48 +143,52 @@ Dacă sunt furnizate informații despre utilizator, poți să îi spui pe nume �
   // Build baby information section
   let babyInfo = "";
   if (babyContext) {
-    const { name, gender, ageInMonths, ageInDays, weight, length, headCircumference } = babyContext;
+    const { name: babyName, gender, ageInMonths, ageInDays, weight, length, headCircumference } = babyContext;
     
     if (lang === "ro") {
-      babyInfo += "\n\nInformații despre bebeluș:\n";
-      babyInfo += `- Nume: ${name}\n`;
-      babyInfo += `- Gen: ${gender === 'male' ? 'băiat' : 'fată'}\n`;
+      babyInfo += "\n\n" + "=".repeat(50) + "\n";
+      babyInfo += "INFORMAȚII DESPRE BEBELUȘ (THE BABY'S INFORMATION):\n";
+      babyInfo += `Numele bebelușului: ${babyName}\n`;
+      babyInfo += `Gen: ${gender === 'male' ? 'băiat' : 'fată'}\n`;
       if (ageInMonths > 0) {
-        babyInfo += `- Vârstă: ${ageInMonths} ${ageInMonths === 1 ? 'lună' : 'luni'} (${ageInDays} zile)\n`;
+        babyInfo += `Vârstă: ${ageInMonths} ${ageInMonths === 1 ? 'lună' : 'luni'} (${ageInDays} zile)\n`;
       } else {
-        babyInfo += `- Vârstă: ${ageInDays} ${ageInDays === 1 ? 'zi' : 'zile'}\n`;
+        babyInfo += `Vârstă: ${ageInDays} ${ageInDays === 1 ? 'zi' : 'zile'}\n`;
       }
-      if (weight) babyInfo += `- Greutate: ${weight} kg\n`;
-      if (length) babyInfo += `- Lungime: ${length} cm\n`;
-      if (headCircumference) babyInfo += `- Circumferința capului: ${headCircumference} cm\n`;
-      babyInfo += `\n⚠️ IMPORTANT: Aceast bebeluș are ${ageInMonths} luni. Dă sfaturi SPECIFICE pentru această vârstă, NU pentru bebeluși mai mici sau mai mari.`;
+      if (weight) babyInfo += `Greutate: ${weight} kg\n`;
+      if (length) babyInfo += `Lungime: ${length} cm\n`;
+      if (headCircumference) babyInfo += `Circumferința capului: ${headCircumference} cm\n`;
+      babyInfo += `\n⚠️ IMPORTANT: Aceast bebeluș are ${ageInMonths} luni. Dă sfaturi SPECIFICE pentru această vârstă, NU pentru bebeluși mai mici sau mai mari.\n`;
+      babyInfo += "=".repeat(50);
     } else {
-      babyInfo += "\n\nBaby Information:\n";
-      babyInfo += `- Name: ${name}\n`;
-      babyInfo += `- Gender: ${gender}\n`;
+      babyInfo += "\n\n" + "=".repeat(50) + "\n";
+      babyInfo += "THE BABY'S INFORMATION:\n";
+      babyInfo += `Baby's name: ${babyName}\n`;
+      babyInfo += `Gender: ${gender}\n`;
       if (ageInMonths > 0) {
-        babyInfo += `- Age: ${ageInMonths} ${ageInMonths === 1 ? 'month' : 'months'} old (${ageInDays} days)\n`;
+        babyInfo += `Age: ${ageInMonths} ${ageInMonths === 1 ? 'month' : 'months'} old (${ageInDays} days)\n`;
       } else {
-        babyInfo += `- Age: ${ageInDays} ${ageInDays === 1 ? 'day' : 'days'} old\n`;
+        babyInfo += `Age: ${ageInDays} ${ageInDays === 1 ? 'day' : 'days'} old\n`;
       }
-      if (weight) babyInfo += `- Weight: ${weight} kg\n`;
-      if (length) babyInfo += `- Length: ${length} cm\n`;
-      if (headCircumference) babyInfo += `- Head Circumference: ${headCircumference} cm\n`;
-      babyInfo += `\n⚠️ IMPORTANT: This baby is ${ageInMonths} months old. Provide advice SPECIFIC to this age, NOT for younger or older babies.`;
+      if (weight) babyInfo += `Weight: ${weight} kg\n`;
+      if (length) babyInfo += `Length: ${length} cm\n`;
+      if (headCircumference) babyInfo += `Head Circumference: ${headCircumference} cm\n`;
+      babyInfo += `\n⚠️ IMPORTANT: This baby is ${ageInMonths} months old. Provide advice SPECIFIC to this age, NOT for younger or older babies.\n`;
+      babyInfo += "=".repeat(50);
     }
   }
 
-  // Structure: instruction -> user info -> baby info (most important) -> knowledge -> question
+  // Structure: instruction -> user info (WHO you're talking to) -> baby info -> knowledge -> question
   let finalPrompt = baseInstruction;
   
+  // User info comes first - this is WHO the chatbot is talking to
   if (userInfo) {
     finalPrompt += userInfo;
   }
   
+  // Baby info comes second - this is ABOUT whom the parent might ask
   if (babyInfo) {
-    finalPrompt += "\n" + "=".repeat(50) + "\n";
     finalPrompt += babyInfo;
-    finalPrompt += "\n" + "=".repeat(50);
   }
   
   if (knowledge) {
