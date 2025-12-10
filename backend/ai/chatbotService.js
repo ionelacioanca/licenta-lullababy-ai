@@ -70,9 +70,12 @@ function getKnowledge(question) {
 }
 
 // Construim promptul final pentru modelul babybuddy
-function buildPrompt(message, lang, knowledge) {
+function buildPrompt(message, lang, knowledge, babyContext) {
   const baseInstructionEn = `
 You are BabyCareBuddy — a calm, empathetic, friendly assistant for parents of babies.
+IMPORTANT: If baby age information is provided below, ALWAYS consider the baby's specific age when giving advice.
+You CAN answer direct questions about the baby's information (name, age, weight, length) using the data provided.
+For example, colic typically occurs in babies under 3-4 months and is rare in older babies.
 Use the provided context if helpful, but do NOT invent medical facts.
 Never diagnose, always suggest contacting a doctor when symptoms are serious.
 Answer in English, in a warm and supportive tone.
@@ -80,6 +83,9 @@ Answer in English, in a warm and supportive tone.
 
   const baseInstructionRo = `
 Ești BabyCareBuddy — un asistent calm, empatic și prietenos pentru părinți de bebeluși.
+IMPORTANT: Dacă sunt furnizate informații despre vârsta bebelușului mai jos, ÎNTOTDEAUNA ia în considerare vârsta specifică a bebelușului când dai sfaturi.
+POȚI răspunde la întrebări directe despre informațiile bebelușului (nume, vârstă, greutate, lungime) folosind datele furnizate.
+De exemplu, colicile apar de obicei la bebelușii sub 3-4 luni și sunt rare la bebelușii mai mari.
 Răspunde DOAR în limba română naturală și conversațională (nu formal sau robotizat).
 Folosește un ton cald, blând și plin de înțelegere, ca și cum ai vorbi cu un prieten.
 Evită limbajul tehnic sau medical excesiv - vorbește simplu și natural.
@@ -87,27 +93,82 @@ Folosește contextul oferit când e relevant, dar nu inventa niciodată informa�
 Nu diagnostica - recomandă părinților să consulte medicul când simptomele sunt îngrijorătoare.
 `;
 
-
   const baseInstruction = lang === "ro" ? baseInstructionRo : baseInstructionEn;
 
-  return `${baseInstruction}
+  // Build baby information section
+  let babyInfo = "";
+  if (babyContext) {
+    const { name, gender, ageInMonths, ageInDays, weight, length, headCircumference } = babyContext;
+    
+    if (lang === "ro") {
+      babyInfo += "\n\nInformații despre bebeluș:\n";
+      babyInfo += `- Nume: ${name}\n`;
+      babyInfo += `- Gen: ${gender === 'male' ? 'băiat' : 'fată'}\n`;
+      if (ageInMonths > 0) {
+        babyInfo += `- Vârstă: ${ageInMonths} ${ageInMonths === 1 ? 'lună' : 'luni'} (${ageInDays} zile)\n`;
+      } else {
+        babyInfo += `- Vârstă: ${ageInDays} ${ageInDays === 1 ? 'zi' : 'zile'}\n`;
+      }
+      if (weight) babyInfo += `- Greutate: ${weight} kg\n`;
+      if (length) babyInfo += `- Lungime: ${length} cm\n`;
+      if (headCircumference) babyInfo += `- Circumferința capului: ${headCircumference} cm\n`;
+      babyInfo += `\n⚠️ IMPORTANT: Aceast bebeluș are ${ageInMonths} luni. Dă sfaturi SPECIFICE pentru această vârstă, NU pentru bebeluși mai mici sau mai mari.`;
+    } else {
+      babyInfo += "\n\nBaby Information:\n";
+      babyInfo += `- Name: ${name}\n`;
+      babyInfo += `- Gender: ${gender}\n`;
+      if (ageInMonths > 0) {
+        babyInfo += `- Age: ${ageInMonths} ${ageInMonths === 1 ? 'month' : 'months'} old (${ageInDays} days)\n`;
+      } else {
+        babyInfo += `- Age: ${ageInDays} ${ageInDays === 1 ? 'day' : 'days'} old\n`;
+      }
+      if (weight) babyInfo += `- Weight: ${weight} kg\n`;
+      if (length) babyInfo += `- Length: ${length} cm\n`;
+      if (headCircumference) babyInfo += `- Head Circumference: ${headCircumference} cm\n`;
+      babyInfo += `\n⚠️ IMPORTANT: This baby is ${ageInMonths} months old. Provide advice SPECIFIC to this age, NOT for younger or older babies.`;
+    }
+  }
 
-Context (you may use relevant parts of this):
-${knowledge || "(no extra context)"}
-
-User: ${message}
-Assistant:`;
+  // Structure: instruction -> baby info (most important) -> knowledge -> question
+  let finalPrompt = baseInstruction;
+  
+  if (babyInfo) {
+    finalPrompt += "\n" + "=".repeat(50) + "\n";
+    finalPrompt += babyInfo;
+    finalPrompt += "\n" + "=".repeat(50);
+  }
+  
+  if (knowledge) {
+    finalPrompt += "\n\nAdditional Context (use if relevant):\n";
+    finalPrompt += knowledge;
+  }
+  
+  finalPrompt += "\n\nUser: " + message;
+  finalPrompt += "\nAssistant:";
+  
+  return finalPrompt;
 }
 
 // Funcția principală apelată din controller
-async function getChatbotReply(message, userLanguage) {
+async function getChatbotReply(message, userLanguage, babyContext = null) {
   try {
     // Use explicit language preference if provided, otherwise detect from message
     const lang = userLanguage === 'ro' || userLanguage === 'en' ? userLanguage : detectLanguage(message);
     const knowledge = getKnowledge(message);
-    const prompt = buildPrompt(message, lang, knowledge);
+    const prompt = buildPrompt(message, lang, knowledge, babyContext);
 
     console.log(`[Chatbot] Processing message (${lang}): "${message.substring(0, 50)}..."`);
+    if (babyContext) {
+      console.log(`[Chatbot] Baby context received:`, JSON.stringify(babyContext, null, 2));
+    } else {
+      console.log(`[Chatbot] WARNING: No baby context provided`);
+    }
+    
+    // Log the complete prompt to debug
+    console.log('\n========== COMPLETE PROMPT ==========');
+    console.log(prompt);
+    console.log('=====================================\n');
+    
     const startTime = Date.now();
 
     // apelăm Ollama HTTP API – ai nevoie de modelul 'babybuddy' creat
@@ -118,7 +179,7 @@ async function getChatbotReply(message, userLanguage) {
       keep_alive: "5m", // Keep model loaded for 5 minutes to speed up subsequent requests
       options: {
         temperature: 0.7,
-        num_predict: 200, // Reduced for faster responses
+        num_predict: 500, // Increased to allow complete responses
         top_k: 40,
         top_p: 0.9,
       }

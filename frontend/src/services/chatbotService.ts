@@ -9,20 +9,29 @@ export interface ChatMessage {
   id: string;
 }
 
-export async function sendChatMessage(message: string, language?: string): Promise<string> {
+export async function sendChatMessage(message: string, language?: string, babyId?: string): Promise<string> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 60000); // 60s timeout
   try {
     const token = await AsyncStorage.getItem('token');
     // Get language preference from AsyncStorage if not provided
     const lang = language || await AsyncStorage.getItem('app_language') || 'en';
+    // Get selected babyId from AsyncStorage if not provided
+    const selectedBabyId = babyId || await AsyncStorage.getItem('selectedBabyId');
+    
+    console.log('[Chatbot Service] Sending message with babyId:', selectedBabyId);
+    
     const res = await fetch(`${API_BASE}/chatbot`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-      body: JSON.stringify({ message, language: lang }),
+      body: JSON.stringify({ 
+        message, 
+        language: lang,
+        babyId: selectedBabyId 
+      }),
       signal: controller.signal,
     });
 

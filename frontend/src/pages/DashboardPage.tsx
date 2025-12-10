@@ -183,6 +183,11 @@ const DashboardPage: React.FC = () => {
         }
         if (!baby) {
           baby = data[0]; // Fallback to first baby if selected not found
+          // Store the first baby as selected if no baby was previously selected
+          if (baby && baby._id) {
+            await AsyncStorage.setItem("selectedBabyId", baby._id);
+            console.log("Set default selectedBabyId:", baby._id);
+          }
         }
         
         if (baby && baby.name) {

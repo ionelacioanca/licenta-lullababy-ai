@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Modal, View, StyleSheet, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform, Animated } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemedText } from '../../components/ThemedText';
 import { ThemedView } from '../../components/ThemedView';
 import { sendChatMessage } from '../services/chatbotService';
@@ -116,11 +117,27 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({ visible, onClose }) 
     scrollToEnd();
 
     setLoading(true);
-    const reply = await sendChatMessage(userText);
-    setLoading(false);
-
-    const botMsg: MessageItem = { id: `b-${Date.now()}`, role: 'bot', text: reply, ts: Date.now() };
-    setMessages((prev) => [...prev, botMsg].slice(-30)); // keep last 30
+    try {
+      // Get the selected baby ID from AsyncStorage
+      const selectedBabyId = await AsyncStorage.getItem('selectedBabyId');
+      
+      // Send message with baby ID so chatbot knows baby's age, weight, etc.
+      const reply = await sendChatMessage(userText, undefined, selectedBabyId || undefined);
+      
+      const botMsg: MessageItem = { id: `b-${Date.now()}`, role: 'bot', text: reply, ts: Date.now() };
+      setMessages((prev) => [...prev, botMsg].slice(-30)); // keep last 30
+    } catch (error) {
+      console.error('Error sending chat message:', error);
+      const errorMsg: MessageItem = { 
+        id: `e-${Date.now()}`, 
+        role: 'bot', 
+        text: 'Sorry, I encountered an error. Please try again.', 
+        ts: Date.now() 
+      };
+      setMessages((prev) => [...prev, errorMsg]);
+    } finally {
+      setLoading(false);
+    }
   }, [input, loading]);
 
   const pickSuggestion = (s: string) => {
