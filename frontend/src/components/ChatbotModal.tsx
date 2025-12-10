@@ -86,6 +86,44 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({ visible, onClose }) 
   const [error, setError] = useState<string | null>(null);
   const listRef = useRef<FlatList<MessageItem>>(null);
 
+  // Ensure a baby is selected when chatbot opens
+  useEffect(() => {
+    const ensureBabySelected = async () => {
+      if (!visible) return;
+      
+      try {
+        const selectedBabyId = await AsyncStorage.getItem('selectedBabyId');
+        if (selectedBabyId) {
+          console.log('[Chatbot] Baby already selected:', selectedBabyId);
+          return; // Baby already selected
+        }
+
+        // No baby selected, fetch babies and select the first one
+        const token = await AsyncStorage.getItem('token');
+        const parentId = await AsyncStorage.getItem('parentId');
+        
+        if (!token || !parentId) return;
+
+        const response = await fetch(`http://192.168.1.27:5000/api/baby/parent/${parentId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (response.ok) {
+          const babies = await response.json();
+          if (babies && babies.length > 0) {
+            const firstBabyId = babies[0]._id;
+            await AsyncStorage.setItem('selectedBabyId', firstBabyId);
+            console.log('[Chatbot] Auto-selected first baby:', firstBabyId);
+          }
+        }
+      } catch (error) {
+        console.error('[Chatbot] Error ensuring baby selected:', error);
+      }
+    };
+
+    ensureBabySelected();
+  }, [visible]);
+
   useEffect(() => {
     if (visible && messages.length === 0) {
       // Welcome message
