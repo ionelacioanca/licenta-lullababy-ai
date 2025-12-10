@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Modal, View, StyleSheet, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform, Animated } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemedText } from '../../components/ThemedText';
 import { ThemedView } from '../../components/ThemedView';
 import { sendChatMessage } from '../services/chatbotService';
@@ -85,6 +86,44 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({ visible, onClose }) 
   const [error, setError] = useState<string | null>(null);
   const listRef = useRef<FlatList<MessageItem>>(null);
 
+  // Ensure a baby is selected when chatbot opens
+  useEffect(() => {
+    const ensureBabySelected = async () => {
+      if (!visible) return;
+      
+      try {
+        const selectedBabyId = await AsyncStorage.getItem('selectedBabyId');
+        if (selectedBabyId) {
+          console.log('[Chatbot] Baby already selected:', selectedBabyId);
+          return; // Baby already selected
+        }
+
+        // No baby selected, fetch babies and select the first one
+        const token = await AsyncStorage.getItem('token');
+        const parentId = await AsyncStorage.getItem('parentId');
+        
+        if (!token || !parentId) return;
+
+        const response = await fetch(`http://192.168.1.27:5000/api/baby/parent/${parentId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (response.ok) {
+          const babies = await response.json();
+          if (babies && babies.length > 0) {
+            const firstBabyId = babies[0]._id;
+            await AsyncStorage.setItem('selectedBabyId', firstBabyId);
+            console.log('[Chatbot] Auto-selected first baby:', firstBabyId);
+          }
+        }
+      } catch (error) {
+        console.error('[Chatbot] Error ensuring baby selected:', error);
+      }
+    };
+
+    ensureBabySelected();
+  }, [visible]);
+
   useEffect(() => {
     if (visible && messages.length === 0) {
       // Welcome message
@@ -116,11 +155,27 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({ visible, onClose }) 
     scrollToEnd();
 
     setLoading(true);
-    const reply = await sendChatMessage(userText);
-    setLoading(false);
-
-    const botMsg: MessageItem = { id: `b-${Date.now()}`, role: 'bot', text: reply, ts: Date.now() };
-    setMessages((prev) => [...prev, botMsg].slice(-30)); // keep last 30
+    try {
+      // Get the selected baby ID from AsyncStorage
+      const selectedBabyId = await AsyncStorage.getItem('selectedBabyId');
+      
+      // Send message with baby ID so chatbot knows baby's age, weight, etc.
+      const reply = await sendChatMessage(userText, undefined, selectedBabyId || undefined);
+      
+      const botMsg: MessageItem = { id: `b-${Date.now()}`, role: 'bot', text: reply, ts: Date.now() };
+      setMessages((prev) => [...prev, botMsg].slice(-30)); // keep last 30
+    } catch (error) {
+      console.error('Error sending chat message:', error);
+      const errorMsg: MessageItem = { 
+        id: `e-${Date.now()}`, 
+        role: 'bot', 
+        text: 'Sorry, I encountered an error. Please try again.', 
+        ts: Date.now() 
+      };
+      setMessages((prev) => [...prev, errorMsg]);
+    } finally {
+      setLoading(false);
+    }
   }, [input, loading]);
 
   const pickSuggestion = (s: string) => {
@@ -128,8 +183,16 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({ visible, onClose }) 
   };
 
   const renderItem = ({ item }: { item: MessageItem }) => (
-    <View style={[styles.bubble, item.role === 'user' ? { backgroundColor: theme.userBubble } : { backgroundColor: theme.otherBubble }]}>
-      <ThemedText style={[styles.bubbleText, { color: theme.text }]}>{item.text}</ThemedText>
+    <View style={[
+      styles.messageContainer,
+      item.role === 'user' ? styles.userMessageContainer : styles.botMessageContainer
+    ]}>
+      <View style={[
+        styles.bubble,
+        item.role === 'user' ? { backgroundColor: theme.userBubble } : { backgroundColor: theme.otherBubble }
+      ]}>
+        <ThemedText style={[styles.bubbleText, { color: theme.text }]}>{item.text}</ThemedText>
+      </View>
     </View>
   );
 
@@ -218,20 +281,27 @@ const styles = StyleSheet.create({
   closeText: { fontSize: 28, fontWeight: '600' },
   list: { flex: 1 },
   listContent: { padding: 16, paddingBottom: 20 },
+  messageContainer: {
+    width: '100%',
+    marginBottom: 10,
+  },
+  userMessageContainer: {
+    alignItems: 'flex-end',
+  },
+  botMessageContainer: {
+    alignItems: 'flex-start',
+  },
   bubble: {
     maxWidth: '80%',
     paddingVertical: 10,
     paddingHorizontal: 14,
-    marginBottom: 10,
     borderRadius: 20,
   },
   userBubble: {
     backgroundColor: '#D4F1C5',
-    marginLeft: 'auto',
   },
   botBubble: {
     backgroundColor: '#FFF3E0',
-    marginRight: 'auto',
   },
   bubbleText: { color: '#333' },
   loadingRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, marginBottom: 8 },
