@@ -70,7 +70,7 @@ function getKnowledge(question) {
 }
 
 // Construim promptul final pentru modelul babybuddy
-function buildPrompt(message, lang, knowledge, babyContext) {
+function buildPrompt(message, lang, knowledge, babyContext, userContext) {
   const baseInstructionEn = `
 You are BabyCareBuddy — a calm, empathetic, friendly assistant for parents of babies.
 IMPORTANT: If baby age information is provided below, ALWAYS consider the baby's specific age when giving advice.
@@ -78,6 +78,7 @@ You CAN answer direct questions about the baby's information (name, age, weight,
 For example, colic typically occurs in babies under 3-4 months and is rare in older babies.
 Use the provided context if helpful, but do NOT invent medical facts.
 Never diagnose, always suggest contacting a doctor when symptoms are serious.
+If user information is provided, you may address them by name naturally, but if not provided, simply respond without mentioning it.
 Answer in English, in a warm and supportive tone.
 `;
 
@@ -91,9 +92,37 @@ Folosește un ton cald, blând și plin de înțelegere, ca și cum ai vorbi cu 
 Evită limbajul tehnic sau medical excesiv - vorbește simplu și natural.
 Folosește contextul oferit când e relevant, dar nu inventa niciodată informații medicale.
 Nu diagnostica - recomandă părinților să consulte medicul când simptomele sunt îngrijorătoare.
+Dacă sunt furnizate informații despre utilizator, poți să îi spui pe nume în mod natural, dar dacă nu, răspunde fără să menționezi acest lucru.
 `;
 
   const baseInstruction = lang === "ro" ? baseInstructionRo : baseInstructionEn;
+
+  // Build user information section
+  let userInfo = "";
+  if (userContext) {
+    console.log('[Chatbot Prompt] Building user info with context:', userContext);
+    const { name, role } = userContext;
+    const roleTranslations = {
+      mother: { en: 'mother', ro: 'mamă' },
+      father: { en: 'father', ro: 'tată' },
+      guardian: { en: 'guardian', ro: 'tutore' },
+      aunt: { en: 'aunt', ro: 'mătușă' },
+      uncle: { en: 'uncle', ro: 'unchi' },
+      grandma: { en: 'grandmother', ro: 'bunică' },
+      grandpa: { en: 'grandfather', ro: 'bunic' },
+    };
+    
+    const translatedRole = roleTranslations[role]?.[lang === 'ro' ? 'ro' : 'en'] || (lang === 'ro' ? 'părinte' : 'parent');
+    
+    if (lang === "ro") {
+      userInfo = `\nVorbești cu ${name}, ${translatedRole === 'părinte' ? 'un părinte' : translatedRole} al bebelușului.`;
+    } else {
+      userInfo = `\nYou are talking to ${name}, the baby's ${translatedRole}.`;
+    }
+    console.log('[Chatbot Prompt] Generated userInfo string:', userInfo);
+  } else {
+    console.log('[Chatbot Prompt] No userContext provided - userInfo will be empty');
+  }
 
   // Build baby information section
   let babyInfo = "";
@@ -129,8 +158,12 @@ Nu diagnostica - recomandă părinților să consulte medicul când simptomele s
     }
   }
 
-  // Structure: instruction -> baby info (most important) -> knowledge -> question
+  // Structure: instruction -> user info -> baby info (most important) -> knowledge -> question
   let finalPrompt = baseInstruction;
+  
+  if (userInfo) {
+    finalPrompt += userInfo;
+  }
   
   if (babyInfo) {
     finalPrompt += "\n" + "=".repeat(50) + "\n";
@@ -150,12 +183,12 @@ Nu diagnostica - recomandă părinților să consulte medicul când simptomele s
 }
 
 // Funcția principală apelată din controller
-async function getChatbotReply(message, userLanguage, babyContext = null) {
+async function getChatbotReply(message, userLanguage, babyContext = null, userContext = null) {
   try {
     // Use explicit language preference if provided, otherwise detect from message
     const lang = userLanguage === 'ro' || userLanguage === 'en' ? userLanguage : detectLanguage(message);
     const knowledge = getKnowledge(message);
-    const prompt = buildPrompt(message, lang, knowledge, babyContext);
+    const prompt = buildPrompt(message, lang, knowledge, babyContext, userContext);
 
     console.log(`[Chatbot] Processing message (${lang}): "${message.substring(0, 50)}..."`);
     if (babyContext) {

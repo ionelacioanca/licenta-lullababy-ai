@@ -19,7 +19,9 @@ export async function sendChatMessage(message: string, language?: string, babyId
     // Get selected babyId from AsyncStorage if not provided
     const selectedBabyId = babyId || await AsyncStorage.getItem('selectedBabyId');
     
-    console.log('[Chatbot Service] Sending message with babyId:', selectedBabyId);
+    console.log('[Chatbot Service] Sending message:', message.substring(0, 30));
+    console.log('[Chatbot Service] Language:', lang);
+    console.log('[Chatbot Service] BabyId:', selectedBabyId);
     
     const res = await fetch(`${API_BASE}/chatbot`, {
       method: 'POST',
