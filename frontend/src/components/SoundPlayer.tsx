@@ -27,6 +27,9 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [currentSound, setCurrentSound] = useState<Sound | null>(null);
   const [volume, setVolume] = useState(0.7);
+  const [position, setPosition] = useState(0); // Current playback position in ms
+  const [duration, setDuration] = useState(0); // Total duration in ms
+  const [isSeeking, setIsSeeking] = useState(false);
   const soundRef = useRef<Audio.Sound | null>(null);
   const { t } = useLanguage();
 
@@ -102,6 +105,10 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
         soundRef.current = null;
       }
 
+      // Reset position and duration when loading new sound
+      setPosition(0);
+      setDuration(0);
+
       // Set audio mode for playback
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: false,
@@ -120,10 +127,17 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
       setIsPlaying(true);
       setIsLoading(false);
 
-      // Listen for playback status
+      // Listen for playback status and update position/duration
       audioSound.setOnPlaybackStatusUpdate((status) => {
-        if (status.isLoaded && status.didJustFinish && !status.isLooping) {
-          setIsPlaying(false);
+        if (status.isLoaded) {
+          if (!isSeeking) {
+            setPosition(status.positionMillis);
+            setDuration(status.durationMillis || 0);
+          }
+          if (status.didJustFinish && !status.isLooping) {
+            setIsPlaying(false);
+            setPosition(0);
+          }
         }
       });
     } catch (error) {
@@ -181,6 +195,23 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
     if (soundRef.current) {
       await soundRef.current.setVolumeAsync(newVolume);
     }
+  };
+
+  const handleSeek = async (value: number) => {
+    if (soundRef.current && duration > 0) {
+      setIsSeeking(true);
+      const newPosition = value * duration;
+      await soundRef.current.setPositionAsync(newPosition);
+      setPosition(newPosition);
+      setIsSeeking(false);
+    }
+  };
+
+  const formatTime = (millis: number): string => {
+    const totalSeconds = Math.floor(millis / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
   const { theme } = useTheme();
@@ -265,6 +296,40 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
           >
             <Ionicons name="volume-high" size={20} color={theme.textSecondary} />
           </TouchableOpacity>
+        </View>
+
+        {/* Seek Bar with Time */}
+        <View style={styles.seekContainer}>
+          <Text style={[styles.timeText, { color: theme.textSecondary }]}>
+            {formatTime(position)}
+          </Text>
+          <TouchableOpacity
+            style={styles.seekBarWrapper}
+            activeOpacity={1}
+            onPress={(e) => {
+              e.stopPropagation();
+              const { locationX } = e.nativeEvent;
+              const seekBarWidth = e.currentTarget.measure((x, y, width) => {
+                const percentage = locationX / width;
+                handleSeek(percentage);
+              });
+            }}
+          >
+            <View style={[styles.seekBarBg, { backgroundColor: theme.border }]}>
+              <View
+                style={[
+                  styles.seekBarFill,
+                  {
+                    width: duration > 0 ? `${(position / duration) * 100}%` : '0%',
+                    backgroundColor: theme.primary,
+                  },
+                ]}
+              />
+            </View>
+          </TouchableOpacity>
+          <Text style={[styles.timeText, { color: theme.textSecondary }]}>
+            {formatTime(duration)}
+          </Text>
         </View>
 
         {/* Volume Indicator */}
@@ -368,6 +433,32 @@ const styles = StyleSheet.create({
   },
   playBtnActive: {
     backgroundColor: "#36c261",
+  },
+  seekContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  timeText: {
+    fontSize: 11,
+    color: "#666",
+    width: 40,
+    textAlign: "center",
+  },
+  seekBarWrapper: {
+    flex: 1,
+    paddingVertical: 4,
+  },
+  seekBarBg: {
+    height: 4,
+    backgroundColor: "#eee",
+    borderRadius: 2,
+    overflow: "hidden",
+  },
+  seekBarFill: {
+    height: 4,
+    backgroundColor: "#A2E884",
+    borderRadius: 2,
   },
   volumeIndicator: {
     flexDirection: "row",
