@@ -60,7 +60,7 @@ export default function NotificationsPanel({
       const token = await AsyncStorage.getItem('token');
       
       const response = await fetch(
-        `http://192.168.1.27:5000/api/alerts/baby/${babyId}`,
+        `http://192.168.1.6:5000/api/alerts/baby/${babyId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -91,7 +91,7 @@ export default function NotificationsPanel({
       const token = await AsyncStorage.getItem('token');
       
       const response = await fetch(
-        `http://192.168.1.27:5000/api/alerts/${alertId}/read`,
+        `http://192.168.1.6:5000/api/alerts/${alertId}/read`,
         {
           method: 'PUT',
           headers: {
@@ -123,7 +123,7 @@ export default function NotificationsPanel({
       const token = await AsyncStorage.getItem('token');
       
       const response = await fetch(
-        `http://192.168.1.27:5000/api/alerts/baby/${babyId}/read-all`,
+        `http://192.168.1.6:5000/api/alerts/baby/${babyId}/read-all`,
         {
           method: 'PUT',
           headers: {
@@ -148,7 +148,7 @@ export default function NotificationsPanel({
       const token = await AsyncStorage.getItem('token');
       
       const response = await fetch(
-        `http://192.168.1.27:5000/api/alerts/${alertId}`,
+        `http://192.168.1.6:5000/api/alerts/${alertId}`,
         {
           method: 'DELETE',
           headers: {

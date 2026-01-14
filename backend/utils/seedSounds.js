@@ -14,7 +14,7 @@ const defaultSounds = [
     artist: "Classical",
     category: "lullaby",
     duration: 180,
-    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+    audioUrl: "https://assets.mixkit.co/music/preview/mixkit-sleepy-cat-135.mp3",
     thumbnailUrl: "https://via.placeholder.com/150/FFB6C1/000000?text=Lullaby",
     description: "Classic soothing lullaby for peaceful sleep",
     isDefault: true
@@ -24,7 +24,7 @@ const defaultSounds = [
     artist: "Traditional",
     category: "lullaby",
     duration: 120,
-    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
+    audioUrl: "https://assets.mixkit.co/music/preview/mixkit-dreaming-big-31.mp3",
     thumbnailUrl: "https://via.placeholder.com/150/FFB6C1/000000?text=Lullaby",
     description: "Gentle melody to calm your baby",
     isDefault: true
@@ -34,7 +34,7 @@ const defaultSounds = [
     artist: "Traditional",
     category: "lullaby",
     duration: 150,
-    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
+    audioUrl: "https://assets.mixkit.co/music/preview/mixkit-a-very-happy-christmas-897.mp3",
     thumbnailUrl: "https://via.placeholder.com/150/FFB6C1/000000?text=Lullaby",
     description: "Traditional lullaby for bedtime",
     isDefault: true
@@ -46,7 +46,7 @@ const defaultSounds = [
     artist: "Ambient",
     category: "white-noise",
     duration: 300,
-    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",
+    audioUrl: "https://assets.mixkit.co/music/preview/mixkit-deep-urban-623.mp3",
     thumbnailUrl: "https://via.placeholder.com/150/D3D3D3/000000?text=White+Noise",
     description: "Continuous white noise for better sleep",
     isDefault: true
@@ -56,7 +56,7 @@ const defaultSounds = [
     artist: "Ambient",
     category: "white-noise",
     duration: 300,
-    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3",
+    audioUrl: "https://assets.mixkit.co/music/preview/mixkit-ambient-piano-amp-strings-1152.mp3",
     thumbnailUrl: "https://via.placeholder.com/150/D3D3D3/000000?text=Pink+Noise",
     description: "Softer than white noise, deeper frequencies",
     isDefault: true
@@ -66,7 +66,7 @@ const defaultSounds = [
     artist: "Ambient",
     category: "white-noise",
     duration: 300,
-    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3",
+    audioUrl: "https://assets.mixkit.co/music/preview/mixkit-serene-view-443.mp3",
     thumbnailUrl: "https://via.placeholder.com/150/D3D3D3/000000?text=Brown+Noise",
     description: "Deep rumbling sound for relaxation",
     isDefault: true
@@ -78,7 +78,7 @@ const defaultSounds = [
     artist: "Nature",
     category: "nature",
     duration: 240,
-    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3",
+    audioUrl: "https://assets.mixkit.co/music/preview/mixkit-relaxing-bell-chimes-1127.mp3",
     thumbnailUrl: "https://via.placeholder.com/150/87CEEB/000000?text=Rain",
     description: "Gentle rain for peaceful sleep",
     isDefault: true
@@ -88,7 +88,7 @@ const defaultSounds = [
     artist: "Nature",
     category: "nature",
     duration: 240,
-    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3",
+    audioUrl: "https://assets.mixkit.co/music/preview/mixkit-tropical-morning-132.mp3",
     thumbnailUrl: "https://via.placeholder.com/150/87CEEB/000000?text=Ocean",
     description: "Calming ocean waves",
     isDefault: true
@@ -98,7 +98,7 @@ const defaultSounds = [
     artist: "Nature",
     category: "nature",
     duration: 180,
-    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3",
+    audioUrl: "https://assets.mixkit.co/music/preview/mixkit-morning-coffee-16.mp3",
     thumbnailUrl: "https://via.placeholder.com/150/90EE90/000000?text=Birds",
     description: "Peaceful forest ambience",
     isDefault: true
@@ -110,7 +110,7 @@ const defaultSounds = [
     artist: "Instrumental",
     category: "music-box",
     duration: 120,
-    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3",
+    audioUrl: "https://assets.mixkit.co/music/preview/mixkit-sleepy-cat-135.mp3",
     thumbnailUrl: "https://via.placeholder.com/150/F0E68C/000000?text=Music+Box",
     description: "Gentle music box melody",
     isDefault: true
@@ -120,7 +120,7 @@ const defaultSounds = [
     artist: "Instrumental",
     category: "music-box",
     duration: 150,
-    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-11.mp3",
+    audioUrl: "https://assets.mixkit.co/music/preview/mixkit-dreaming-big-31.mp3",
     thumbnailUrl: "https://via.placeholder.com/150/F0E68C/000000?text=Music+Box",
     description: "Soothing music box tunes",
     isDefault: true
@@ -132,7 +132,7 @@ const defaultSounds = [
     artist: "Mozart",
     category: "classical",
     duration: 200,
-    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-12.mp3",
+    audioUrl: "https://assets.mixkit.co/music/preview/mixkit-piano-reflections-651.mp3",
     thumbnailUrl: "https://via.placeholder.com/150/DDA0DD/000000?text=Classical",
     description: "Classical music for infant development",
     isDefault: true
@@ -142,7 +142,7 @@ const defaultSounds = [
     artist: "Bach",
     category: "classical",
     duration: 180,
-    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-13.mp3",
+    audioUrl: "https://assets.mixkit.co/music/preview/mixkit-tech-house-vibes-130.mp3",
     thumbnailUrl: "https://via.placeholder.com/150/DDA0DD/000000?text=Classical",
     description: "Gentle Bach composition for sleep",
     isDefault: true

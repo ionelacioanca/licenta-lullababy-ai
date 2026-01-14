@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Image,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Audio } from "expo-av";
@@ -14,14 +15,33 @@ import { Sound, getDefaultSounds } from "../services/soundService";
 import { useTheme } from "../contexts/ThemeContext";
 import { useLanguage } from "../contexts/LanguageContext";
 
+// Raspberry Pi Configuration
+const PI_IP = "192.168.1.44:5001";
+const PLAY_LULLABY_URL = `http://${PI_IP}/play_lullaby`;
+const STOP_AUDIO_URL = `http://${PI_IP}/stop_audio`;
+
+// Backend server configuration
+const BACKEND_SERVER = "http://192.168.1.6:5000";
+
+// Helper function to get full audio URL
+const getFullAudioUrl = (audioUrl: string): string => {
+  if (audioUrl.startsWith('http://') || audioUrl.startsWith('https://')) {
+    return audioUrl;
+  }
+  // If it's a relative path, prepend the backend server URL
+  return `${BACKEND_SERVER}${audioUrl.startsWith('/') ? '' : '/'}${audioUrl}`;
+};
+
 type SoundPlayerProps = {
   onOpenLibrary: () => void;
   selectedSound?: Sound | null;
+  useRaspberryPi?: boolean; // Toggle between phone and Raspberry Pi playback
 };
 
 const SoundPlayer: React.FC<SoundPlayerProps> = ({
   onOpenLibrary,
   selectedSound: externalSelectedSound,
+  useRaspberryPi = true, // Default to Raspberry Pi
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -124,49 +144,101 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
     try {
       setIsLoading(true);
 
-      // Unload previous sound
-      if (soundRef.current) {
-        await soundRef.current.unloadAsync();
-        soundRef.current = null;
-      }
+      if (useRaspberryPi) {
+        // Play through Raspberry Pi with timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
-      // Reset position and duration when loading new sound
-      setPosition(0);
-      setDuration(0);
+        try {
+          const response = await fetch(PLAY_LULLABY_URL, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              url: sound.audioUrl,
+            }),
+            signal: controller.signal,
+          });
 
-      // Set audio mode for playback
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: false,
-        playsInSilentModeIOS: true,
-        staysActiveInBackground: true,
-        shouldDuckAndroid: true,
-      });
+          clearTimeout(timeoutId);
 
-      // Load and play new sound
-      const { sound: audioSound } = await Audio.Sound.createAsync(
-        { uri: sound.audioUrl },
-        { shouldPlay: true, volume: volume, isLooping: true }
-      );
-
-      soundRef.current = audioSound;
-      setIsPlaying(true);
-      setIsLoading(false);
-
-      // Listen for playback status and update position/duration
-      audioSound.setOnPlaybackStatusUpdate((status) => {
-        if (status.isLoaded) {
-          if (!isSeeking) {
-            setPosition(status.positionMillis);
-            setDuration(status.durationMillis || 0);
+          if (response.ok) {
+            setIsPlaying(true);
+            setIsLoading(false);
+            Alert.alert("🎵", `Playing "${sound.title}" on baby monitor`);
+          } else {
+            const errorText = await response.text();
+            console.error('Raspberry Pi error:', errorText);
+            throw new Error('Raspberry Pi returned error: ' + response.status);
           }
-          if (status.didJustFinish && !status.isLooping) {
-            setIsPlaying(false);
-            setPosition(0);
+        } catch (fetchError: any) {
+          clearTimeout(timeoutId);
+          if (fetchError.name === 'AbortError') {
+            throw new Error('Connection timeout. Is Raspberry Pi running?');
           }
+          throw fetchError;
         }
-      });
-    } catch (error) {
+      } else {
+        // Play on phone (original implementation)
+        // Unload previous sound
+        if (soundRef.current) {
+          await soundRef.current.unloadAsync();
+          soundRef.current = null;
+        }
+
+        // Reset position and duration when loading new sound
+        setPosition(0);
+        setDuration(0);
+
+        // Set audio mode for playback
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: false,
+          playsInSilentModeIOS: true,
+          staysActiveInBackground: true,
+          shouldDuckAndroid: true,
+        });
+
+        // Load and play new sound with full URL
+        const fullAudioUrl = getFullAudioUrl(sound.audioUrl);
+        console.log('Playing audio from:', fullAudioUrl);
+        
+        const { sound: audioSound } = await Audio.Sound.createAsync(
+          { uri: fullAudioUrl },
+          { shouldPlay: true, volume: volume, isLooping: true }
+        );
+
+        soundRef.current = audioSound;
+        setIsPlaying(true);
+        setIsLoading(false);
+
+        // Listen for playback status and update position/duration
+        audioSound.setOnPlaybackStatusUpdate((status) => {
+          if (status.isLoaded) {
+            if (!isSeeking) {
+              setPosition(status.positionMillis);
+              setDuration(status.durationMillis || 0);
+            }
+            if (status.didJustFinish && !status.isLooping) {
+              setIsPlaying(false);
+              setPosition(0);
+            }
+          }
+        });
+      }
+    } catch (error: any) {
       console.error("Error playing sound:", error);
+      const errorMessage = error.message || "Unknown error occurred";
+      
+      if (errorMessage.includes('timeout') || errorMessage.includes('Network request failed')) {
+        Alert.alert(
+          "Connection Error", 
+          "Cannot connect to baby monitor.\n\nPlease check:\n• Raspberry Pi is powered on\n• Both devices are on same WiFi\n• IP address is correct (192.168.1.44)"
+        );
+      } else {
+        Alert.alert("Error", `Could not play sound: ${errorMessage}`);
+      }
+      
       setIsLoading(false);
       setIsPlaying(false);
     }
@@ -174,12 +246,22 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
 
   const pauseSound = async () => {
     try {
-      if (soundRef.current) {
-        await soundRef.current.pauseAsync();
-        setIsPlaying(false);
+      if (useRaspberryPi) {
+        // Stop sound on Raspberry Pi
+        const response = await fetch(STOP_AUDIO_URL, { method: 'POST' });
+        if (response.ok) {
+          setIsPlaying(false);
+        }
+      } else {
+        // Pause on phone
+        if (soundRef.current) {
+          await soundRef.current.pauseAsync();
+          setIsPlaying(false);
+        }
       }
     } catch (error) {
       console.error("Error pausing sound:", error);
+      Alert.alert("Error", "Could not stop sound");
     }
   };
 
