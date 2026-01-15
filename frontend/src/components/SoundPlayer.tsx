@@ -20,6 +20,7 @@ const PI_IP = "192.168.1.44:5001";
 const PLAY_LULLABY_URL = `http://${PI_IP}/play_lullaby`;
 const STOP_AUDIO_URL = `http://${PI_IP}/stop_audio`;
 const SET_VOLUME_URL = `http://${PI_IP}/set_volume`;
+const STATUS_URL = `http://${PI_IP}/status`;
 
 // Backend server configuration
 const BACKEND_SERVER = "http://192.168.1.6:5000";
@@ -57,6 +58,13 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number | null>(null); // Track when playback started
   const { t } = useLanguage();
+
+  // Sync with Raspberry Pi on mount (when using Pi mode)
+  useEffect(() => {
+    if (useRaspberryPi) {
+      syncWithPi();
+    }
+  }, [useRaspberryPi]);
 
   // Load last played sound and volume from AsyncStorage on mount
   useEffect(() => {
@@ -184,6 +192,60 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
       await AsyncStorage.setItem("volume", vol.toString());
     } catch (error) {
       console.error("Error saving volume:", error);
+    }
+  };
+
+  const syncWithPi = async () => {
+    try {
+      const response = await fetch(STATUS_URL, {
+        method: 'GET',
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Pi status:', data);
+        
+        // Sync playback state
+        if (data.status === 'playing') {
+          setIsPlaying(true);
+          
+          // Try to find the sound by URL if we have the playlist
+          if (data.url && playlist.length > 0) {
+            const foundSound = playlist.find(s => {
+              const fullUrl = getFullAudioUrl(s.audioUrl);
+              return fullUrl === data.url;
+            });
+            
+            if (foundSound) {
+              setCurrentSound(foundSound);
+              const index = playlist.findIndex(s => s._id === foundSound._id);
+              if (index !== -1) {
+                setCurrentIndex(index);
+              }
+              // Set duration for progress bar
+              setDuration(foundSound.duration * 1000);
+            }
+          }
+        } else {
+          setIsPlaying(false);
+          // Stop progress timer if it's running
+          if (progressIntervalRef.current) {
+            clearInterval(progressIntervalRef.current);
+            progressIntervalRef.current = null;
+          }
+          setPosition(0);
+          startTimeRef.current = null;
+        }
+        
+        // Sync volume
+        if (data.volume !== undefined) {
+          const volumeFloat = data.volume / 100;
+          setVolume(volumeFloat);
+          await saveVolume(volumeFloat);
+        }
+      }
+    } catch (error) {
+      console.log('Could not sync with Pi (might be offline):', error);
     }
   };
 
