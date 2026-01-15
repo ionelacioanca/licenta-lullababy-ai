@@ -53,6 +53,7 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
   const [playlist, setPlaylist] = useState<Sound[]>([]); // Available sounds
   const [currentIndex, setCurrentIndex] = useState(0); // Current sound index in playlist
   const soundRef = useRef<Audio.Sound | null>(null);
+  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const { t } = useLanguage();
 
   // Load last played sound from AsyncStorage on mount
@@ -79,6 +80,9 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
     return () => {
       if (soundRef.current) {
         soundRef.current.unloadAsync();
+      }
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
       }
     };
   }, []);
@@ -212,6 +216,34 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
           if (response.ok) {
             setIsPlaying(true);
             setIsLoading(false);
+            
+            // Set duration from sound metadata
+            setDuration(sound.duration * 1000); // Convert seconds to milliseconds
+            setPosition(0);
+            
+            // Start progress simulation after 1 second delay
+            if (progressIntervalRef.current) {
+              clearInterval(progressIntervalRef.current);
+            }
+            
+            setTimeout(() => {
+              progressIntervalRef.current = setInterval(() => {
+                setPosition(prev => {
+                  const newPos = prev + 1000; // Increment by 1 second
+                  if (newPos >= sound.duration * 1000) {
+                    // Song finished
+                    if (progressIntervalRef.current) {
+                      clearInterval(progressIntervalRef.current);
+                    }
+                    setIsPlaying(false);
+                    setPosition(0);
+                    return 0;
+                  }
+                  return newPos;
+                });
+              }, 1000);
+            }, 1000); // Wait 1 second before starting progress
+            
             Alert.alert("🎵", `Playing "${sound.title}" on baby monitor`);
           } else {
             const errorText = await response.text();
@@ -297,6 +329,15 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
         const response = await fetch(STOP_AUDIO_URL, { method: 'POST' });
         if (response.ok) {
           setIsPlaying(false);
+          
+          // Stop progress simulation
+          if (progressIntervalRef.current) {
+            clearInterval(progressIntervalRef.current);
+            progressIntervalRef.current = null;
+          }
+          
+          // Reset position
+          setPosition(0);
         }
       } else {
         // Pause on phone
