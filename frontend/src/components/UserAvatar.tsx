@@ -25,7 +25,7 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
     return name.substring(0, 2).toUpperCase();
   };
 
-  const API_URL = "http://192.168.1.27:5000";
+  const API_URL = "http://192.168.1.6:5000";
 
   if (profilePicture) {
     const imageUri = profilePicture.startsWith('http') 

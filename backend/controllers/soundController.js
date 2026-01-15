@@ -58,10 +58,29 @@ const createSound = async (req, res) => {
   }
 };
 
+// Get local URL for Raspberry Pi playback (returns Cloudflare R2 URL)
+const getLocalUrl = async (req, res) => {
+  try {
+    const { id } = req.params;
+    console.log('getLocalUrl called with ID:', id);
+    
+    const sound = await soundService.getSoundById(id);
+    console.log('Found sound:', sound.title);
+    console.log('Sending Cloudflare R2 URL to Raspberry Pi:', sound.audioUrl);
+    
+    // Return the Cloudflare R2 URL directly
+    res.status(200).json({ url: sound.audioUrl });
+  } catch (error) {
+    console.error('Error in getLocalUrl:', error.message);
+    res.status(500).json({ message: error.message });
+  }
+};
+
 export {
   getAllSounds,
   getSoundsByCategory,
   getDefaultSounds,
   getSoundById,
-  createSound
+  createSound,
+  getLocalUrl
 };

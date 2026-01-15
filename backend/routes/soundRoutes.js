@@ -16,6 +16,9 @@ router.get('/default', soundController.getDefaultSounds);
 // GET /api/sounds/category/:category - Get sounds by category
 router.get('/category/:category', soundController.getSoundsByCategory);
 
+// GET /api/sounds/:id/local-url - Get local URL for Raspberry Pi (must be before /:id)
+router.get('/:id/local-url', soundController.getLocalUrl);
+
 // GET /api/sounds/:id - Get sound by ID
 router.get('/:id', soundController.getSoundById);
 

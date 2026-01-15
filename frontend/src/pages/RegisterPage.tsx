@@ -71,7 +71,7 @@ const RegisterPage: React.FC = () => {
         registrationData.relatedParentEmail = relatedParentEmail.trim();
       }
 
-      const response = await fetch("http://192.168.1.27:5000/api/register", {
+      const response = await fetch("http://192.168.1.6:5000/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(registrationData),

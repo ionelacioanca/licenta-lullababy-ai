@@ -7,207 +7,136 @@ import {
   Modal,
   ActivityIndicator,
   Alert,
+  Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { CameraView, CameraType, useCameraPermissions } from "expo-camera";
-import * as MediaLibrary from "expo-media-library";
 import { Audio } from "expo-av";
 
 type BabyMonitorStreamProps = {
   babyName?: string;
-  useDeviceCamera?: boolean;
 };
+
+// Raspberry Pi Camera Configuration
+const PI_IP = "192.168.1.44:5001";
+const VIDEO_FEED_URL = `http://${PI_IP}/video_feed`;
+const SPEAK_URL = `http://${PI_IP}/speak`;
 
 const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
   babyName = "Baby",
 }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [facing, setFacing] = useState<CameraType>("front");
-  const [permission, requestPermission] = useCameraPermissions();
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const [audioPermission, requestAudioPermission] = Audio.usePermissions();
-  const [isListening, setIsListening] = useState(false);
-  const [audioLevel, setAudioLevel] = useState(0);
+  const [videoKey, setVideoKey] = useState(0);
   
-  const cameraRef = useRef<CameraView>(null);
   const recordingRef = useRef<Audio.Recording | null>(null);
-  const pollTimer = useRef<number | null>(null);
-
-  // Auto-start audio monitoring when permissions granted
-  useEffect(() => {
-    if (!audioPermission) return;
-    const ensureAudio = async () => {
-      if (!audioPermission.granted) {
-        if (audioPermission.canAskAgain) {
-          const res = await requestAudioPermission();
-          if (res.granted && !isListening) {
-            startListening();
-          }
-        }
-      } else {
-        if (!isListening) {
-          startListening();
-        }
-      }
-    };
-    ensureAudio();
-  }, [audioPermission]);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      stopListening();
+      if (recordingRef.current) {
+        recordingRef.current.stopAndUnloadAsync().catch(() => {});
+      }
     };
   }, []);
 
-  const startListening = async () => {
+  // Refresh video feed every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setVideoKey(prev => prev + 1);
+    }, 30000);
+    
+    return () => clearInterval(interval);
+  }, []);
+
+  // Start recording voice to send to Raspberry Pi
+  const startSpeaking = async () => {
     try {
       if (!audioPermission?.granted) {
         const res = await requestAudioPermission();
-        if (!res.granted) return;
+        if (!res.granted) {
+          Alert.alert("Permission Required", "Microphone access is needed to speak to your baby");
+          return;
+        }
       }
 
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: true,
         playsInSilentModeIOS: true,
-        shouldDuckAndroid: false,
-        playThroughEarpieceAndroid: false,
-        staysActiveInBackground: true,
       });
 
       const recording = new Audio.Recording();
-      const opts: any = { ...(Audio.RecordingOptionsPresets.HIGH_QUALITY as any) };
-      opts.isMeteringEnabled = true;
-      await recording.prepareToRecordAsync(opts);
-
+      await recording.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
       await recording.startAsync();
       recordingRef.current = recording;
-      setIsListening(true);
-
-      // Poll metering for audio level
-      if (pollTimer.current) clearInterval(pollTimer.current as any);
-      pollTimer.current = (setInterval(async () => {
-        try {
-          const status = await recording.getStatusAsync();
-          const dB = (status as any).metering ?? -160;
-          const normalized = Math.max(0, Math.min(1, 1 - Math.abs(dB) / 160));
-          setAudioLevel(normalized);
-        } catch (e) {
-          // ignore
-        }
-      }, 200) as unknown) as number;
-    } catch (e) {
-      console.warn("Failed to start microphone:", e);
+      setIsSpeaking(true);
+    } catch (error) {
+      console.error("Failed to start recording:", error);
+      Alert.alert("Error", "Could not start microphone");
     }
   };
 
-  const stopListening = async () => {
+  // Stop recording and send audio to Raspberry Pi
+  const stopSpeaking = async () => {
     try {
-      if (pollTimer.current) {
-        clearInterval(pollTimer.current as any);
-        pollTimer.current = null;
-      }
-      if (recordingRef.current) {
-        const rec = recordingRef.current;
+      if (!recordingRef.current) return;
+      
+      const recording = recordingRef.current;
+      setIsSpeaking(false);
+      
+      await recording.stopAndUnloadAsync();
+      const uri = recording.getURI();
+      
+      if (uri) {
+        setIsLoading(true);
+        
         try {
-          await rec.stopAndUnloadAsync();
-        } catch {}
-        recordingRef.current = null;
+          // Read audio file and convert to blob
+          const fileResponse = await fetch(uri);
+          const audioBlob = await fileResponse.blob();
+          
+          // Create FormData and send to Raspberry Pi
+          const formData = new FormData();
+          formData.append('audio', audioBlob, 'voice.m4a');
+          
+          const uploadResponse = await fetch(SPEAK_URL, {
+            method: 'POST',
+            body: formData,
+          });
+          
+          if (uploadResponse.ok) {
+            Alert.alert("✅", "Voice sent successfully");
+          } else {
+            const errorText = await uploadResponse.text();
+            console.error("Server response:", errorText);
+            Alert.alert("Error", "Failed to send voice");
+          }
+        } catch (uploadError) {
+          console.error("Upload error:", uploadError);
+          Alert.alert("Error", "Could not connect to baby monitor");
+        } finally {
+          setIsLoading(false);
+        }
       }
-      setIsListening(false);
-      setAudioLevel(0);
-      await Audio.setAudioModeAsync({ allowsRecordingIOS: false, staysActiveInBackground: false });
-    } catch (e) {
-      // ignore
+      
+      recordingRef.current = null;
+      await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
+    } catch (error) {
+      console.error("Error stopping recording:", error);
+      Alert.alert("Error", "Could not send voice");
+      setIsSpeaking(false);
+      setIsLoading(false);
     }
-  };
-
-  const toggleAudioMonitoring = () => {
-    if (isListening) stopListening();
-    else startListening();
   };
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
   };
 
-  const toggleCameraFacing = () => {
-    setFacing((current) => (current === "back" ? "front" : "back"));
+  const takePicture = () => {
+    Alert.alert("📸", "Screenshot feature coming soon!");
   };
-
-  const takePicture = async () => {
-    if (cameraRef.current) {
-      try {
-        console.log("Taking picture...");
-        
-        // Take the picture
-        const photo = await cameraRef.current.takePictureAsync({
-          quality: 1,
-          base64: false,
-          exif: false,
-        });
-        
-        console.log("Photo taken:", photo);
-        
-        if (photo && photo.uri) {
-          // Request permission to save to media library
-          const { status } = await MediaLibrary.requestPermissionsAsync();
-          
-          if (status === "granted") {
-            // Save to gallery
-            const asset = await MediaLibrary.createAssetAsync(photo.uri);
-            console.log("Photo saved to gallery:", asset);
-            
-            Alert.alert(
-              "📸 Photo Saved!",
-              "The baby monitor screenshot has been saved to your gallery.",
-              [{ text: "OK" }]
-            );
-          } else {
-            // Permission denied, but still show the URI
-            Alert.alert(
-              "Photo Captured!",
-              `Picture taken but not saved to gallery.\n\nTemporary path: ${photo.uri}`,
-              [{ text: "OK" }]
-            );
-          }
-        }
-      } catch (error: any) {
-        console.error("Error taking picture:", error);
-        Alert.alert("Error", `Failed to take picture: ${error.message || "Unknown error"}`);
-      }
-    } else {
-      console.warn("Camera ref is not available");
-      Alert.alert("Error", "Camera is not ready yet");
-    }
-  };
-
-  // Check permissions
-  if (!permission) {
-    return (
-      <View style={styles.normalContainer}>
-        <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading camera...</Text>
-        </View>
-      </View>
-    );
-  }
-
-  if (!permission.granted) {
-    return (
-      <View style={styles.normalContainer}>
-        <View style={styles.permissionContainer}>
-          <Ionicons name="camera-outline" size={60} color="#ccc" />
-          <Text style={styles.permissionText}>Camera Permission Required</Text>
-          <Text style={styles.permissionSubtext}>
-            Allow access to use the baby monitor
-          </Text>
-          <TouchableOpacity style={styles.permissionButton} onPress={requestPermission}>
-            <Text style={styles.permissionButtonText}>Grant Permission</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  }
 
   const renderCamera = (isFullscreenMode: boolean) => {
     const containerStyle = isFullscreenMode
@@ -232,55 +161,51 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
           )}
         </View>
 
-        {/* Camera View */}
-        <CameraView
-          ref={cameraRef}
-          style={styles.camera}
-          facing={facing}
-        />
-
-        {/* Audio Level Overlay - Top of video */}
-        <View style={styles.audioOverlay}>
-          <View style={styles.audioStatusRow}>
-            <Ionicons 
-              name={isListening ? "mic" : "mic-off"} 
-              size={16} 
-              color={isListening ? "#36c261" : "#999"} 
-            />
-            <Text style={[styles.audioStatusText, isListening && styles.audioStatusActive]}>
-              {isListening ? "Listening" : "Audio Off"}
-            </Text>
-          </View>
-          <View style={styles.audioMeterContainer}>
-            <View style={styles.audioMeterBg}>
-              <View 
-                style={[
-                  styles.audioMeterFill, 
-                  { width: `${Math.round(audioLevel * 100)}%` }
-                ]} 
-              />
-            </View>
-          </View>
+        {/* Video Stream from Raspberry Pi */}
+        <View style={styles.videoWrapper}>
+          <Image
+            key={videoKey}
+            source={{ uri: `${VIDEO_FEED_URL}?t=${Date.now()}` }}
+            style={styles.video}
+            resizeMode="contain"
+          />
         </View>
+
+        {/* Status Overlay */}
+        {(isSpeaking || isLoading) && (
+          <View style={styles.statusOverlay}>
+            {isSpeaking && (
+              <View style={styles.statusRow}>
+                <Ionicons name="mic" size={16} color="#FF6B6B" />
+                <Text style={styles.statusText}>Recording...</Text>
+              </View>
+            )}
+            {isLoading && (
+              <View style={styles.statusRow}>
+                <ActivityIndicator size="small" color="#A2E884" />
+                <Text style={styles.statusText}>Sending voice...</Text>
+              </View>
+            )}
+          </View>
+        )}
 
         {/* Camera Controls */}
         <View style={styles.controlsContainer}>
-          <TouchableOpacity
-            onPress={toggleCameraFacing}
-            style={styles.controlButton}
-          >
-            <Ionicons name="camera-reverse" size={24} color="#fff" />
-          </TouchableOpacity>
-
           <TouchableOpacity onPress={takePicture} style={styles.controlButton}>
             <Ionicons name="camera" size={24} color="#fff" />
           </TouchableOpacity>
 
           <TouchableOpacity 
-            onPress={toggleAudioMonitoring} 
-            style={[styles.controlButton, isListening && styles.controlButtonActive]}
+            onPressIn={startSpeaking}
+            onPressOut={stopSpeaking}
+            style={[styles.controlButton, isSpeaking && styles.controlButtonSpeaking]}
+            disabled={isLoading}
           >
-            <Ionicons name={isListening ? "mic" : "mic-off"} size={24} color="#fff" />
+            {isLoading ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Ionicons name="mic" size={24} color="#fff" />
+            )}
           </TouchableOpacity>
 
           {!isFullscreenMode && (
@@ -333,9 +258,6 @@ const styles = StyleSheet.create({
   fullscreenWrapper: {
     flex: 1,
     backgroundColor: "#000",
-  },
-  camera: {
-    flex: 1,
   },
   cameraHeader: {
     flexDirection: "row",
@@ -392,7 +314,6 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
   },
-
   controlsContainer: {
     flexDirection: "row",
     justifyContent: "space-around",
@@ -414,10 +335,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  controlButtonActive: {
-    backgroundColor: "#36c261",
+  controlButtonSpeaking: {
+    backgroundColor: "#FF6B6B",
   },
-  audioOverlay: {
+  statusOverlay: {
     position: "absolute",
     top: 50,
     left: 12,
@@ -427,74 +348,17 @@ const styles = StyleSheet.create({
     padding: 10,
     zIndex: 5,
   },
-  audioStatusRow: {
+  statusRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    marginBottom: 8,
+    marginVertical: 4,
   },
-  audioStatusText: {
-    color: "#999",
+  statusText: {
+    color: "#fff",
     fontSize: 13,
     fontWeight: "600",
     marginLeft: 6,
-  },
-  audioStatusActive: {
-    color: "#36c261",
-  },
-  audioMeterContainer: {
-    width: "100%",
-  },
-  audioMeterBg: {
-    height: 6,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-    borderRadius: 3,
-    overflow: "hidden",
-  },
-  audioMeterFill: {
-    height: 6,
-    backgroundColor: "#A2E884",
-    borderRadius: 3,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  loadingText: {
-    color: "#fff",
-    fontSize: 16,
-  },
-  permissionContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 24,
-  },
-  permissionText: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "600",
-    marginTop: 16,
-    textAlign: "center",
-  },
-  permissionSubtext: {
-    color: "#ccc",
-    fontSize: 14,
-    marginTop: 8,
-    textAlign: "center",
-  },
-  permissionButton: {
-    backgroundColor: "#A2E884",
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 25,
-    marginTop: 20,
-  },
-  permissionButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
   },
 });
 
