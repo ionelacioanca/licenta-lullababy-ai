@@ -19,6 +19,7 @@ import { useLanguage } from "../contexts/LanguageContext";
 const PI_IP = "192.168.1.44:5001";
 const PLAY_LULLABY_URL = `http://${PI_IP}/play_lullaby`;
 const STOP_AUDIO_URL = `http://${PI_IP}/stop_audio`;
+const SET_VOLUME_URL = `http://${PI_IP}/set_volume`;
 
 // Backend server configuration
 const BACKEND_SERVER = "http://192.168.1.6:5000";
@@ -53,11 +54,14 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
   const [playlist, setPlaylist] = useState<Sound[]>([]); // Available sounds
   const [currentIndex, setCurrentIndex] = useState(0); // Current sound index in playlist
   const soundRef = useRef<Audio.Sound | null>(null);
+  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const startTimeRef = useRef<number | null>(null); // Track when playback started
   const { t } = useLanguage();
 
-  // Load last played sound from AsyncStorage on mount
+  // Load last played sound and volume from AsyncStorage on mount
   useEffect(() => {
     loadLastPlayedSound();
+    loadVolume();
   }, []);
 
   // Update current sound when external selection changes
@@ -79,6 +83,9 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
     return () => {
       if (soundRef.current) {
         soundRef.current.unloadAsync();
+      }
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
       }
     };
   }, []);
@@ -160,6 +167,26 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
     }
   };
 
+  const loadVolume = async () => {
+    try {
+      const savedVolume = await AsyncStorage.getItem("volume");
+      if (savedVolume) {
+        const vol = parseFloat(savedVolume);
+        setVolume(vol);
+      }
+    } catch (error) {
+      console.error("Error loading volume:", error);
+    }
+  };
+
+  const saveVolume = async (vol: number) => {
+    try {
+      await AsyncStorage.setItem("volume", vol.toString());
+    } catch (error) {
+      console.error("Error saving volume:", error);
+    }
+  };
+
   const playSound = async (sound: Sound) => {
     try {
       setIsLoading(true);
@@ -212,7 +239,43 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
           if (response.ok) {
             setIsPlaying(true);
             setIsLoading(false);
-            Alert.alert("🎵", `Playing "${sound.title}" on baby monitor`);
+            
+            // Set initial volume on Raspberry Pi
+            await setVolumeOnDevice(volume);
+            
+            // Set duration from sound metadata
+            setDuration(sound.duration * 1000); // Convert seconds to milliseconds
+            setPosition(0);
+            
+            // Start progress simulation after 1 second delay
+            if (progressIntervalRef.current) {
+              clearInterval(progressIntervalRef.current);
+            }
+            
+            setTimeout(() => {
+              // Record the start time
+              startTimeRef.current = Date.now();
+              
+              progressIntervalRef.current = setInterval(() => {
+                if (startTimeRef.current) {
+                  // Calculate elapsed time based on real time, not increments
+                  const elapsed = Date.now() - startTimeRef.current;
+                  const newPos = Math.min(elapsed, sound.duration * 1000);
+                  
+                  setPosition(newPos);
+                  
+                  if (newPos >= sound.duration * 1000) {
+                    // Song finished
+                    if (progressIntervalRef.current) {
+                      clearInterval(progressIntervalRef.current);
+                    }
+                    setIsPlaying(false);
+                    setPosition(0);
+                    startTimeRef.current = null;
+                  }
+                }
+              }, 100); // Update every 100ms for smoother progress
+            }, 1000); // Wait 1 second before starting progress
           } else {
             const errorText = await response.text();
             console.error('Raspberry Pi error:', errorText);
@@ -297,6 +360,16 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
         const response = await fetch(STOP_AUDIO_URL, { method: 'POST' });
         if (response.ok) {
           setIsPlaying(false);
+          
+          // Stop progress simulation
+          if (progressIntervalRef.current) {
+            clearInterval(progressIntervalRef.current);
+            progressIntervalRef.current = null;
+          }
+          
+          // Reset position and start time
+          setPosition(0);
+          startTimeRef.current = null;
         }
       } else {
         // Pause on phone
@@ -342,20 +415,44 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
     }
   };
 
+  const setVolumeOnDevice = async (newVolume: number) => {
+    try {
+      if (useRaspberryPi) {
+        // Send volume to Raspberry Pi (0.0 - 1.0)
+        const response = await fetch(SET_VOLUME_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ volume: newVolume }),
+        });
+
+        if (response.ok) {
+          console.log(`Volume set to ${Math.round(newVolume * 100)}% on Raspberry Pi`);
+        } else {
+          console.error('Failed to set volume on Raspberry Pi');
+        }
+      } else {
+        // Set volume on phone
+        if (soundRef.current) {
+          await soundRef.current.setVolumeAsync(newVolume);
+        }
+      }
+    } catch (error) {
+      console.error('Error setting volume:', error);
+    }
+  };
+
   const handleVolumeDown = async () => {
     const newVolume = Math.max(0, volume - 0.1);
     setVolume(newVolume);
-    if (soundRef.current) {
-      await soundRef.current.setVolumeAsync(newVolume);
-    }
+    await setVolumeOnDevice(newVolume);
   };
 
   const handleVolumeUp = async () => {
     const newVolume = Math.min(1, volume + 0.1);
     setVolume(newVolume);
-    if (soundRef.current) {
-      await soundRef.current.setVolumeAsync(newVolume);
-    }
+    await setVolumeOnDevice(newVolume);
   };
 
   const handleSeek = async (value: number) => {
