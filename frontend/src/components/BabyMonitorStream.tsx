@@ -19,27 +19,16 @@ type BabyMonitorStreamProps = {
 // Raspberry Pi Camera Configuration
 const PI_IP = "192.168.1.44:5001";
 const VIDEO_FEED_URL = `http://${PI_IP}/video_feed`;
-const SPEAK_URL = `http://${PI_IP}/speak`;
+const TALKBACK_URL = `http://${PI_IP}/talkback`;
 
 const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
   babyName = "Baby",
 }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const [audioPermission, requestAudioPermission] = Audio.usePermissions();
   const [videoKey, setVideoKey] = useState(0);
-  
-  const recordingRef = useRef<Audio.Recording | null>(null);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (recordingRef.current) {
-        recordingRef.current.stopAndUnloadAsync().catch(() => {});
-      }
-    };
-  }, []);
 
   // Refresh video feed every 30 seconds
   useEffect(() => {
@@ -51,84 +40,53 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
   }, []);
 
   // Start recording voice to send to Raspberry Pi
-  const startSpeaking = async () => {
+  async function startRecording() {
     try {
-      if (!audioPermission?.granted) {
-        const res = await requestAudioPermission();
-        if (!res.granted) {
-          Alert.alert("Permission Required", "Microphone access is needed to speak to your baby");
-          return;
-        }
+      const permission = await Audio.requestPermissionsAsync();
+      if (permission.status === 'granted') {
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: true,
+          playsInSilentModeIOS: true,
+        });
+
+        const { recording } = await Audio.Recording.createAsync(
+          Audio.RecordingOptionsPresets.LOW_QUALITY // Calitate joasă = viteză mare de transmitere
+        );
+        setRecording(recording);
       }
-
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-      });
-
-      const recording = new Audio.Recording();
-      await recording.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
-      await recording.startAsync();
-      recordingRef.current = recording;
-      setIsSpeaking(true);
-    } catch (error) {
-      console.error("Failed to start recording:", error);
-      Alert.alert("Error", "Could not start microphone");
+    } catch (err) {
+      console.error('Failed to start recording', err);
     }
-  };
+  }
 
   // Stop recording and send audio to Raspberry Pi
-  const stopSpeaking = async () => {
-    try {
-      if (!recordingRef.current) return;
-      
-      const recording = recordingRef.current;
-      setIsSpeaking(false);
-      
-      await recording.stopAndUnloadAsync();
-      const uri = recording.getURI();
-      
-      if (uri) {
-        setIsLoading(true);
-        
-        try {
-          // Read audio file and convert to blob
-          const fileResponse = await fetch(uri);
-          const audioBlob = await fileResponse.blob();
-          
-          // Create FormData and send to Raspberry Pi
-          const formData = new FormData();
-          formData.append('audio', audioBlob, 'voice.m4a');
-          
-          const uploadResponse = await fetch(SPEAK_URL, {
-            method: 'POST',
-            body: formData,
-          });
-          
-          if (uploadResponse.ok) {
-            Alert.alert("✅", "Voice sent successfully");
-          } else {
-            const errorText = await uploadResponse.text();
-            console.error("Server response:", errorText);
-            Alert.alert("Error", "Failed to send voice");
-          }
-        } catch (uploadError) {
-          console.error("Upload error:", uploadError);
-          Alert.alert("Error", "Could not connect to baby monitor");
-        } finally {
-          setIsLoading(false);
-        }
+  async function stopRecording() {
+    setRecording(null);
+    await recording?.stopAndUnloadAsync();
+    const uri = recording?.getURI();
+
+    if (uri) {
+      // Trimitem fișierul către Raspberry Pi
+      const formData = new FormData();
+      formData.append('audio', {
+        uri,
+        type: 'audio/wav',
+        name: 'talkback.wav',
+      } as any);
+
+      try {
+        await fetch(`http://${PI_IP}/talkback`, {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+      } catch (e) {
+        console.error("Talkback error:", e);
       }
-      
-      recordingRef.current = null;
-      await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
-    } catch (error) {
-      console.error("Error stopping recording:", error);
-      Alert.alert("Error", "Could not send voice");
-      setIsSpeaking(false);
-      setIsLoading(false);
     }
-  };
+  }
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
@@ -172,20 +130,12 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
         </View>
 
         {/* Status Overlay */}
-        {(isSpeaking || isLoading) && (
+        {recording && (
           <View style={styles.statusOverlay}>
-            {isSpeaking && (
-              <View style={styles.statusRow}>
-                <Ionicons name="mic" size={16} color="#FF6B6B" />
-                <Text style={styles.statusText}>Recording...</Text>
-              </View>
-            )}
-            {isLoading && (
-              <View style={styles.statusRow}>
-                <ActivityIndicator size="small" color="#A2E884" />
-                <Text style={styles.statusText}>Sending voice...</Text>
-              </View>
-            )}
+            <View style={styles.statusRow}>
+              <Ionicons name="mic" size={16} color="#FF6B6B" />
+              <Text style={styles.statusText}>Recording...</Text>
+            </View>
           </View>
         )}
 
@@ -196,16 +146,11 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
           </TouchableOpacity>
 
           <TouchableOpacity 
-            onPressIn={startSpeaking}
-            onPressOut={stopSpeaking}
-            style={[styles.controlButton, isSpeaking && styles.controlButtonSpeaking]}
-            disabled={isLoading}
+            onPressIn={startRecording}
+            onPressOut={stopRecording}
+            style={[styles.controlButton, recording && styles.controlButtonSpeaking]}
           >
-            {isLoading ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <Ionicons name="mic" size={24} color="#fff" />
-            )}
+            <Ionicons name="mic" size={24} color="#fff" />
           </TouchableOpacity>
 
           {!isFullscreenMode && (
