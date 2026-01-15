@@ -20,6 +20,7 @@ const PI_IP = "192.168.1.44:5001";
 const PLAY_LULLABY_URL = `http://${PI_IP}/play_lullaby`;
 const STOP_AUDIO_URL = `http://${PI_IP}/stop_audio`;
 const SET_VOLUME_URL = `http://${PI_IP}/set_volume`;
+const STATUS_URL = `http://${PI_IP}/status`;
 
 // Backend server configuration
 const BACKEND_SERVER = "http://192.168.1.6:5000";
@@ -56,7 +57,25 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
   const soundRef = useRef<Audio.Sound | null>(null);
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number | null>(null); // Track when playback started
+  const currentIndexRef = useRef<number>(0); // Ref to always have current index
+  const playlistRef = useRef<Sound[]>([]); // Ref to always have current playlist
   const { t } = useLanguage();
+
+  // Update refs when playlist or currentIndex changes
+  useEffect(() => {
+    playlistRef.current = playlist;
+  }, [playlist]);
+
+  useEffect(() => {
+    currentIndexRef.current = currentIndex;
+  }, [currentIndex]);
+
+  // Sync with Raspberry Pi on mount (when using Pi mode)
+  useEffect(() => {
+    if (useRaspberryPi) {
+      syncWithPi();
+    }
+  }, [useRaspberryPi]);
 
   // Load last played sound and volume from AsyncStorage on mount
   useEffect(() => {
@@ -187,6 +206,60 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
     }
   };
 
+  const syncWithPi = async () => {
+    try {
+      const response = await fetch(STATUS_URL, {
+        method: 'GET',
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Pi status:', data);
+        
+        // Sync playback state
+        if (data.status === 'playing') {
+          setIsPlaying(true);
+          
+          // Try to find the sound by URL if we have the playlist
+          if (data.url && playlist.length > 0) {
+            const foundSound = playlist.find(s => {
+              const fullUrl = getFullAudioUrl(s.audioUrl);
+              return fullUrl === data.url;
+            });
+            
+            if (foundSound) {
+              setCurrentSound(foundSound);
+              const index = playlist.findIndex(s => s._id === foundSound._id);
+              if (index !== -1) {
+                setCurrentIndex(index);
+              }
+              // Set duration for progress bar
+              setDuration(foundSound.duration * 1000);
+            }
+          }
+        } else {
+          setIsPlaying(false);
+          // Stop progress timer if it's running
+          if (progressIntervalRef.current) {
+            clearInterval(progressIntervalRef.current);
+            progressIntervalRef.current = null;
+          }
+          setPosition(0);
+          startTimeRef.current = null;
+        }
+        
+        // Sync volume
+        if (data.volume !== undefined) {
+          const volumeFloat = data.volume / 100;
+          setVolume(volumeFloat);
+          await saveVolume(volumeFloat);
+        }
+      }
+    } catch (error) {
+      console.log('Could not sync with Pi (might be offline):', error);
+    }
+  };
+
   const playSound = async (sound: Sound) => {
     try {
       setIsLoading(true);
@@ -265,13 +338,27 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
                   setPosition(newPos);
                   
                   if (newPos >= sound.duration * 1000) {
-                    // Song finished
+                    // Song finished - play next song automatically
                     if (progressIntervalRef.current) {
                       clearInterval(progressIntervalRef.current);
                     }
-                    setIsPlaying(false);
                     setPosition(0);
                     startTimeRef.current = null;
+                    
+                    // Autoplay next song using refs for current values
+                    setTimeout(() => {
+                      const currentPlaylist = playlistRef.current;
+                      const currentIdx = currentIndexRef.current;
+                      
+                      if (currentPlaylist.length > 0) {
+                        const newIndex = currentIdx < currentPlaylist.length - 1 ? currentIdx + 1 : 0;
+                        const nextSound = currentPlaylist[newIndex];
+                        setCurrentIndex(newIndex);
+                        setCurrentSound(nextSound);
+                        saveLastPlayedSound(nextSound);
+                        playSound(nextSound);
+                      }
+                    }, 500); // Small delay before next song
                   }
                 }
               }, 100); // Update every 100ms for smoother progress
@@ -329,8 +416,21 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
               setDuration(status.durationMillis || 0);
             }
             if (status.didJustFinish && !status.isLooping) {
-              setIsPlaying(false);
               setPosition(0);
+              // Autoplay next song using refs for current values
+              const currentPlaylist = playlistRef.current;
+              const currentIdx = currentIndexRef.current;
+              
+              if (currentPlaylist.length > 0) {
+                const newIndex = currentIdx < currentPlaylist.length - 1 ? currentIdx + 1 : 0;
+                const nextSound = currentPlaylist[newIndex];
+                setCurrentIndex(newIndex);
+                setCurrentSound(nextSound);
+                saveLastPlayedSound(nextSound);
+                playSound(nextSound);
+              } else {
+                setIsPlaying(false);
+              }
             }
           }
         });
@@ -531,6 +631,14 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
             <Text style={[styles.soundArtist, { color: theme.textSecondary }]} numberOfLines={1}>
               {currentSound.artist}
             </Text>
+            {useRaspberryPi && (
+              <View style={styles.durationRow}>
+                <Ionicons name="time-outline" size={14} color={theme.textTertiary} />
+                <Text style={[styles.durationText, { color: theme.textTertiary }]}>
+                  {formatTime(duration)}
+                </Text>
+              </View>
+            )}
           </View>
         </View>
 
@@ -610,39 +718,42 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
           </TouchableOpacity>
         </View>
 
-        {/* Seek Bar with Time */}
-        <View style={styles.seekContainer}>
-          <Text style={[styles.timeText, { color: theme.textSecondary }]}>
-            {formatTime(position)}
-          </Text>
-          <TouchableOpacity
-            style={styles.seekBarWrapper}
-            activeOpacity={1}
-            onPress={(e) => {
-              e.stopPropagation();
-              const { locationX } = e.nativeEvent;
-              const seekBarWidth = e.currentTarget.measure((x, y, width) => {
-                const percentage = locationX / width;
-                handleSeek(percentage);
-              });
-            }}
-          >
-            <View style={[styles.seekBarBg, { backgroundColor: theme.border }]}>
-              <View
-                style={[
-                  styles.seekBarFill,
-                  {
-                    width: duration > 0 ? `${(position / duration) * 100}%` : '0%',
-                    backgroundColor: theme.primary,
-                  },
-                ]}
-              />
-            </View>
-          </TouchableOpacity>
-          <Text style={[styles.timeText, { color: theme.textSecondary }]}>
-            {formatTime(duration)}
-          </Text>
-        </View>
+        {/* Progress Bar - Only for Phone */}
+        {!useRaspberryPi && (
+          // Phone: Show full progress bar with seek capability
+          <View style={styles.seekContainer}>
+            <Text style={[styles.timeText, { color: theme.textSecondary }]}>
+              {formatTime(position)}
+            </Text>
+            <TouchableOpacity
+              style={styles.seekBarWrapper}
+              activeOpacity={1}
+              onPress={(e) => {
+                e.stopPropagation();
+                const { locationX } = e.nativeEvent;
+                const seekBarWidth = e.currentTarget.measure((x, y, width) => {
+                  const percentage = locationX / width;
+                  handleSeek(percentage);
+                });
+              }}
+            >
+              <View style={[styles.seekBarBg, { backgroundColor: theme.border }]}>
+                <View
+                  style={[
+                    styles.seekBarFill,
+                    {
+                      width: duration > 0 ? `${(position / duration) * 100}%` : '0%',
+                      backgroundColor: theme.primary,
+                    },
+                  ]}
+                />
+              </View>
+            </TouchableOpacity>
+            <Text style={[styles.timeText, { color: theme.textSecondary }]}>
+              {formatTime(duration)}
+            </Text>
+          </View>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -799,6 +910,16 @@ const styles = StyleSheet.create({
     color: "#666",
     width: 35,
     textAlign: "right",
+  },
+  durationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 4,
+  },
+  durationText: {
+    fontSize: 12,
+    color: "#999",
   },
   emptyState: {
     alignItems: "center",
