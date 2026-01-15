@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { View, ScrollView, StyleSheet, TouchableOpacity, Text, Alert, Image } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter, useFocusEffect } from "expo-router";
@@ -7,7 +7,7 @@ import { useLanguage } from "../contexts/LanguageContext";
 import Header from "./Header";
 import Footer from "./Footer";
 import BabyMonitorStream from "../components/BabyMonitorStream";
-import SoundPlayer from "../components/SoundPlayer";
+import SoundPlayer, { SoundPlayerRef } from "../components/SoundPlayer";
 import SoundLibraryModal from "../components/SoundLibraryModal";
 import SleepHistoryModal from "../components/SleepHistoryModal";
 import GrowthTrackingModal from "../components/GrowthTrackingModal";
@@ -31,6 +31,7 @@ const DashboardPage: React.FC = () => {
   const router = useRouter();
   const { theme } = useTheme();
   const { t } = useLanguage();
+  const soundPlayerRef = useRef<SoundPlayerRef>(null);
   const [babyName, setBabyName] = useState("");
   const [childInitial, setChildInitial] = useState("?");
   const [avatarColor, setAvatarColor] = useState("#00CFFF");
@@ -375,7 +376,10 @@ const DashboardPage: React.FC = () => {
       />
       
       <ScrollView style={[styles.content, { backgroundColor: theme.background }]} showsVerticalScrollIndicator={false}>
-        <BabyMonitorStream babyName={babyName} />
+        <BabyMonitorStream 
+          babyName={babyName} 
+          onStopMusic={() => soundPlayerRef.current?.stopPlayback()}
+        />
         
         {/* Baby Sleep Activity */}
         <TouchableOpacity
@@ -429,6 +433,7 @@ const DashboardPage: React.FC = () => {
         </TouchableOpacity>
         
         <SoundPlayer
+          ref={soundPlayerRef}
           onOpenLibrary={() => setIsLibraryOpen(true)}
           selectedSound={selectedSound}
           useRaspberryPi={true}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from "react";
 import {
   View,
   Text,
@@ -40,13 +40,21 @@ type SoundPlayerProps = {
   useRaspberryPi?: boolean; // Toggle between phone and Raspberry Pi playback
 };
 
-const SoundPlayer: React.FC<SoundPlayerProps> = ({
+export type SoundPlayerRef = {
+  stopPlayback: () => void;
+};
+
+const SoundPlayer = forwardRef<SoundPlayerRef, SoundPlayerProps>((
+  {
   onOpenLibrary,
   selectedSound: externalSelectedSound,
   useRaspberryPi = true, // Default to Raspberry Pi
-}) => {
+},
+ref
+) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [piStatus, setPiStatus] = useState<'playing' | 'paused' | 'idle'>('idle'); // Raspberry Pi playback status
   const [currentSound, setCurrentSound] = useState<Sound | null>(null);
   const [volume, setVolume] = useState(0.7);
   const [position, setPosition] = useState(0); // Current playback position in ms
@@ -69,6 +77,13 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
   useEffect(() => {
     currentIndexRef.current = currentIndex;
   }, [currentIndex]);
+
+  // Expose stopPlayback method to parent components
+  useImperativeHandle(ref, () => ({
+    stopPlayback: () => {
+      pauseSound();
+    },
+  }));
 
   // Sync with Raspberry Pi on mount (when using Pi mode)
   useEffect(() => {
@@ -311,6 +326,7 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
 
           if (response.ok) {
             setIsPlaying(true);
+            setPiStatus('playing');
             setIsLoading(false);
             
             // Set initial volume on Raspberry Pi
@@ -460,6 +476,7 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
         const response = await fetch(STOP_AUDIO_URL, { method: 'POST' });
         if (response.ok) {
           setIsPlaying(false);
+          setPiStatus('idle');
           
           // Stop progress simulation
           if (progressIntervalRef.current) {
@@ -757,7 +774,7 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
       </View>
     </TouchableOpacity>
   );
-};
+});
 
 const styles = StyleSheet.create({
   card: {

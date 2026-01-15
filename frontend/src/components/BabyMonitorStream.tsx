@@ -14,15 +14,18 @@ import { Audio } from "expo-av";
 
 type BabyMonitorStreamProps = {
   babyName?: string;
+  onStopMusic?: () => void;
 };
 
 // Raspberry Pi Camera Configuration
 const PI_IP = "192.168.1.44:5001";
 const VIDEO_FEED_URL = `http://${PI_IP}/video_feed`;
 const TALKBACK_URL = `http://${PI_IP}/talkback`;
+const STOP_AUDIO_URL = `http://${PI_IP}/stop_audio`;
 
 const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
   babyName = "Baby",
+  onStopMusic,
 }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -39,11 +42,33 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
     return () => clearInterval(interval);
   }, []);
 
+  // Toggle microphone: start/stop recording
+  async function toggleMicrophone() {
+    if (recording) {
+      // Stop recording
+      await stopRecording();
+    } else {
+      // Start recording
+      await startRecording();
+    }
+  }
+
   // Start recording voice to send to Raspberry Pi
   async function startRecording() {
     try {
       const permission = await Audio.requestPermissionsAsync();
       if (permission.status === 'granted') {
+        // Stop music first - both on Pi and in UI
+        try {
+          await fetch(STOP_AUDIO_URL, { method: 'POST' });
+          // Update UI state
+          if (onStopMusic) {
+            onStopMusic();
+          }
+        } catch (e) {
+          console.error('Failed to stop music:', e);
+        }
+
         await Audio.setAudioModeAsync({
           allowsRecordingIOS: true,
           playsInSilentModeIOS: true,
@@ -146,8 +171,7 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
           </TouchableOpacity>
 
           <TouchableOpacity 
-            onPressIn={startRecording}
-            onPressOut={stopRecording}
+            onPress={toggleMicrophone}
             style={[styles.controlButton, recording && styles.controlButtonSpeaking]}
           >
             <Ionicons name="mic" size={24} color="#fff" />
