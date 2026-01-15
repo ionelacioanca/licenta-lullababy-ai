@@ -86,12 +86,32 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
   const loadLastPlayedSound = async () => {
     try {
       // Always load playlist first
-      await loadPlaylist();
+      const token = await AsyncStorage.getItem("token");
+      if (!token) return;
+
+      const sounds = await getDefaultSounds(token);
+      setPlaylist(sounds);
       
       const savedSound = await AsyncStorage.getItem("lastPlayedSound");
       if (savedSound) {
         const sound: Sound = JSON.parse(savedSound);
-        setCurrentSound(sound);
+        
+        // Try to find the sound in the current playlist by title (in case ID changed)
+        const freshSound = sounds.find(s => s.title === sound.title);
+        if (freshSound) {
+          console.log('Refreshing sound with new ID:', freshSound._id);
+          setCurrentSound(freshSound);
+          // Update saved sound with fresh data
+          await saveLastPlayedSound(freshSound);
+          
+          // Update index
+          const index = sounds.findIndex(s => s._id === freshSound._id);
+          if (index !== -1) {
+            setCurrentIndex(index);
+          }
+        } else {
+          setCurrentSound(sound);
+        }
       } else {
         // If no saved sound, load a default one
         await loadDefaultSound();
@@ -150,13 +170,39 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
         const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
         try {
+          // Get local URL from backend (downloads if necessary)
+          const token = await AsyncStorage.getItem("token");
+          console.log('Sound ID:', sound._id);
+          console.log('Sound object:', JSON.stringify(sound, null, 2));
+          
+          const localUrlEndpoint = `${BACKEND_SERVER}/api/sounds/${sound._id}/local-url`;
+          console.log('Requesting local URL from:', localUrlEndpoint);
+          
+          const localUrlResponse = await fetch(localUrlEndpoint, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            signal: controller.signal,
+          });
+
+          console.log('Local URL response status:', localUrlResponse.status);
+
+          if (!localUrlResponse.ok) {
+            const errorText = await localUrlResponse.text();
+            console.error('Failed to get local URL:', errorText);
+            throw new Error(`Failed to get local URL: ${localUrlResponse.status}`);
+          }
+
+          const { url: localUrl } = await localUrlResponse.json();
+          console.log('Got local URL, sending to Raspberry Pi:', localUrl);
+          
           const response = await fetch(PLAY_LULLABY_URL, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              url: sound.audioUrl,
+              url: localUrl,
             }),
             signal: controller.signal,
           });
@@ -280,10 +326,18 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
     if (isPlaying) {
       pauseSound();
     } else {
-      if (soundRef.current) {
-        resumeSound();
-      } else if (currentSound) {
-        playSound(currentSound);
+      if (useRaspberryPi) {
+        // For Raspberry Pi, always play the current sound
+        if (currentSound) {
+          playSound(currentSound);
+        }
+      } else {
+        // For phone, check if sound is loaded
+        if (soundRef.current) {
+          resumeSound();
+        } else if (currentSound) {
+          playSound(currentSound);
+        }
       }
     }
   };
