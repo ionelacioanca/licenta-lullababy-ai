@@ -55,6 +55,7 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
   const [currentIndex, setCurrentIndex] = useState(0); // Current sound index in playlist
   const soundRef = useRef<Audio.Sound | null>(null);
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const startTimeRef = useRef<number | null>(null); // Track when playback started
   const { t } = useLanguage();
 
   // Load last played sound and volume from AsyncStorage on mount
@@ -252,9 +253,17 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
             }
             
             setTimeout(() => {
+              // Record the start time
+              startTimeRef.current = Date.now();
+              
               progressIntervalRef.current = setInterval(() => {
-                setPosition(prev => {
-                  const newPos = prev + 1000; // Increment by 1 second
+                if (startTimeRef.current) {
+                  // Calculate elapsed time based on real time, not increments
+                  const elapsed = Date.now() - startTimeRef.current;
+                  const newPos = Math.min(elapsed, sound.duration * 1000);
+                  
+                  setPosition(newPos);
+                  
                   if (newPos >= sound.duration * 1000) {
                     // Song finished
                     if (progressIntervalRef.current) {
@@ -262,11 +271,10 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
                     }
                     setIsPlaying(false);
                     setPosition(0);
-                    return 0;
+                    startTimeRef.current = null;
                   }
-                  return newPos;
-                });
-              }, 1000);
+                }
+              }, 100); // Update every 100ms for smoother progress
             }, 1000); // Wait 1 second before starting progress
           } else {
             const errorText = await response.text();
@@ -359,8 +367,9 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
             progressIntervalRef.current = null;
           }
           
-          // Reset position
+          // Reset position and start time
           setPosition(0);
+          startTimeRef.current = null;
         }
       } else {
         // Pause on phone
