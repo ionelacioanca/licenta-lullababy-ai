@@ -268,8 +268,6 @@ const SoundPlayer: React.FC<SoundPlayerProps> = ({
                 });
               }, 1000);
             }, 1000); // Wait 1 second before starting progress
-            
-            Alert.alert("🎵", `Playing "${sound.title}" on baby monitor`);
           } else {
             const errorText = await response.text();
             console.error('Raspberry Pi error:', errorText);
