@@ -156,14 +156,14 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
           <Image
             source={{ uri: currentUrl }}
             style={StyleSheet.absoluteFill}
-            resizeMode="contain"
+            resizeMode="cover"
             fadeDuration={0}
           />
           {/* Imaginea nouă care se încarcă deasupra */}
           <Image
             source={{ uri: nextUrl }}
             style={StyleSheet.absoluteFill}
-            resizeMode="contain"
+            resizeMode="cover"
             fadeDuration={0}
             onLoad={() => {
               // Când frame-ul nou e gata, devine frame-ul curent
