@@ -201,14 +201,24 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
         {/* Camera Controls */}
         <View style={styles.controlsContainer}>
           <TouchableOpacity onPress={takePicture} style={styles.controlButton}>
-            <Ionicons name="camera" size={24} color="#fff" />
+            <Ionicons 
+              name="camera" 
+              size={24} 
+              color="#fff" 
+              style={isFullscreenMode ? { transform: [{ rotate: '-90deg' }] } : undefined}
+            />
           </TouchableOpacity>
 
           <TouchableOpacity 
             onPress={toggleMicrophone}
             style={[styles.controlButton, recording && styles.controlButtonSpeaking]}
           >
-            <Ionicons name="mic" size={24} color="#fff" />
+            <Ionicons 
+              name="mic" 
+              size={24} 
+              color="#fff"
+              style={isFullscreenMode ? { transform: [{ rotate: '-90deg' }] } : undefined}
+            />
           </TouchableOpacity>
 
           {!isFullscreenMode && (
@@ -276,7 +286,8 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   cameraHeaderFullscreen: {
-    top: 40,
+    top: 0,
+    paddingTop: 60,
   },
   headerLeft: {
     flexDirection: "row",
