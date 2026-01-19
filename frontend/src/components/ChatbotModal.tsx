@@ -104,7 +104,7 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({ visible, onClose }) 
         
         if (!token || !parentId) return;
 
-        const response = await fetch(`http://192.168.1.6:5000/api/baby/parent/${parentId}`, {
+        const response = await fetch(`http://192.168.1.11:5000/api/baby/parent/${parentId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 

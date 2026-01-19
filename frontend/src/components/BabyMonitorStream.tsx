@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  useWindowDimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Audio } from "expo-av";
@@ -17,9 +18,8 @@ type BabyMonitorStreamProps = {
   onStopMusic?: () => void;
 };
 
-// Raspberry Pi Camera Configuration
 const PI_IP = "192.168.1.44:5001";
-const VIDEO_FEED_URL = `http://${PI_IP}/video_feed`;
+const SNAPSHOT_URL = `http://${PI_IP}/snapshot`;
 const TALKBACK_URL = `http://${PI_IP}/talkback`;
 const STOP_AUDIO_URL = `http://${PI_IP}/stop_audio`;
 
@@ -31,15 +31,36 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const [audioPermission, requestAudioPermission] = Audio.usePermissions();
-  const [videoKey, setVideoKey] = useState(0);
+  const [currentUrl, setCurrentUrl] = useState(`${SNAPSHOT_URL}?t=${Date.now()}`);
+  const [nextUrl, setNextUrl] = useState(`${SNAPSHOT_URL}?t=${Date.now()}`);
+  const intervalRef = useRef<number | null>(null);
+  const [currentDateTime, setCurrentDateTime] = useState(new Date());
+  
+  // Detectează orientarea ecranului
+  const { width, height } = useWindowDimensions();
+  const isLandscape = width > height;
 
-  // Refresh video feed every 30 seconds
+  // Start/stop video refresh when component mounts/unmounts
   useEffect(() => {
-    const interval = setInterval(() => {
-      setVideoKey(prev => prev + 1);
-    }, 30000);
-    
-    return () => clearInterval(interval);
+    // Pregătim următorul frame la fiecare 100ms
+    intervalRef.current = setInterval(() => {
+      setNextUrl(`${SNAPSHOT_URL}?t=${Date.now()}`);
+    }, 100);
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, []);
+
+  // Update clock every second
+  useEffect(() => {
+    const clockInterval = setInterval(() => {
+      setCurrentDateTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(clockInterval);
   }, []);
 
   // Toggle microphone: start/stop recording
@@ -129,28 +150,72 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
     return (
       <View style={containerStyle}>
         {/* Camera Header */}
-        <View style={styles.cameraHeader}>
-          <View style={styles.headerLeft}>
-            <View style={styles.liveIndicator}>
-              <View style={styles.liveDot} />
-              <Text style={styles.liveText}>LIVE</Text>
+        {!isFullscreenMode && (
+          <View style={styles.cameraHeader}>
+            <View style={styles.headerLeft}>
+              <View style={styles.liveIndicator}>
+                <View style={styles.liveDot} />
+                <Text style={styles.liveText}>LIVE</Text>
+              </View>
+              <Text style={styles.babyNameText}>{babyName}</Text>
             </View>
-            <Text style={styles.babyNameText}>{babyName}</Text>
           </View>
-          {isFullscreenMode && (
-            <TouchableOpacity onPress={toggleFullscreen} style={styles.closeButton}>
-              <Ionicons name="close" size={28} color="#fff" />
-            </TouchableOpacity>
-          )}
-        </View>
+        )}
+        
+        {/* Close button in fullscreen */}
+        {isFullscreenMode && (
+          <TouchableOpacity onPress={toggleFullscreen} style={styles.closeButtonFullscreen}>
+            <Ionicons name="close" size={28} color="#fff" />
+          </TouchableOpacity>
+        )}
+
+        {/* Date and Time in fullscreen */}
+        {isFullscreenMode && (
+          <View style={styles.dateTimeOverlay}>
+            <Text style={styles.dateTimeText}>
+              {currentDateTime.toLocaleDateString('ro-RO', { 
+                day: '2-digit', 
+                month: '2-digit', 
+                year: 'numeric' 
+              })} {currentDateTime.toLocaleTimeString('ro-RO', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                second: '2-digit'
+              })}
+            </Text>
+          </View>
+        )}
 
         {/* Video Stream from Raspberry Pi */}
         <View style={styles.videoWrapper}>
+          {/* Imaginea de fundal (frame-ul vechi) */}
           <Image
-            key={videoKey}
-            source={{ uri: `${VIDEO_FEED_URL}?t=${Date.now()}` }}
-            style={styles.video}
-            resizeMode="contain"
+            source={{ uri: currentUrl }}
+            style={
+              isFullscreenMode 
+                ? { position: 'absolute', width: height, height: width, transform: [{ rotate: '90deg' }] }
+                : StyleSheet.absoluteFill
+            }
+            resizeMode="cover"
+            fadeDuration={0}
+          />
+          {/* Imaginea nouă care se încarcă deasupra */}
+          <Image
+            source={{ uri: nextUrl }}
+            style={
+              isFullscreenMode 
+                ? { position: 'absolute', width: height, height: width, transform: [{ rotate: '90deg' }] }
+                : StyleSheet.absoluteFill
+            }
+            resizeMode="cover"
+            fadeDuration={0}
+            onLoad={() => {
+              // Când frame-ul nou e gata, devine frame-ul curent
+              setCurrentUrl(nextUrl);
+            }}
+            onError={(error) => {
+              console.error('Frame error:', error.nativeEvent.error);
+            }}
           />
         </View>
 
@@ -167,14 +232,26 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
         {/* Camera Controls */}
         <View style={styles.controlsContainer}>
           <TouchableOpacity onPress={takePicture} style={styles.controlButton}>
-            <Ionicons name="camera" size={24} color="#fff" />
+            <View style={isFullscreenMode ? { transform: [{ rotate: '90deg' }] } : undefined}>
+              <Ionicons 
+                name="camera" 
+                size={24} 
+                color="#fff" 
+              />
+            </View>
           </TouchableOpacity>
 
           <TouchableOpacity 
             onPress={toggleMicrophone}
             style={[styles.controlButton, recording && styles.controlButtonSpeaking]}
           >
-            <Ionicons name="mic" size={24} color="#fff" />
+            <View style={isFullscreenMode ? { transform: [{ rotate: '90deg' }] } : undefined}>
+              <Ionicons 
+                name="mic" 
+                size={24} 
+                color="#fff"
+              />
+            </View>
           </TouchableOpacity>
 
           {!isFullscreenMode && (
@@ -223,6 +300,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#000",
     flex: 1,
     justifyContent: "center",
+    alignItems: "center",
   },
   fullscreenWrapper: {
     flex: 1,
@@ -239,6 +317,10 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 10,
+  },
+  cameraHeaderFullscreen: {
+    top: 0,
+    paddingTop: 60,
   },
   headerLeft: {
     flexDirection: "row",
@@ -273,6 +355,25 @@ const styles = StyleSheet.create({
   closeButton: {
     padding: 8,
   },
+  closeButtonFullscreen: {
+    position: "absolute",
+    top: 60,
+    right: 16,
+    padding: 8,
+    zIndex: 20,
+  },
+  dateTimeOverlay: {
+    position: "absolute",
+    top: "48%",
+    right: 3,
+    zIndex: 20,
+    transform: [{ rotate: '90deg' }, { translateY: -50 }],
+  },
+  dateTimeText: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "600",
+  },
   videoWrapper: {
     flex: 1,
     justifyContent: "center",
@@ -294,6 +395,18 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 10,
+  },
+  controlsContainerLandscape: {
+    flexDirection: "column",
+    justifyContent: "center",
+    alignItems: "center",
+    bottom: "auto",
+    top: "50%",
+    right: 16,
+    left: "auto",
+    width: 60,
+    transform: [{ translateY: -75 }],
+    gap: 16,
   },
   controlButton: {
     padding: 12,

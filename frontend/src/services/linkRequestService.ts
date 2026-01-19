@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_URL = 'http://192.168.1.6:5000/api/link-request';
+const API_URL = 'http://192.168.1.11:5000/api/link-request';
 
 interface LinkRequest {
   _id: string;
