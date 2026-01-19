@@ -65,7 +65,7 @@ async function main() {
             console.log(`Server running on port ${PORT}`);
             console.log(`Server accessible at:`);
             console.log(`  - http://localhost:${PORT}`);
-            console.log(`  - http://192.168.1.6:${PORT} (WiFi)`);
+            console.log(`  - http://192.168.1.11:${PORT} (WiFi)`);
         });
 
         server.on('error', (err) => {

@@ -17,9 +17,8 @@ type BabyMonitorStreamProps = {
   onStopMusic?: () => void;
 };
 
-// Raspberry Pi Camera Configuration
 const PI_IP = "192.168.1.44:5001";
-const VIDEO_FEED_URL = `http://${PI_IP}/video_feed`;
+const SNAPSHOT_URL = `http://${PI_IP}/snapshot`;
 const TALKBACK_URL = `http://${PI_IP}/talkback`;
 const STOP_AUDIO_URL = `http://${PI_IP}/stop_audio`;
 
@@ -31,15 +30,22 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const [audioPermission, requestAudioPermission] = Audio.usePermissions();
-  const [videoKey, setVideoKey] = useState(0);
+  const [currentUrl, setCurrentUrl] = useState(`${SNAPSHOT_URL}?t=${Date.now()}`);
+  const [nextUrl, setNextUrl] = useState(`${SNAPSHOT_URL}?t=${Date.now()}`);
+  const intervalRef = useRef<number | null>(null);
 
-  // Refresh video feed every 30 seconds
+  // Start/stop video refresh when component mounts/unmounts
   useEffect(() => {
-    const interval = setInterval(() => {
-      setVideoKey(prev => prev + 1);
-    }, 30000);
-    
-    return () => clearInterval(interval);
+    // Pregătim următorul frame la fiecare 100ms
+    intervalRef.current = setInterval(() => {
+      setNextUrl(`${SNAPSHOT_URL}?t=${Date.now()}`);
+    }, 100);
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
   }, []);
 
   // Toggle microphone: start/stop recording
@@ -129,7 +135,7 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
     return (
       <View style={containerStyle}>
         {/* Camera Header */}
-        <View style={styles.cameraHeader}>
+        <View style={[styles.cameraHeader, isFullscreenMode && styles.cameraHeaderFullscreen]}>
           <View style={styles.headerLeft}>
             <View style={styles.liveIndicator}>
               <View style={styles.liveDot} />
@@ -146,11 +152,26 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
 
         {/* Video Stream from Raspberry Pi */}
         <View style={styles.videoWrapper}>
+          {/* Imaginea de fundal (frame-ul vechi) */}
           <Image
-            key={videoKey}
-            source={{ uri: `${VIDEO_FEED_URL}?t=${Date.now()}` }}
-            style={styles.video}
+            source={{ uri: currentUrl }}
+            style={StyleSheet.absoluteFill}
             resizeMode="contain"
+            fadeDuration={0}
+          />
+          {/* Imaginea nouă care se încarcă deasupra */}
+          <Image
+            source={{ uri: nextUrl }}
+            style={StyleSheet.absoluteFill}
+            resizeMode="contain"
+            fadeDuration={0}
+            onLoad={() => {
+              // Când frame-ul nou e gata, devine frame-ul curent
+              setCurrentUrl(nextUrl);
+            }}
+            onError={(error) => {
+              console.error('Frame error:', error.nativeEvent.error);
+            }}
           />
         </View>
 
@@ -239,6 +260,9 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 10,
+  },
+  cameraHeaderFullscreen: {
+    top: 40,
   },
   headerLeft: {
     flexDirection: "row",

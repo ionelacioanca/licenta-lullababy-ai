@@ -23,7 +23,7 @@ const SET_VOLUME_URL = `http://${PI_IP}/set_volume`;
 const STATUS_URL = `http://${PI_IP}/status`;
 
 // Backend server configuration
-const BACKEND_SERVER = "http://192.168.1.6:5000";
+const BACKEND_SERVER = "http://192.168.1.11:5000";
 
 // Helper function to get full audio URL
 const getFullAudioUrl = (audioUrl: string): string => {
