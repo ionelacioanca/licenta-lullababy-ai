@@ -160,14 +160,20 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
           {/* Imaginea de fundal (frame-ul vechi) */}
           <Image
             source={{ uri: currentUrl }}
-            style={StyleSheet.absoluteFill}
+            style={[
+              StyleSheet.absoluteFill,
+              isFullscreenMode && { transform: [{ rotate: '-90deg' }] }
+            ]}
             resizeMode={isFullscreenMode ? "contain" : "cover"}
             fadeDuration={0}
           />
           {/* Imaginea nouă care se încarcă deasupra */}
           <Image
             source={{ uri: nextUrl }}
-            style={StyleSheet.absoluteFill}
+            style={[
+              StyleSheet.absoluteFill,
+              isFullscreenMode && { transform: [{ rotate: '-90deg' }] }
+            ]}
             resizeMode={isFullscreenMode ? "contain" : "cover"}
             fadeDuration={0}
             onLoad={() => {
