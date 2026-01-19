@@ -140,20 +140,24 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
     return (
       <View style={containerStyle}>
         {/* Camera Header */}
-        <View style={[styles.cameraHeader, isFullscreenMode && styles.cameraHeaderFullscreen]}>
-          <View style={styles.headerLeft}>
-            <View style={styles.liveIndicator}>
-              <View style={styles.liveDot} />
-              <Text style={styles.liveText}>LIVE</Text>
+        {!isFullscreenMode && (
+          <View style={styles.cameraHeader}>
+            <View style={styles.headerLeft}>
+              <View style={styles.liveIndicator}>
+                <View style={styles.liveDot} />
+                <Text style={styles.liveText}>LIVE</Text>
+              </View>
+              <Text style={styles.babyNameText}>{babyName}</Text>
             </View>
-            <Text style={styles.babyNameText}>{babyName}</Text>
           </View>
-          {isFullscreenMode && (
-            <TouchableOpacity onPress={toggleFullscreen} style={styles.closeButton}>
-              <Ionicons name="close" size={28} color="#fff" />
-            </TouchableOpacity>
-          )}
-        </View>
+        )}
+        
+        {/* Close button in fullscreen */}
+        {isFullscreenMode && (
+          <TouchableOpacity onPress={toggleFullscreen} style={styles.closeButtonFullscreen}>
+            <Ionicons name="close" size={28} color="#fff" />
+          </TouchableOpacity>
+        )}
 
         {/* Video Stream from Raspberry Pi */}
         <View style={styles.videoWrapper}>
@@ -162,7 +166,7 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
             source={{ uri: currentUrl }}
             style={
               isFullscreenMode 
-                ? { position: 'absolute', width: height, height: width, transform: [{ rotate: '-90deg' }] }
+                ? { position: 'absolute', width: height, height: width, transform: [{ rotate: '90deg' }] }
                 : StyleSheet.absoluteFill
             }
             resizeMode="cover"
@@ -173,7 +177,7 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
             source={{ uri: nextUrl }}
             style={
               isFullscreenMode 
-                ? { position: 'absolute', width: height, height: width, transform: [{ rotate: '-90deg' }] }
+                ? { position: 'absolute', width: height, height: width, transform: [{ rotate: '90deg' }] }
                 : StyleSheet.absoluteFill
             }
             resizeMode="cover"
@@ -201,24 +205,26 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
         {/* Camera Controls */}
         <View style={styles.controlsContainer}>
           <TouchableOpacity onPress={takePicture} style={styles.controlButton}>
-            <Ionicons 
-              name="camera" 
-              size={24} 
-              color="#fff" 
-              style={isFullscreenMode ? { transform: [{ rotate: '-90deg' }] } : undefined}
-            />
+            <View style={isFullscreenMode ? { transform: [{ rotate: '90deg' }] } : undefined}>
+              <Ionicons 
+                name="camera" 
+                size={24} 
+                color="#fff" 
+              />
+            </View>
           </TouchableOpacity>
 
           <TouchableOpacity 
             onPress={toggleMicrophone}
             style={[styles.controlButton, recording && styles.controlButtonSpeaking]}
           >
-            <Ionicons 
-              name="mic" 
-              size={24} 
-              color="#fff"
-              style={isFullscreenMode ? { transform: [{ rotate: '-90deg' }] } : undefined}
-            />
+            <View style={isFullscreenMode ? { transform: [{ rotate: '90deg' }] } : undefined}>
+              <Ionicons 
+                name="mic" 
+                size={24} 
+                color="#fff"
+              />
+            </View>
           </TouchableOpacity>
 
           {!isFullscreenMode && (
@@ -321,6 +327,13 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     padding: 8,
+  },
+  closeButtonFullscreen: {
+    position: "absolute",
+    top: 60,
+    right: 16,
+    padding: 8,
+    zIndex: 20,
   },
   videoWrapper: {
     flex: 1,
