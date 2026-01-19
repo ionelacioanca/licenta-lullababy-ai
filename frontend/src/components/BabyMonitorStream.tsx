@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  useWindowDimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Audio } from "expo-av";
@@ -33,6 +34,10 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
   const [currentUrl, setCurrentUrl] = useState(`${SNAPSHOT_URL}?t=${Date.now()}`);
   const [nextUrl, setNextUrl] = useState(`${SNAPSHOT_URL}?t=${Date.now()}`);
   const intervalRef = useRef<number | null>(null);
+  
+  // Detectează orientarea ecranului
+  const { width, height } = useWindowDimensions();
+  const isLandscape = width > height;
 
   // Start/stop video refresh when component mounts/unmounts
   useEffect(() => {
@@ -156,14 +161,14 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
           <Image
             source={{ uri: currentUrl }}
             style={StyleSheet.absoluteFill}
-            resizeMode="cover"
+            resizeMode={isFullscreenMode ? "contain" : "cover"}
             fadeDuration={0}
           />
           {/* Imaginea nouă care se încarcă deasupra */}
           <Image
             source={{ uri: nextUrl }}
             style={StyleSheet.absoluteFill}
-            resizeMode="cover"
+            resizeMode={isFullscreenMode ? "contain" : "cover"}
             fadeDuration={0}
             onLoad={() => {
               // Când frame-ul nou e gata, devine frame-ul curent
@@ -318,6 +323,18 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 10,
+  },
+  controlsContainerLandscape: {
+    flexDirection: "column",
+    justifyContent: "center",
+    alignItems: "center",
+    bottom: "auto",
+    top: "50%",
+    right: 16,
+    left: "auto",
+    width: 60,
+    transform: [{ translateY: -75 }],
+    gap: 16,
   },
   controlButton: {
     padding: 12,
