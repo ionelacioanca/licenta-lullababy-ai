@@ -34,6 +34,7 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
   const [currentUrl, setCurrentUrl] = useState(`${SNAPSHOT_URL}?t=${Date.now()}`);
   const [nextUrl, setNextUrl] = useState(`${SNAPSHOT_URL}?t=${Date.now()}`);
   const intervalRef = useRef<number | null>(null);
+  const [currentDateTime, setCurrentDateTime] = useState(new Date());
   
   // Detectează orientarea ecranului
   const { width, height } = useWindowDimensions();
@@ -51,6 +52,15 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
         clearInterval(intervalRef.current);
       }
     };
+  }, []);
+
+  // Update clock every second
+  useEffect(() => {
+    const clockInterval = setInterval(() => {
+      setCurrentDateTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(clockInterval);
   }, []);
 
   // Toggle microphone: start/stop recording
@@ -157,6 +167,23 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
           <TouchableOpacity onPress={toggleFullscreen} style={styles.closeButtonFullscreen}>
             <Ionicons name="close" size={28} color="#fff" />
           </TouchableOpacity>
+        )}
+
+        {/* Date and Time in fullscreen */}
+        {isFullscreenMode && (
+          <View style={styles.dateTimeOverlay}>
+            <Text style={styles.dateTimeText}>
+              {currentDateTime.toLocaleDateString('ro-RO', { 
+                day: '2-digit', 
+                month: '2-digit', 
+                year: 'numeric' 
+              })} {currentDateTime.toLocaleTimeString('ro-RO', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                second: '2-digit'
+              })}
+            </Text>
+          </View>
         )}
 
         {/* Video Stream from Raspberry Pi */}
@@ -334,6 +361,18 @@ const styles = StyleSheet.create({
     right: 16,
     padding: 8,
     zIndex: 20,
+  },
+  dateTimeOverlay: {
+    position: "absolute",
+    top: "48%",
+    right: 3,
+    zIndex: 20,
+    transform: [{ rotate: '90deg' }, { translateY: -50 }],
+  },
+  dateTimeText: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "600",
   },
   videoWrapper: {
     flex: 1,
