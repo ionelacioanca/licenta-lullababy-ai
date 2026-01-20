@@ -9,9 +9,10 @@ import {
   Alert,
   Image,
   useWindowDimensions,
+  ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { Audio } from "expo-av";
+import { Audio, Video, AVPlaybackStatus, ResizeMode } from "expo-av";
 
 type BabyMonitorStreamProps = {
   babyName?: string;
@@ -35,6 +36,12 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
   const [nextUrl, setNextUrl] = useState(`${SNAPSHOT_URL}?t=${Date.now()}`);
   const intervalRef = useRef<number | null>(null);
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
+  const [recordings, setRecordings] = useState<string[]>([]);
+  const [showEvents, setShowEvents] = useState(false);
+  const [showVideoPlayer, setShowVideoPlayer] = useState(false);
+  const [currentVideoUrl, setCurrentVideoUrl] = useState<string>('');
+  const [currentVideoName, setCurrentVideoName] = useState<string>('');
+  const videoRef = useRef<Video>(null);
   
   // Detectează orientarea ecranului
   const { width, height } = useWindowDimensions();
@@ -140,6 +147,37 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
 
   const takePicture = () => {
     Alert.alert("📸", "Screenshot feature coming soon!");
+  };
+
+  const fetchRecordings = async () => {
+    try {
+      const response = await fetch(`http://${PI_IP}/list_recordings`);
+      const data = await response.json();
+      setRecordings(data);
+      setShowEvents(true); // Deschidem lista după ce se încarcă
+    } catch (error) {
+      Alert.alert("Eroare", "Nu am putut prelua lista de evenimente.");
+      console.error(error);
+    }
+  };
+
+  const playVideo = (filename: string) => {
+    const videoUrl = `http://${PI_IP}/get_video/${filename}`;
+    // Convertim .h264 în .mp4 pentru compatibilitate iOS
+    const compatibleUrl = videoUrl.replace('.h264', '.mp4');
+    setCurrentVideoUrl(compatibleUrl);
+    setCurrentVideoName(filename);
+    setShowVideoPlayer(true);
+    setShowEvents(false); // Închidem lista când deschidem video-ul
+  };
+
+  const closeVideoPlayer = async () => {
+    if (videoRef.current) {
+      await videoRef.current.stopAsync();
+      await videoRef.current.unloadAsync();
+    }
+    setShowVideoPlayer(false);
+    setCurrentVideoUrl('');
   };
 
   const renderCamera = (isFullscreenMode: boolean) => {
@@ -254,6 +292,15 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
             </View>
           </TouchableOpacity>
 
+          <TouchableOpacity 
+            onPress={fetchRecordings} 
+            style={styles.controlButton}
+          >
+            <View style={isFullscreenMode ? { transform: [{ rotate: '90deg' }] } : undefined}>
+              <Ionicons name="list" size={24} color="#fff" />
+            </View>
+          </TouchableOpacity>
+
           {!isFullscreenMode && (
             <TouchableOpacity
               onPress={toggleFullscreen}
@@ -281,6 +328,136 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
       >
         <View style={styles.fullscreenWrapper}>
           {renderCamera(true)}
+        </View>
+      </Modal>
+
+      {/* Recordings Modal */}
+      <Modal
+        visible={showEvents}
+        animationType="slide"
+        onRequestClose={() => setShowEvents(false)}
+        transparent={false}
+      >
+        <View style={styles.recordingsModalContainer}>
+          {/* Header */}
+          <View style={styles.recordingsHeader}>
+            <Text style={styles.recordingsTitle}>Evenimente Detectate</Text>
+            <TouchableOpacity onPress={() => setShowEvents(false)} style={styles.closeModalButton}>
+              <Ionicons name="close-circle" size={32} color="#FF6B6B" />
+            </TouchableOpacity>
+          </View>
+
+          {/* Subtitle */}
+          <Text style={styles.recordingsSubtitle}>
+            Ultimele 24 de ore • {recordings.length} {recordings.length === 1 ? 'eveniment' : 'evenimente'}
+          </Text>
+
+          {/* Recordings List */}
+          <ScrollView 
+            style={styles.recordingsScroll}
+            contentContainerStyle={styles.recordingsScrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            {recordings.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Ionicons name="videocam-off-outline" size={64} color="#666" />
+                <Text style={styles.emptyStateText}>Nicio mișcare detectată încă</Text>
+                <Text style={styles.emptyStateSubtext}>Videoclipurile se vor afișa aici automat</Text>
+              </View>
+            ) : (
+              recordings.map((file, index) => {
+                // Extract timestamp from filename if available (e.g., motion_20260120-1200.h264)
+                const timeMatch = file.match(/(\d{8})-(\d{4})/);
+                let displayTime = 'Acum';
+                if (timeMatch) {
+                  const date = timeMatch[1]; // YYYYMMDD
+                  const time = timeMatch[2]; // HHMM
+                  const formattedDate = `${date.slice(6, 8)}.${date.slice(4, 6)}.${date.slice(0, 4)}`;
+                  const formattedTime = `${time.slice(0, 2)}:${time.slice(2, 4)}`;
+                  displayTime = `${formattedDate} la ${formattedTime}`;
+                }
+
+                return (
+                  <TouchableOpacity 
+                    key={index} 
+                    style={styles.recordingCard} 
+                    onPress={() => playVideo(file)}
+                    activeOpacity={0.7}
+                  >
+                    {/* Thumbnail */}
+                    <View style={styles.thumbnailContainer}>
+                      {/* Placeholder pentru thumbnail - va fi înlocuit cu imagine reală de la server */}
+                      <Image 
+                        source={{ uri: `http://${PI_IP}/get_thumbnail/${file.replace('.h264', '.jpg')}` }}
+                        style={styles.thumbnail}
+                        defaultSource={require('../../assets/images/partial-react-logo.png')}
+                      />
+                      <View style={styles.playOverlay}>
+                        <Ionicons name="play-circle" size={48} color="rgba(255, 255, 255, 0.9)" />
+                      </View>
+                      <View style={styles.durationBadge}>
+                        <Ionicons name="time-outline" size={12} color="#fff" />
+                        <Text style={styles.durationText}>~30s</Text>
+                      </View>
+                    </View>
+
+                    {/* Info */}
+                    <View style={styles.recordingInfo}>
+                      <View style={styles.recordingHeader}>
+                        <View style={styles.recordingTitleRow}>
+                          <Ionicons name="alert-circle" size={18} color="#FF6B6B" />
+                          <Text style={styles.recordingTitle}>Mișcare detectată</Text>
+                        </View>
+                        <Text style={styles.recordingIndex}>#{recordings.length - index}</Text>
+                      </View>
+                      <Text style={styles.recordingTime}>{displayTime}</Text>
+                      <Text style={styles.recordingFilename}>{file}</Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })
+            )}
+          </ScrollView>
+        </View>
+      </Modal>
+
+      {/* Video Player Modal */}
+      <Modal
+        visible={showVideoPlayer}
+        animationType="slide"
+        onRequestClose={closeVideoPlayer}
+        transparent={false}
+      >
+        <View style={styles.videoPlayerContainer}>
+          {/* Header */}
+          <View style={styles.videoPlayerHeader}>
+            <TouchableOpacity onPress={closeVideoPlayer} style={styles.backButton}>
+              <Ionicons name="arrow-back" size={28} color="#fff" />
+            </TouchableOpacity>
+            <View style={styles.videoPlayerTitleContainer}>
+              <Text style={styles.videoPlayerTitle}>Redare Eveniment</Text>
+              <Text style={styles.videoPlayerSubtitle}>{currentVideoName}</Text>
+            </View>
+            <View style={{ width: 28 }} />
+          </View>
+
+          {/* Video Player */}
+          <View style={styles.videoContainer}>
+            {currentVideoUrl ? (
+              <Video
+                ref={videoRef}
+                source={{ uri: currentVideoUrl }}
+                style={styles.videoPlayer}
+                useNativeControls
+                resizeMode={ResizeMode.COVER}
+                shouldPlay
+                onError={(error) => {
+                  console.error('Video error:', error);
+                  Alert.alert('Eroare', 'Nu am putut reda video-ul.');
+                }}
+              />
+            ) : null}
+          </View>
         </View>
       </Modal>
     </>
@@ -441,6 +618,185 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "600",
     marginLeft: 6,
+  },
+  // Recordings Modal Styles
+  recordingsModalContainer: {
+    flex: 1,
+    backgroundColor: '#0a0a0a',
+  },
+  recordingsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 60,
+    paddingBottom: 16,
+    backgroundColor: '#1a1a1a',
+    borderBottomWidth: 1,
+    borderBottomColor: '#333',
+  },
+  recordingsTitle: {
+    color: '#fff',
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  closeModalButton: {
+    padding: 4,
+  },
+  recordingsSubtitle: {
+    color: '#999',
+    fontSize: 14,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    backgroundColor: '#1a1a1a',
+  },
+  recordingsScroll: {
+    flex: 1,
+  },
+  recordingsScrollContent: {
+    padding: 16,
+    paddingBottom: 32,
+  },
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 80,
+  },
+  emptyStateText: {
+    color: '#999',
+    fontSize: 18,
+    fontWeight: '600',
+    marginTop: 16,
+  },
+  emptyStateSubtext: {
+    color: '#666',
+    fontSize: 14,
+    marginTop: 8,
+  },
+  recordingCard: {
+    backgroundColor: '#1a1a1a',
+    borderRadius: 12,
+    marginBottom: 16,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#2a2a2a',
+  },
+  thumbnailContainer: {
+    width: '100%',
+    height: 200,
+    backgroundColor: '#000',
+    position: 'relative',
+  },
+  thumbnail: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  playOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+  },
+  durationBadge: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  durationText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  recordingInfo: {
+    padding: 12,
+  },
+  recordingHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  recordingTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  recordingTitle: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  recordingIndex: {
+    color: '#666',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  recordingTime: {
+    color: '#999',
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  recordingFilename: {
+    color: '#666',
+    fontSize: 12,
+    fontFamily: 'monospace',
+  },
+  // Video Player Modal Styles
+  videoPlayerContainer: {
+    flex: 1,
+    backgroundColor: '#000',
+  },
+  videoPlayerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 60,
+    paddingBottom: 16,
+    backgroundColor: '#1a1a1a',
+    borderBottomWidth: 1,
+    borderBottomColor: '#333',
+  },
+  backButton: {
+    padding: 4,
+  },
+  videoPlayerTitleContainer: {
+    flex: 1,
+    alignItems: 'center',
+    paddingHorizontal: 12,
+  },
+  videoPlayerTitle: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  videoPlayerSubtitle: {
+    color: '#999',
+    fontSize: 12,
+    marginTop: 2,
+  },
+  videoContainer: {
+    flex: 1,
+    backgroundColor: '#000',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  videoPlayer: {
+    width: '100%',
+    height: '100%',
   },
 });
 
