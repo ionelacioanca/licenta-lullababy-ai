@@ -439,13 +439,11 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
         supportedOrientations={["portrait", "landscape"]}
       >
         <View style={[styles.videoPlayerContainer, { backgroundColor: theme.background }]}>
-          {/* Header - doar dacă nu e fullscreen */}
+          {/* Back button - doar dacă nu e fullscreen */}
           {!isVideoFullscreen && (
-            <View style={[styles.videoPlayerHeader, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
-              <TouchableOpacity onPress={closeVideoPlayer} style={styles.backButton}>
-                <Ionicons name="arrow-back" size={28} color={theme.icon} />
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity onPress={closeVideoPlayer} style={styles.backButtonVideo}>
+              <Ionicons name="arrow-back" size={28} color={theme.icon} />
+            </TouchableOpacity>
           )}
 
           {/* Close button in fullscreen */}
@@ -786,6 +784,15 @@ const styles = StyleSheet.create({
   },
   backButton: {
     padding: 4,
+  },
+  backButtonVideo: {
+    position: 'absolute',
+    top: 60,
+    left: 16,
+    padding: 8,
+    zIndex: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 20,
   },
   videoPlayerTitleContainer: {
     flex: 1,
