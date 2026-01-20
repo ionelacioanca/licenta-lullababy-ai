@@ -45,6 +45,7 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
   const [showVideoPlayer, setShowVideoPlayer] = useState(false);
   const [currentVideoUrl, setCurrentVideoUrl] = useState<string>('');
   const [currentVideoName, setCurrentVideoName] = useState<string>('');
+  const [isVideoFullscreen, setIsVideoFullscreen] = useState(false);
   const videoRef = useRef<Video>(null);
   
   // Detectează orientarea ecranului
@@ -182,6 +183,7 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
     }
     setShowVideoPlayer(false);
     setCurrentVideoUrl('');
+    setIsVideoFullscreen(false);
   };
 
   const renderCamera = (isFullscreenMode: boolean) => {
@@ -433,27 +435,43 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
         animationType="slide"
         onRequestClose={closeVideoPlayer}
         transparent={false}
+        supportedOrientations={["portrait", "landscape"]}
       >
         <View style={[styles.videoPlayerContainer, { backgroundColor: theme.background }]}>
-          {/* Header */}
-          <View style={[styles.videoPlayerHeader, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
-            <TouchableOpacity onPress={closeVideoPlayer} style={styles.backButton}>
-              <Ionicons name="arrow-back" size={28} color={theme.icon} />
-            </TouchableOpacity>
-            <View style={styles.videoPlayerTitleContainer}>
-              <Text style={[styles.videoPlayerTitle, { color: theme.text }]}>{t('monitor.playingEvent')}</Text>
-              <Text style={[styles.videoPlayerSubtitle, { color: theme.textSecondary }]}>{currentVideoName}</Text>
+          {/* Header - doar dacă nu e fullscreen */}
+          {!isVideoFullscreen && (
+            <View style={[styles.videoPlayerHeader, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
+              <TouchableOpacity onPress={closeVideoPlayer} style={styles.backButton}>
+                <Ionicons name="arrow-back" size={28} color={theme.icon} />
+              </TouchableOpacity>
+              <View style={styles.videoPlayerTitleContainer}>
+                <Text style={[styles.videoPlayerTitle, { color: theme.text }]}>{t('monitor.playingEvent')}</Text>
+                <Text style={[styles.videoPlayerSubtitle, { color: theme.textSecondary }]}>{currentVideoName}</Text>
+              </View>
+              <View style={{ width: 28 }} />
             </View>
-            <View style={{ width: 28 }} />
-          </View>
+          )}
+
+          {/* Close button in fullscreen */}
+          {isVideoFullscreen && (
+            <TouchableOpacity 
+              onPress={() => setIsVideoFullscreen(false)} 
+              style={styles.closeButtonVideoFullscreen}
+            >
+              <Ionicons name="close" size={28} color="#fff" />
+            </TouchableOpacity>
+          )}
 
           {/* Video Player */}
-          <View style={styles.videoContainer}>
+          <View style={isVideoFullscreen ? styles.videoContainerFullscreen : styles.videoContainerNormal}>
             {currentVideoUrl ? (
               <Video
                 ref={videoRef}
                 source={{ uri: currentVideoUrl }}
-                style={styles.videoPlayer}
+                style={isVideoFullscreen 
+                  ? { width: height, height: width, transform: [{ rotate: '90deg' }] }
+                  : styles.videoPlayer
+                }
                 useNativeControls
                 resizeMode={ResizeMode.COVER}
                 shouldPlay
@@ -464,6 +482,16 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
               />
             ) : null}
           </View>
+
+          {/* Fullscreen Button - doar dacă nu e fullscreen */}
+          {!isVideoFullscreen && (
+            <TouchableOpacity
+              onPress={() => setIsVideoFullscreen(true)}
+              style={styles.fullscreenVideoButton}
+            >
+              <Ionicons name="expand" size={32} color="#fff" />
+            </TouchableOpacity>
+          )}
         </View>
       </Modal>
     </>
@@ -775,7 +803,15 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 2,
   },
-  videoContainer: {
+  videoContainerNormal: {
+    width: '100%',
+    aspectRatio: 16 / 9,
+    backgroundColor: '#000',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  videoContainerFullscreen: {
     flex: 1,
     backgroundColor: '#000',
     justifyContent: 'center',
@@ -784,6 +820,27 @@ const styles = StyleSheet.create({
   videoPlayer: {
     width: '100%',
     height: '100%',
+  },
+  fullscreenVideoButton: {
+    position: 'absolute',
+    bottom: 100,
+    right: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    borderRadius: 25,
+    width: 50,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  closeButtonVideoFullscreen: {
+    position: 'absolute',
+    top: 60,
+    right: 16,
+    padding: 8,
+    zIndex: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 20,
   },
 });
 
