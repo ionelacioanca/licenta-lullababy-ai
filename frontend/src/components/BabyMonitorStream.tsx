@@ -184,6 +184,7 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
     setShowVideoPlayer(false);
     setCurrentVideoUrl('');
     setIsVideoFullscreen(false);
+    setShowEvents(true); // Revine la lista de videouri
   };
 
   const renderCamera = (isFullscreenMode: boolean) => {
@@ -444,11 +445,6 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
               <TouchableOpacity onPress={closeVideoPlayer} style={styles.backButton}>
                 <Ionicons name="arrow-back" size={28} color={theme.icon} />
               </TouchableOpacity>
-              <View style={styles.videoPlayerTitleContainer}>
-                <Text style={[styles.videoPlayerTitle, { color: theme.text }]}>{t('monitor.playingEvent')}</Text>
-                <Text style={[styles.videoPlayerSubtitle, { color: theme.textSecondary }]}>{currentVideoName}</Text>
-              </View>
-              <View style={{ width: 28 }} />
             </View>
           )}
 
@@ -777,6 +773,7 @@ const styles = StyleSheet.create({
   // Video Player Modal Styles
   videoPlayerContainer: {
     flex: 1,
+    justifyContent: 'center',
   },
   videoPlayerHeader: {
     flexDirection: 'row',
@@ -809,7 +806,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#000',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 20,
   },
   videoContainerFullscreen: {
     flex: 1,
