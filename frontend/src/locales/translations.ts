@@ -349,6 +349,22 @@ export const translations = {
       stop: 'Stop',
     },
     
+    // Baby Monitor
+    monitor: {
+      detectedEvents: 'Detected Events',
+      last24Hours: 'Last 24 hours',
+      event: 'event',
+      events: 'events',
+      noMotion: 'No motion detected yet',
+      videosAutomatic: 'Videos will appear here automatically',
+      motionDetected: 'Motion detected',
+      playingEvent: 'Playing Event',
+      now: 'Now',
+      at: 'at',
+      errorFetchList: 'Could not fetch event list.',
+      errorPlayVideo: 'Could not play video.',
+    },
+    
     // Common
     common: {
       save: 'Save',
@@ -715,6 +731,22 @@ export const translations = {
       play: 'Redare',
       pause: 'Pauză',
       stop: 'Oprește',
+    },
+    
+    // Baby Monitor
+    monitor: {
+      detectedEvents: 'Evenimente Detectate',
+      last24Hours: 'Ultimele 24 de ore',
+      event: 'eveniment',
+      events: 'evenimente',
+      noMotion: 'Nicio mișcare detectată încă',
+      videosAutomatic: 'Videoclipurile se vor afișa aici automat',
+      motionDetected: 'Mișcare detectată',
+      playingEvent: 'Redare Eveniment',
+      now: 'Acum',
+      at: 'la',
+      errorFetchList: 'Nu am putut prelua lista de evenimente.',
+      errorPlayVideo: 'Nu am putut reda video-ul.',
     },
     
     // Common
