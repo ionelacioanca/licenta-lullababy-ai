@@ -14,6 +14,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { Audio, Video, AVPlaybackStatus, ResizeMode } from "expo-av";
 import { useLanguage } from '../contexts/LanguageContext';
+import { useTheme } from '../contexts/ThemeContext';
 
 type BabyMonitorStreamProps = {
   babyName?: string;
@@ -30,6 +31,7 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
   onStopMusic,
 }) => {
   const { t, language } = useLanguage();
+  const { theme } = useTheme();
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
@@ -340,17 +342,17 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
         onRequestClose={() => setShowEvents(false)}
         transparent={false}
       >
-        <View style={styles.recordingsModalContainer}>
+        <View style={[styles.recordingsModalContainer, { backgroundColor: theme.background }]}>
           {/* Header */}
-          <View style={styles.recordingsHeader}>
-            <Text style={styles.recordingsTitle}>{t('monitor.detectedEvents')}</Text>
+          <View style={[styles.recordingsHeader, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
+            <Text style={[styles.recordingsTitle, { color: theme.text }]}>{t('monitor.detectedEvents')}</Text>
             <TouchableOpacity onPress={() => setShowEvents(false)} style={styles.closeModalButton}>
               <Ionicons name="close-circle" size={32} color="#FF6B6B" />
             </TouchableOpacity>
           </View>
 
           {/* Subtitle */}
-          <Text style={styles.recordingsSubtitle}>
+          <Text style={[styles.recordingsSubtitle, { color: theme.textSecondary, backgroundColor: theme.surface }]}>
             {t('monitor.last24Hours')} • {recordings.length} {recordings.length === 1 ? t('monitor.event') : t('monitor.events')}
           </Text>
 
@@ -362,9 +364,9 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
           >
             {recordings.length === 0 ? (
               <View style={styles.emptyState}>
-                <Ionicons name="videocam-off-outline" size={64} color="#666" />
-                <Text style={styles.emptyStateText}>{t('monitor.noMotion')}</Text>
-                <Text style={styles.emptyStateSubtext}>{t('monitor.videosAutomatic')}</Text>
+                <Ionicons name="videocam-off-outline" size={64} color={theme.textTertiary} />
+                <Text style={[styles.emptyStateText, { color: theme.textSecondary }]}>{t('monitor.noMotion')}</Text>
+                <Text style={[styles.emptyStateSubtext, { color: theme.textTertiary }]}>{t('monitor.videosAutomatic')}</Text>
               </View>
             ) : (
               recordings.map((file, index) => {
@@ -384,7 +386,7 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
                 return (
                   <TouchableOpacity 
                     key={index} 
-                    style={styles.recordingCard} 
+                    style={[styles.recordingCard, { backgroundColor: theme.card, borderColor: theme.border }]} 
                     onPress={() => playVideo(file)}
                     activeOpacity={0.7}
                   >
@@ -410,12 +412,12 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
                       <View style={styles.recordingHeader}>
                         <View style={styles.recordingTitleRow}>
                           <Ionicons name="alert-circle" size={18} color="#FF6B6B" />
-                          <Text style={styles.recordingTitle}>{t('monitor.motionDetected')}</Text>
+                          <Text style={[styles.recordingTitle, { color: theme.text }]}>{t('monitor.motionDetected')}</Text>
                         </View>
-                        <Text style={styles.recordingIndex}>#{recordings.length - index}</Text>
+                        <Text style={[styles.recordingIndex, { color: theme.textTertiary }]}>#{recordings.length - index}</Text>
                       </View>
-                      <Text style={styles.recordingTime}>{displayTime}</Text>
-                      <Text style={styles.recordingFilename}>{file}</Text>
+                      <Text style={[styles.recordingTime, { color: theme.textSecondary }]}>{displayTime}</Text>
+                      <Text style={[styles.recordingFilename, { color: theme.textTertiary }]}>{file}</Text>
                     </View>
                   </TouchableOpacity>
                 );
@@ -432,15 +434,15 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
         onRequestClose={closeVideoPlayer}
         transparent={false}
       >
-        <View style={styles.videoPlayerContainer}>
+        <View style={[styles.videoPlayerContainer, { backgroundColor: theme.background }]}>
           {/* Header */}
-          <View style={styles.videoPlayerHeader}>
+          <View style={[styles.videoPlayerHeader, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
             <TouchableOpacity onPress={closeVideoPlayer} style={styles.backButton}>
-              <Ionicons name="arrow-back" size={28} color="#fff" />
+              <Ionicons name="arrow-back" size={28} color={theme.icon} />
             </TouchableOpacity>
             <View style={styles.videoPlayerTitleContainer}>
-              <Text style={styles.videoPlayerTitle}>{t('monitor.playingEvent')}</Text>
-              <Text style={styles.videoPlayerSubtitle}>{currentVideoName}</Text>
+              <Text style={[styles.videoPlayerTitle, { color: theme.text }]}>{t('monitor.playingEvent')}</Text>
+              <Text style={[styles.videoPlayerSubtitle, { color: theme.textSecondary }]}>{currentVideoName}</Text>
             </View>
             <View style={{ width: 28 }} />
           </View>
@@ -626,7 +628,6 @@ const styles = StyleSheet.create({
   // Recordings Modal Styles
   recordingsModalContainer: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
   },
   recordingsHeader: {
     flexDirection: 'row',
@@ -635,12 +636,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 60,
     paddingBottom: 16,
-    backgroundColor: '#1a1a1a',
     borderBottomWidth: 1,
-    borderBottomColor: '#333',
   },
   recordingsTitle: {
-    color: '#fff',
     fontSize: 24,
     fontWeight: 'bold',
   },
@@ -648,11 +646,9 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   recordingsSubtitle: {
-    color: '#999',
     fontSize: 14,
     paddingHorizontal: 20,
     paddingVertical: 12,
-    backgroundColor: '#1a1a1a',
   },
   recordingsScroll: {
     flex: 1,
@@ -668,23 +664,19 @@ const styles = StyleSheet.create({
     paddingVertical: 80,
   },
   emptyStateText: {
-    color: '#999',
     fontSize: 18,
     fontWeight: '600',
     marginTop: 16,
   },
   emptyStateSubtext: {
-    color: '#666',
     fontSize: 14,
     marginTop: 8,
   },
   recordingCard: {
-    backgroundColor: '#1a1a1a',
     borderRadius: 12,
     marginBottom: 16,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#2a2a2a',
   },
   thumbnailContainer: {
     width: '100%',
@@ -739,29 +731,24 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   recordingTitle: {
-    color: '#fff',
     fontSize: 16,
     fontWeight: '600',
   },
   recordingIndex: {
-    color: '#666',
     fontSize: 14,
     fontWeight: '600',
   },
   recordingTime: {
-    color: '#999',
     fontSize: 14,
     marginBottom: 4,
   },
   recordingFilename: {
-    color: '#666',
     fontSize: 12,
     fontFamily: 'monospace',
   },
   // Video Player Modal Styles
   videoPlayerContainer: {
     flex: 1,
-    backgroundColor: '#000',
   },
   videoPlayerHeader: {
     flexDirection: 'row',
@@ -770,9 +757,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 60,
     paddingBottom: 16,
-    backgroundColor: '#1a1a1a',
     borderBottomWidth: 1,
-    borderBottomColor: '#333',
   },
   backButton: {
     padding: 4,
@@ -783,12 +768,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   videoPlayerTitle: {
-    color: '#fff',
     fontSize: 18,
     fontWeight: 'bold',
   },
   videoPlayerSubtitle: {
-    color: '#999',
     fontSize: 12,
     marginTop: 2,
   },
