@@ -350,7 +350,7 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
           <View style={[styles.recordingsHeader, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
             <Text style={[styles.recordingsTitle, { color: theme.text }]}>{t('monitor.detectedEvents')}</Text>
             <TouchableOpacity onPress={() => setShowEvents(false)} style={styles.closeModalButton}>
-              <Ionicons name="close-circle" size={32} color="#FF6B6B" />
+              <Ionicons name="close-circle" size={32} color={theme.text} />
             </TouchableOpacity>
           </View>
 
