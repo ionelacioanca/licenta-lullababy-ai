@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Audio, Video, AVPlaybackStatus, ResizeMode } from "expo-av";
+import { useLanguage } from '../contexts/LanguageContext';
 
 type BabyMonitorStreamProps = {
   babyName?: string;
@@ -28,6 +29,7 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
   babyName = "Baby",
   onStopMusic,
 }) => {
+  const { t, language } = useLanguage();
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
@@ -154,9 +156,9 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
       const response = await fetch(`http://${PI_IP}/list_recordings`);
       const data = await response.json();
       setRecordings(data);
-      setShowEvents(true); // Deschidem lista după ce se încarcă
+      setShowEvents(true);
     } catch (error) {
-      Alert.alert("Eroare", "Nu am putut prelua lista de evenimente.");
+      Alert.alert(t('common.error'), t('monitor.errorFetchList'));
       console.error(error);
     }
   };
@@ -341,7 +343,7 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
         <View style={styles.recordingsModalContainer}>
           {/* Header */}
           <View style={styles.recordingsHeader}>
-            <Text style={styles.recordingsTitle}>Evenimente Detectate</Text>
+            <Text style={styles.recordingsTitle}>{t('monitor.detectedEvents')}</Text>
             <TouchableOpacity onPress={() => setShowEvents(false)} style={styles.closeModalButton}>
               <Ionicons name="close-circle" size={32} color="#FF6B6B" />
             </TouchableOpacity>
@@ -349,7 +351,7 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
 
           {/* Subtitle */}
           <Text style={styles.recordingsSubtitle}>
-            Ultimele 24 de ore • {recordings.length} {recordings.length === 1 ? 'eveniment' : 'evenimente'}
+            {t('monitor.last24Hours')} • {recordings.length} {recordings.length === 1 ? t('monitor.event') : t('monitor.events')}
           </Text>
 
           {/* Recordings List */}
@@ -361,20 +363,22 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
             {recordings.length === 0 ? (
               <View style={styles.emptyState}>
                 <Ionicons name="videocam-off-outline" size={64} color="#666" />
-                <Text style={styles.emptyStateText}>Nicio mișcare detectată încă</Text>
-                <Text style={styles.emptyStateSubtext}>Videoclipurile se vor afișa aici automat</Text>
+                <Text style={styles.emptyStateText}>{t('monitor.noMotion')}</Text>
+                <Text style={styles.emptyStateSubtext}>{t('monitor.videosAutomatic')}</Text>
               </View>
             ) : (
               recordings.map((file, index) => {
-                // Extract timestamp from filename if available (e.g., motion_20260120-1200.h264)
                 const timeMatch = file.match(/(\d{8})-(\d{4})/);
-                let displayTime = 'Acum';
+                let displayTime = t('monitor.now');
                 if (timeMatch) {
-                  const date = timeMatch[1]; // YYYYMMDD
-                  const time = timeMatch[2]; // HHMM
-                  const formattedDate = `${date.slice(6, 8)}.${date.slice(4, 6)}.${date.slice(0, 4)}`;
+                  const date = timeMatch[1];
+                  const time = timeMatch[2];
+                  // Format based on language
+                  const formattedDate = language === 'ro' 
+                    ? `${date.slice(6, 8)}.${date.slice(4, 6)}.${date.slice(0, 4)}`
+                    : `${date.slice(4, 6)}/${date.slice(6, 8)}/${date.slice(0, 4)}`;
                   const formattedTime = `${time.slice(0, 2)}:${time.slice(2, 4)}`;
-                  displayTime = `${formattedDate} la ${formattedTime}`;
+                  displayTime = `${formattedDate} ${t('monitor.at')} ${formattedTime}`;
                 }
 
                 return (
@@ -406,7 +410,7 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
                       <View style={styles.recordingHeader}>
                         <View style={styles.recordingTitleRow}>
                           <Ionicons name="alert-circle" size={18} color="#FF6B6B" />
-                          <Text style={styles.recordingTitle}>Mișcare detectată</Text>
+                          <Text style={styles.recordingTitle}>{t('monitor.motionDetected')}</Text>
                         </View>
                         <Text style={styles.recordingIndex}>#{recordings.length - index}</Text>
                       </View>
@@ -435,7 +439,7 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
               <Ionicons name="arrow-back" size={28} color="#fff" />
             </TouchableOpacity>
             <View style={styles.videoPlayerTitleContainer}>
-              <Text style={styles.videoPlayerTitle}>Redare Eveniment</Text>
+              <Text style={styles.videoPlayerTitle}>{t('monitor.playingEvent')}</Text>
               <Text style={styles.videoPlayerSubtitle}>{currentVideoName}</Text>
             </View>
             <View style={{ width: 28 }} />
@@ -453,7 +457,7 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
                 shouldPlay
                 onError={(error) => {
                   console.error('Video error:', error);
-                  Alert.alert('Eroare', 'Nu am putut reda video-ul.');
+                  Alert.alert(t('common.error'), t('monitor.errorPlayVideo'));
                 }}
               />
             ) : null}
