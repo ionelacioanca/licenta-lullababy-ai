@@ -441,8 +441,8 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
         <View style={[styles.videoPlayerContainer, { backgroundColor: theme.background }]}>
           {/* Back button - doar dacă nu e fullscreen */}
           {!isVideoFullscreen && (
-            <TouchableOpacity onPress={closeVideoPlayer} style={styles.backButtonVideo}>
-              <Ionicons name="arrow-back" size={28} color={theme.icon} />
+            <TouchableOpacity onPress={closeVideoPlayer} style={styles.backButtonVideo} activeOpacity={0.7}>
+              <Ionicons name="arrow-back" size={28} color="#fff" />
             </TouchableOpacity>
           )}
 
