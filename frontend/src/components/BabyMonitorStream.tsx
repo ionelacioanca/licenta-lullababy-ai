@@ -469,6 +469,8 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
                 useNativeControls
                 resizeMode={ResizeMode.COVER}
                 shouldPlay
+                rate={1.0}
+                shouldCorrectPitch={true}
                 onError={(error) => {
                   console.error('Video error:', error);
                   Alert.alert(t('common.error'), t('monitor.errorPlayVideo'));
