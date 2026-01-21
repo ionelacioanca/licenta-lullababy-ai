@@ -43,16 +43,22 @@ const SleepHistoryModal: React.FC<SleepHistoryModalProps> = ({
     try {
       const deviceId = "lullababypi_01";
       
-      // Get last 7 days
-      const endDate = new Date();
-      const startDate = new Date();
-      startDate.setDate(startDate.getDate() - 7);
+      // Get last 7 days - use UTC time to avoid timezone issues
+      const now = Date.now(); // Current time in milliseconds since epoch
+      const sevenDaysAgo = now - (7 * 24 * 60 * 60 * 1000); // 7 days in milliseconds
+      
+      const startISO = new Date(sevenDaysAgo).toISOString();
+      const endISO = new Date(now + (24 * 60 * 60 * 1000)).toISOString(); // Add 1 day buffer to include today's events
+      
+      console.log("Fetching sleep events from:", startISO, "to:", endISO);
       
       const events = await getSleepEventsByDateRange(
         deviceId,
-        startDate.toISOString(),
-        endDate.toISOString()
+        startISO,
+        endISO
       );
+      
+      console.log("Sleep events fetched:", events.length, events);
       
       // Filter only completed sleep sessions
       const completedSessions = events.filter(
@@ -60,6 +66,8 @@ const SleepHistoryModal: React.FC<SleepHistoryModalProps> = ({
           (event.status === "Somn Incheiat" || event.status === "Finalizat") && 
           event.duration_minutes > 0
       );
+      
+      console.log("Completed sessions:", completedSessions.length, completedSessions);
       
       // Format data for display
       const formattedHistory: SleepHistoryEntry[] = completedSessions.map((event: SleepEvent) => {

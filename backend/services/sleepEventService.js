@@ -53,12 +53,22 @@ class SleepEventService {
     static async getSleepEventsByDateRange(deviceId, startDate, endDate) {
         return SleepEvent.find({
             device_id: deviceId,
-            start_time: {
-                $gte: new Date(startDate),
-                $lte: new Date(endDate)
-            }
+            $or: [
+                {
+                    start_time: {
+                        $gte: new Date(startDate),
+                        $lte: new Date(endDate)
+                    }
+                },
+                {
+                    end_time: {
+                        $gte: new Date(startDate),
+                        $lte: new Date(endDate)
+                    }
+                }
+            ]
         })
-            .sort({ start_time: -1 });
+            .sort({ end_time: -1 });
     }
 
     /**
