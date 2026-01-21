@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -6,71 +6,126 @@ import {
   Modal,
   TouchableOpacity,
   ScrollView,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { getSleepEventsByDateRange, SleepEvent } from "../services/sleepEventService";
 
 type SleepHistoryModalProps = {
   visible: boolean;
   onClose: () => void;
 };
 
-// Mock data for a week of sleep history
-const sleepHistory = [
-  {
-    date: "Today",
-    day: "Nov 17",
-    sleepTime: "14:30 PM",
-    wakeTime: "16:15 PM",
-    duration: "1h 45m",
-  },
-  {
-    date: "Yesterday",
-    day: "Nov 16",
-    sleepTime: "13:00 PM",
-    wakeTime: "15:30 PM",
-    duration: "2h 30m",
-  },
-  {
-    date: "Friday",
-    day: "Nov 15",
-    sleepTime: "14:00 PM",
-    wakeTime: "16:00 PM",
-    duration: "2h 0m",
-  },
-  {
-    date: "Thursday",
-    day: "Nov 14",
-    sleepTime: "12:30 PM",
-    wakeTime: "14:45 PM",
-    duration: "2h 15m",
-  },
-  {
-    date: "Wednesday",
-    day: "Nov 13",
-    sleepTime: "13:15 PM",
-    wakeTime: "15:00 PM",
-    duration: "1h 45m",
-  },
-  {
-    date: "Tuesday",
-    day: "Nov 12",
-    sleepTime: "14:45 PM",
-    wakeTime: "17:00 PM",
-    duration: "2h 15m",
-  },
-  {
-    date: "Monday",
-    day: "Nov 11",
-    sleepTime: "13:30 PM",
-    wakeTime: "16:15 PM",
-    duration: "2h 45m",
-  },
-];
+interface SleepHistoryEntry {
+  date: string;
+  day: string;
+  sleepTime: string;
+  wakeTime: string;
+  duration: string;
+  rawDate: Date;
+}
 
 const SleepHistoryModal: React.FC<SleepHistoryModalProps> = ({
   visible,
   onClose,
 }) => {
+  const [sleepHistory, setSleepHistory] = useState<SleepHistoryEntry[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (visible) {
+      loadSleepHistory();
+    }
+  }, [visible]);
+
+  const loadSleepHistory = async () => {
+    setLoading(true);
+    try {
+      const deviceId = "lullababypi_01";
+      
+      // Get last 7 days
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - 7);
+      
+      const events = await getSleepEventsByDateRange(
+        deviceId,
+        startDate.toISOString(),
+        endDate.toISOString()
+      );
+      
+      // Filter only completed sleep sessions
+      const completedSessions = events.filter(
+        (event: SleepEvent) => 
+          (event.status === "Somn Incheiat" || event.status === "Finalizat") && 
+          event.duration_minutes > 0
+      );
+      
+      // Format data for display
+      const formattedHistory: SleepHistoryEntry[] = completedSessions.map((event: SleepEvent) => {
+        const startDate = new Date(event.start_time);
+        const endDate = new Date(event.end_time);
+        
+        return {
+          date: getRelativeDate(startDate),
+          day: formatDate(startDate),
+          sleepTime: formatTime(startDate),
+          wakeTime: formatTime(endDate),
+          duration: formatDuration(event.duration_minutes),
+          rawDate: startDate,
+        };
+      });
+      
+      // Sort by date (newest first)
+      formattedHistory.sort((a, b) => b.rawDate.getTime() - a.rawDate.getTime());
+      
+      setSleepHistory(formattedHistory);
+    } catch (error) {
+      console.error("Error loading sleep history:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getRelativeDate = (date: Date): string => {
+    const today = new Date();
+    const todayUTC = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
+    
+    const dateUTC = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+    
+    const diffDays = Math.floor((todayUTC - dateUTC) / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) {
+      return "Today";
+    } else if (diffDays === 1) {
+      return "Yesterday";
+    } else {
+      const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      return days[date.getUTCDay()];
+    }
+  };
+
+  const formatDate = (date: Date): string => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return `${months[date.getUTCMonth()]} ${date.getUTCDate()}`;
+  };
+
+  const formatTime = (date: Date): string => {
+    const hours = date.getUTCHours();
+    const minutes = date.getUTCMinutes();
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    const displayHours = hours % 12 || 12;
+    return `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+  };
+
+  const formatDuration = (minutes: number): string => {
+    const hours = Math.floor(minutes / 60);
+    const mins = Math.round(minutes % 60);
+    if (hours > 0) {
+      return `${hours}h ${mins}m`;
+    }
+    return `${mins}m`;
+  };
   return (
     <Modal
       visible={visible}
@@ -98,44 +153,57 @@ const SleepHistoryModal: React.FC<SleepHistoryModalProps> = ({
           >
             <Text style={styles.subtitle}>Last 7 Days</Text>
 
-            {sleepHistory.map((entry, index) => (
-              <View key={index} style={styles.historyCard}>
-                <View style={styles.dateSection}>
-                  <Text style={styles.dateLabel}>{entry.date}</Text>
-                  <Text style={styles.dateValue}>{entry.day}</Text>
-                </View>
-
-                <View style={styles.detailsSection}>
-                  <View style={styles.timeRow}>
-                    <View style={styles.timeItem}>
-                      <View style={styles.iconCircle}>
-                        <Ionicons name="bed-outline" size={16} color="white" />
-                      </View>
-                      <View>
-                        <Text style={styles.timeLabel}>Fell Asleep</Text>
-                        <Text style={styles.timeValue}>{entry.sleepTime}</Text>
-                      </View>
-                    </View>
-
-                    <View style={styles.timeItem}>
-                      <View style={styles.iconCircle}>
-                        <Ionicons name="sunny-outline" size={16} color="white" />
-                      </View>
-                      <View>
-                        <Text style={styles.timeLabel}>Woke Up</Text>
-                        <Text style={styles.timeValue}>{entry.wakeTime}</Text>
-                      </View>
-                    </View>
-                  </View>
-
-                  <View style={styles.durationSection}>
-                    <Ionicons name="time-outline" size={18} color="#A2E884" />
-                    <Text style={styles.durationLabel}>Duration:</Text>
-                    <Text style={styles.durationValue}>{entry.duration}</Text>
-                  </View>
-                </View>
+            {loading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#A2E884" />
+                <Text style={styles.loadingText}>Loading sleep history...</Text>
               </View>
-            ))}
+            ) : sleepHistory.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <Ionicons name="moon-outline" size={64} color="#666" />
+                <Text style={styles.emptyText}>No sleep data available</Text>
+                <Text style={styles.emptySubtext}>Sleep data will appear here once recorded</Text>
+              </View>
+            ) : (
+              sleepHistory.map((entry, index) => (
+                <View key={index} style={styles.historyCard}>
+                  <View style={styles.dateSection}>
+                    <Text style={styles.dateLabel}>{entry.date}</Text>
+                    <Text style={styles.dateValue}>{entry.day}</Text>
+                  </View>
+
+                  <View style={styles.detailsSection}>
+                    <View style={styles.timeRow}>
+                      <View style={styles.timeItem}>
+                        <View style={styles.iconCircle}>
+                          <Ionicons name="bed-outline" size={16} color="white" />
+                        </View>
+                        <View>
+                          <Text style={styles.timeLabel}>Fell Asleep</Text>
+                          <Text style={styles.timeValue}>{entry.sleepTime}</Text>
+                        </View>
+                      </View>
+
+                      <View style={styles.timeItem}>
+                        <View style={styles.iconCircle}>
+                          <Ionicons name="sunny-outline" size={16} color="white" />
+                        </View>
+                        <View>
+                          <Text style={styles.timeLabel}>Woke Up</Text>
+                          <Text style={styles.timeValue}>{entry.wakeTime}</Text>
+                        </View>
+                      </View>
+                    </View>
+
+                    <View style={styles.durationSection}>
+                      <Ionicons name="time-outline" size={18} color="#A2E884" />
+                      <Text style={styles.durationLabel}>Duration:</Text>
+                      <Text style={styles.durationValue}>{entry.duration}</Text>
+                    </View>
+                  </View>
+                </View>
+              ))
+            )}
           </ScrollView>
         </View>
       </View>
@@ -268,6 +336,34 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
     color: "#6B4FA0",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 60,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: "#666",
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 60,
+  },
+  emptyText: {
+    marginTop: 16,
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#666",
+  },
+  emptySubtext: {
+    marginTop: 8,
+    fontSize: 14,
+    color: "#999",
   },
 });
 

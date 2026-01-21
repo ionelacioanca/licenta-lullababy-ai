@@ -25,6 +25,7 @@ import { getUpcomingEvents, CalendarEvent, generateVaccinationSchedule, generate
 import { getRecentEntries, JournalEntry } from "../services/journalService";
 import { getPendingRequestsCount } from "../services/linkRequestService";
 import { getUnreadCount } from "../services/messageService";
+import { getLastSleepSession, getCurrentSleepSession, SleepEvent } from "../services/sleepEventService";
 import { useTheme } from "../contexts/ThemeContext";
 
 const DashboardPage: React.FC = () => {
@@ -64,6 +65,11 @@ const DashboardPage: React.FC = () => {
   const [selectedUserId, setSelectedUserId] = useState("");
   const [selectedUserName, setSelectedUserName] = useState("");
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
+  
+  // Sleep tracking states
+  const [lastSleepSession, setLastSleepSession] = useState<SleepEvent | null>(null);
+  const [currentSleepSession, setCurrentSleepSession] = useState<SleepEvent | null>(null);
+  const [isSleeping, setIsSleeping] = useState(false);
 
   const loadPendingRequestsCount = async () => {
     try {
@@ -117,6 +123,25 @@ const DashboardPage: React.FC = () => {
   const handleConversationClose = () => {
     setConversationOpen(false);
     loadUnreadMessagesCount();
+  };
+
+  const loadSleepData = async () => {
+    try {
+      const deviceId = "lullababypi_01"; // Your Raspberry Pi device ID
+      
+      // Get last completed sleep session
+      const lastSession = await getLastSleepSession(deviceId);
+      setLastSleepSession(lastSession);
+      
+      // Get current sleep session (if baby is sleeping)
+      const currentSession = await getCurrentSleepSession(deviceId);
+      setIsSleeping(currentSession.sleeping);
+      setCurrentSleepSession(currentSession.session);
+      
+      console.log("Sleep data loaded:", { lastSession, currentSession });
+    } catch (error) {
+      console.error("Error loading sleep data:", error);
+    }
   };
 
   const loadBabyForParent = async () => {
@@ -215,6 +240,9 @@ const DashboardPage: React.FC = () => {
           
           // Load recent journal entries
           loadRecentMemories(baby._id);
+          
+          // Load sleep data
+          loadSleepData();
         }
       } else {
         console.warn("No baby found for this parent");
@@ -261,6 +289,15 @@ const DashboardPage: React.FC = () => {
       loadNotificationsCount();
     }
   }, [babyId]);
+  
+  // Auto-refresh sleep data every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      loadSleepData();
+    }, 30000); // 30 seconds
+    
+    return () => clearInterval(interval);
+  }, []);
 
   const loadUpcomingEvents = async (babyId: string) => {
     try {
@@ -318,6 +355,44 @@ const DashboardPage: React.FC = () => {
 
   const handleSelectSound = (sound: Sound) => {
     setSelectedSound(sound);
+  };
+  
+  // Helper function to format time from ISO date string
+  const formatTime = (dateString: string): string => {
+    const date = new Date(dateString);
+    const hours = date.getUTCHours();
+    const minutes = date.getUTCMinutes();
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    const displayHours = hours % 12 || 12;
+    return `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+  };
+  
+  // Helper function to calculate time ago
+  const getTimeAgo = (dateString: string): string => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+    
+    if (diffDays > 0) {
+      return `${diffDays}d ${t('dashboard.ago')}`;
+    } else if (diffHours > 0) {
+      return `${diffHours}h ${t('dashboard.ago')}`;
+    } else {
+      return `${diffMins}m ${t('dashboard.ago')}`;
+    }
+  };
+  
+  // Helper function to format duration
+  const formatDuration = (minutes: number): string => {
+    const hours = Math.floor(minutes / 60);
+    const mins = Math.round(minutes % 60);
+    if (hours > 0) {
+      return `${hours}h ${mins}m`;
+    }
+    return `${mins}m`;
   };
   
   const handleSaveGrowth = async (weight: string, length: string) => {
@@ -403,7 +478,9 @@ const DashboardPage: React.FC = () => {
                 </View>
                 <View style={styles.timelineContent}>
                   <Text style={[styles.timelineLabel, { color: theme.textSecondary }]}>{t('dashboard.fellAsleep')}</Text>
-                  <Text style={[styles.timelineTime, { color: theme.text }]}>14:30 PM</Text>
+                  <Text style={[styles.timelineTime, { color: theme.text }]}>
+                    {lastSleepSession ? formatTime(lastSleepSession.start_time) : '--:--'}
+                  </Text>
                 </View>
               </View>
               <View style={styles.activityDivider} />
@@ -413,7 +490,9 @@ const DashboardPage: React.FC = () => {
                 </View>
                 <View style={styles.timelineContent}>
                   <Text style={[styles.timelineLabel, { color: theme.textSecondary }]}>{t('dashboard.wokeUp')}</Text>
-                  <Text style={[styles.timelineTime, { color: theme.text }]}>16:15 PM</Text>
+                  <Text style={[styles.timelineTime, { color: theme.text }]}>
+                    {lastSleepSession ? formatTime(lastSleepSession.end_time) : '--:--'}
+                  </Text>
                 </View>
               </View>
             </View>
@@ -421,12 +500,16 @@ const DashboardPage: React.FC = () => {
             <View style={styles.activitySummary}>
               <View style={styles.summaryItem}>
                 <Text style={[styles.activityLabel, { color: theme.textSecondary }]}>{t('dashboard.lastSleep')}</Text>
-                <Text style={[styles.activityValue, { color: theme.text }]}>2h {t('dashboard.ago')}</Text>
+                <Text style={[styles.activityValue, { color: theme.text }]}>
+                  {lastSleepSession ? getTimeAgo(lastSleepSession.end_time) : '--'}
+                </Text>
               </View>
               <View style={styles.activityDivider} />
               <View style={styles.summaryItem}>
                 <Text style={[styles.activityLabel, { color: theme.textSecondary }]}>{t('dashboard.duration')}</Text>
-                <Text style={[styles.activityValue, { color: theme.text }]}>1h 45m</Text>
+                <Text style={[styles.activityValue, { color: theme.text }]}>
+                  {lastSleepSession ? formatDuration(lastSleepSession.duration_minutes) : '--'}
+                </Text>
               </View>
             </View>
           </View>
