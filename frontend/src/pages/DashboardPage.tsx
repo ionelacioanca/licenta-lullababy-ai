@@ -369,19 +369,37 @@ const DashboardPage: React.FC = () => {
   
   // Helper function to calculate time ago
   const getTimeAgo = (dateString: string): string => {
-    const date = new Date(dateString);
+    const endTime = new Date(dateString);
     const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
+    
+    // Get current time in UTC
+    const nowUTC = Date.UTC(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      now.getHours(),
+      now.getMinutes(),
+      now.getSeconds()
+    );
+    
+    const diffMs = nowUTC - endTime.getTime();
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMins / 60);
     const diffDays = Math.floor(diffHours / 24);
+    
+    // Handle negative values (shouldn't happen but just in case)
+    if (diffMs < 0) {
+      return 'just now';
+    }
     
     if (diffDays > 0) {
       return `${diffDays}d ${t('dashboard.ago')}`;
     } else if (diffHours > 0) {
       return `${diffHours}h ${t('dashboard.ago')}`;
-    } else {
+    } else if (diffMins > 0) {
       return `${diffMins}m ${t('dashboard.ago')}`;
+    } else {
+      return 'just now';
     }
   };
   
