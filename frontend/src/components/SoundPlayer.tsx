@@ -72,6 +72,7 @@ ref
   const currentSoundRef = useRef<Sound | null>(null); // Ref to always have current sound
   const volumeRef = useRef<number>(0.7); // Ref to always have current volume
   const isPlayingRef = useRef<boolean>(false); // Ref to always have current playing state
+  const useRaspberryPiRef = useRef<boolean>(useRaspberryPi); // Ref for useRaspberryPi prop
   const { t } = useLanguage();
 
   // Update refs when state changes
@@ -95,6 +96,10 @@ ref
     isPlayingRef.current = isPlaying;
   }, [isPlaying]);
 
+  useEffect(() => {
+    useRaspberryPiRef.current = useRaspberryPi;
+  }, [useRaspberryPi]);
+
   // Initialize media notification service
   useEffect(() => {
     const initNotifications = async () => {
@@ -103,8 +108,31 @@ ref
         // Register notification handlers using refs to avoid stale closures
         mediaNotificationService.registerHandlers(
           () => {
-            console.log('🎵 Toggle play/pause from notification');
-            togglePlayPause();
+            console.log('🎵 Toggle play/pause from notification - using refs');
+            console.log('Current playing state:', isPlayingRef.current);
+            console.log('Current sound:', currentSoundRef.current?.name);
+            
+            if (isPlayingRef.current) {
+              // Pause
+              console.log('⏸️ Pausing sound...');
+              pauseSound();
+            } else {
+              // Play/Resume
+              console.log('▶️ Playing sound...');
+              if (useRaspberryPiRef.current) {
+                // For Raspberry Pi, always play the current sound
+                if (currentSoundRef.current) {
+                  playSound(currentSoundRef.current);
+                }
+              } else {
+                // For phone, check if sound is loaded
+                if (soundRef.current) {
+                  resumeSound();
+                } else if (currentSoundRef.current) {
+                  playSound(currentSoundRef.current);
+                }
+              }
+            }
           },
           () => {
             console.log('⏭️ Next from notification - using refs');
