@@ -84,7 +84,7 @@ export const downloadSound = (url, soundId) => {
  * @returns {Promise<string>} - The full local URL
  */
 export const getLocalSoundUrl = async (sound) => {
-  const baseUrl = process.env.BASE_URL || 'http://192.168.1.11:5000';
+  const baseUrl = process.env.BASE_URL || 'http://192.168.1.14:5000';
   
   // If already a local URL, return as is
   if (sound.audioUrl.startsWith('/uploads/')) {

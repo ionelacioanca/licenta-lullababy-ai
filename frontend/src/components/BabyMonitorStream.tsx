@@ -38,6 +38,7 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
   const [audioPermission, requestAudioPermission] = Audio.usePermissions();
   const [currentUrl, setCurrentUrl] = useState(`${SNAPSHOT_URL}?t=${Date.now()}`);
   const [nextUrl, setNextUrl] = useState(`${SNAPSHOT_URL}?t=${Date.now()}`);
+  const [isNextLoaded, setIsNextLoaded] = useState(false);
   const intervalRef = useRef<number | null>(null);
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
   const [recordings, setRecordings] = useState<string[]>([]);
@@ -54,10 +55,10 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
 
   // Start/stop video refresh when component mounts/unmounts
   useEffect(() => {
-    // Pregătim următorul frame la fiecare 100ms
+    // Pregătim următorul frame la fiecare 50ms (~20 FPS) - echilibru între smooth și performanță
     intervalRef.current = setInterval(() => {
       setNextUrl(`${SNAPSHOT_URL}?t=${Date.now()}`);
-    }, 100);
+    }, 50);
 
     return () => {
       if (intervalRef.current) {
@@ -233,7 +234,7 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
 
         {/* Video Stream from Raspberry Pi */}
         <View style={styles.videoWrapper}>
-          {/* Imaginea de fundal (frame-ul vechi) */}
+          {/* Imaginea curentă - mereu vizibilă */}
           <Image
             source={{ uri: currentUrl }}
             style={
@@ -244,19 +245,25 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
             resizeMode="cover"
             fadeDuration={0}
           />
-          {/* Imaginea nouă care se încarcă deasupra */}
+          {/* Imaginea nouă - preîncărcată invizibil, apoi swap instant */}
           <Image
             source={{ uri: nextUrl }}
-            style={
+            style={[
               isFullscreenMode 
                 ? { position: 'absolute', width: height, height: width, transform: [{ rotate: '90deg' }] }
-                : StyleSheet.absoluteFill
-            }
+                : StyleSheet.absoluteFill,
+              { opacity: 0 } // Invizibilă până se încarcă
+            ]}
             resizeMode="cover"
             fadeDuration={0}
             onLoad={() => {
-              // Când frame-ul nou e gata, devine frame-ul curent
+              // Când frame-ul nou e complet încărcat, face swap instant
+              setIsNextLoaded(true);
               setCurrentUrl(nextUrl);
+              setIsNextLoaded(false);
+            }}
+            onLoadStart={() => {
+              setIsNextLoaded(false);
             }}
             onError={(error) => {
               console.error('Frame error:', error.nativeEvent.error);
