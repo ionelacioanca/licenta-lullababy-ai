@@ -36,39 +36,26 @@ try {
   }
 
   // Set up notification categories with actions (for iOS and some Android versions)
+  // Simplified controls: STOP + Volume only (no Next/Previous)
   if (Notifications && Notifications.setNotificationCategoryAsync) {
     Notifications.setNotificationCategoryAsync('media_controls', [
       {
-        identifier: 'previous',
-        buttonTitle: '⏮️',
-        options: {
-          opensAppToForeground: false,
-        },
-      },
-      {
         identifier: 'play_pause',
-        buttonTitle: '⏯️',
-        options: {
-          opensAppToForeground: false,
-        },
-      },
-      {
-        identifier: 'next',
-        buttonTitle: '⏭️',
+        buttonTitle: 'Stop',
         options: {
           opensAppToForeground: false,
         },
       },
       {
         identifier: 'volume_down',
-        buttonTitle: '🔉',
+        buttonTitle: 'Vol -',
         options: {
           opensAppToForeground: false,
         },
       },
       {
         identifier: 'volume_up',
-        buttonTitle: '🔊',
+        buttonTitle: 'Vol +',
         options: {
           opensAppToForeground: false,
         },
@@ -137,7 +124,7 @@ class MediaNotificationService {
             name: 'Media Playback',
             importance: Notifications.AndroidImportance.HIGH,
             vibrationPattern: [0],
-            lightColor: '#4CAF50',
+            lightColor: '#A2E884', // LullaBaby green
             sound: null,
             enableVibrate: false,
             showBadge: false,
@@ -297,14 +284,14 @@ class MediaNotificationService {
 
       // Build notification content based on platform
       const content: any = {
-        title: `${isPlaying ? '▶️' : '⏸️'} ${title}`,
-        body: `${artist} • Volume: ${volumePercent}%`,
+        title: `${isPlaying ? '🎵' : '⏸'} ${title}`,
+        body: `${artist} • Volume ${volumePercent}%`,
         data: { 
           type: 'media', 
           isPlaying,
           volume: volumePercent,
         },
-        sticky: true,
+        sticky: false, // Allow user to dismiss notification with swipe
         priority: Notifications.AndroidNotificationPriority.MAX,
         sound: false,
       };
@@ -313,11 +300,11 @@ class MediaNotificationService {
         content.priority = Notifications.AndroidNotificationPriority.MAX;
         content.channelId = 'media';
         content.categoryIdentifier = 'media_controls';
-        content.color = '#4CAF50'; // Green theme color - hex string format
+        content.color = '#A2E884'; // LullaBaby green theme
       } else {
         // iOS supports categories with actions
         content.categoryIdentifier = 'media_controls';
-        content.color = '#4CAF50';
+        content.color = '#A2E884';
       }
 
       const notificationId = await Notifications.scheduleNotificationAsync({
@@ -356,13 +343,48 @@ class MediaNotificationService {
       }
 
       if (this.notificationId) {
-        await Notifications.dismissNotificationAsync(this.notificationId);
-        this.notificationId = null;
+        const idToRemove = this.notificationId;
+        this.notificationId = null; // Clear immediately to prevent double-calls
         this.lastNotificationState = ''; // Reset state
+        
+        try {
+          // Cancel the scheduled notification (removes it completely)
+          await Notifications.cancelScheduledNotificationAsync(idToRemove);
+        } catch (err) {
+          // Ignore if notification is not scheduled anymore
+          console.log('Could not cancel scheduled notification (may already be shown)');
+        }
+        
+        try {
+          // Also dismiss from notification tray
+          await Notifications.dismissNotificationAsync(idToRemove);
+        } catch (err) {
+          // Ignore if notification is already dismissed
+          console.log('Could not dismiss notification (may already be dismissed)');
+        }
+        
         console.log('Media notification hidden');
       }
     } catch (error) {
       console.error('Failed to hide media notification:', error);
+    }
+  }
+
+  async clearAllNotifications() {
+    try {
+      if (!notificationsAvailable || !Notifications) {
+        return;
+      }
+
+      // Cancel all scheduled notifications
+      await Notifications.cancelAllScheduledNotificationsAsync();
+      // Dismiss all present notifications
+      await Notifications.dismissAllNotificationsAsync();
+      this.notificationId = null;
+      this.lastNotificationState = '';
+      console.log('All notifications cleared');
+    } catch (error) {
+      console.error('Failed to clear all notifications:', error);
     }
   }
 

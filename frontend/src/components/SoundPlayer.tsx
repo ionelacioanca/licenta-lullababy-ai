@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from "react";
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle, useCallback } from "react";
 import {
   View,
   Text,
@@ -65,7 +65,7 @@ ref
   const [playlist, setPlaylist] = useState<Sound[]>([]); // Available sounds
   const [currentIndex, setCurrentIndex] = useState(0); // Current sound index in playlist
   const soundRef = useRef<Audio.Sound | null>(null);
-  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const progressIntervalRef = useRef<number | null>(null);
   const startTimeRef = useRef<number | null>(null); // Track when playback started
   const currentIndexRef = useRef<number>(0); // Ref to always have current index
   const playlistRef = useRef<Sound[]>([]); // Ref to always have current playlist
@@ -73,6 +73,9 @@ ref
   const volumeRef = useRef<number>(0.7); // Ref to always have current volume
   const isPlayingRef = useRef<boolean>(false); // Ref to always have current playing state
   const useRaspberryPiRef = useRef<boolean>(useRaspberryPi); // Ref for useRaspberryPi prop
+  const togglePlayPauseRef = useRef<(() => void) | null>(null); // Ref for togglePlayPause function
+  const handleNextRef = useRef<(() => void) | null>(null); // Ref for handleNext function
+  const handlePreviousRef = useRef<(() => void) | null>(null); // Ref for handlePrevious function
   const { t } = useLanguage();
 
   // Update refs when state changes
@@ -100,77 +103,82 @@ ref
     useRaspberryPiRef.current = useRaspberryPi;
   }, [useRaspberryPi]);
 
+  // Save state to AsyncStorage for background handlers
+  useEffect(() => {
+    const saveState = async () => {
+      try {
+        await AsyncStorage.setItem('musicPlayerState', JSON.stringify({
+          isPlaying,
+          currentSound,
+          currentIndex,
+          playlist,
+        }));
+      } catch (error) {
+        console.error('Error saving music player state:', error);
+      }
+    };
+    
+    if (currentSound) {
+      saveState();
+    }
+  }, [isPlaying, currentSound, currentIndex, playlist]);
+
+  // Handler simplu pentru STOP din notificare - funcționează în background
+  const handleStopFromNotification = async () => {
+    console.log('🛑 Stop from notification (background-safe)');
+    try {
+      const stopResponse = await fetch(STOP_AUDIO_URL, { method: 'POST' });
+      console.log('Stop response:', stopResponse.status);
+      
+      if (stopResponse.ok) {
+        // Actualizează AsyncStorage
+        const savedState = await AsyncStorage.getItem('musicPlayerState');
+        if (savedState) {
+          const state = JSON.parse(savedState);
+          await AsyncStorage.setItem('musicPlayerState', JSON.stringify({ ...state, isPlaying: false }));
+        }
+        
+        // Ascunde notificarea
+        mediaNotificationService.hideMediaNotification();
+        
+        // Actualizează UI
+        setIsPlaying(false);
+        setPiStatus('paused');
+        console.log('✅ Playback stopped from notification');
+      }
+    } catch (error) {
+      console.error('❌ Error stopping from notification:', error);
+    }
+  };
+
   // Initialize media notification service
   useEffect(() => {
     const initNotifications = async () => {
+      // Clear any old notifications from previous sessions
+      await mediaNotificationService.clearAllNotifications();
+      
       const success = await mediaNotificationService.initialize();
       if (success) {
-        // Register notification handlers using refs to avoid stale closures
+        console.log('📱 Registering notification handlers (simplified - STOP + Volume only)...');
+        // Înregistrăm doar STOP și Volume (Next/Previous eliminate)
         mediaNotificationService.registerHandlers(
-          () => {
-            console.log('🎵 Toggle play/pause from notification - using refs');
-            console.log('Current playing state:', isPlayingRef.current);
-            console.log('Current sound:', currentSoundRef.current?.name);
-            
-            if (isPlayingRef.current) {
-              // Pause
-              console.log('⏸️ Pausing sound...');
-              pauseSound();
-            } else {
-              // Play/Resume
-              console.log('▶️ Playing sound...');
-              if (useRaspberryPiRef.current) {
-                // For Raspberry Pi, always play the current sound
-                if (currentSoundRef.current) {
-                  playSound(currentSoundRef.current);
-                }
-              } else {
-                // For phone, check if sound is loaded
-                if (soundRef.current) {
-                  resumeSound();
-                } else if (currentSoundRef.current) {
-                  playSound(currentSoundRef.current);
-                }
-              }
-            }
-          },
-          () => {
-            console.log('⏭️ Next from notification - using refs');
-            if (playlistRef.current.length === 0) return;
-            const newIndex = currentIndexRef.current < playlistRef.current.length - 1 
-              ? currentIndexRef.current + 1 
-              : 0;
-            const nextSound = playlistRef.current[newIndex];
-            setCurrentIndex(newIndex);
-            setCurrentSound(nextSound);
-            saveLastPlayedSound(nextSound);
-            playSound(nextSound);
-          },
-          () => {
-            console.log('⏮️ Previous from notification - using refs');
-            if (playlistRef.current.length === 0) return;
-            const newIndex = currentIndexRef.current > 0 
-              ? currentIndexRef.current - 1 
-              : playlistRef.current.length - 1;
-            const prevSound = playlistRef.current[newIndex];
-            setCurrentIndex(newIndex);
-            setCurrentSound(prevSound);
-            saveLastPlayedSound(prevSound);
-            playSound(prevSound);
-          },
+          handleStopFromNotification, // STOP/Play-Pause → doar STOP
+          () => {}, // Next → eliminat (funcție goală)
+          () => {}, // Previous → eliminat (funcție goală)
           async () => {
-            console.log('🔊 Volume up from notification - using refs');
+            console.log('🔊 Volume up from notification');
             const newVolume = Math.min(1, volumeRef.current + 0.1);
             setVolume(newVolume);
             await setVolumeOnDevice(newVolume);
           },
           async () => {
-            console.log('🔉 Volume down from notification - using refs');
+            console.log('🔉 Volume down from notification');
             const newVolume = Math.max(0, volumeRef.current - 0.1);
             setVolume(newVolume);
             await setVolumeOnDevice(newVolume);
           }
         );
+        console.log('✅ Notification handlers registered (STOP + Volume)');
       }
     };
 
@@ -180,7 +188,7 @@ ref
     return () => {
       mediaNotificationService.cleanup();
     };
-  }, []);
+  }, []); // Fără dependințe - înregistrăm o singură dată
 
   // Update notification ONLY when playback state or song changes - NOT on position updates
   useEffect(() => {
@@ -188,7 +196,7 @@ ref
       const fullAudioUrl = getFullAudioUrl(currentSound.audioUrl);
       mediaNotificationService.showMediaNotification({
         title: currentSound.title,
-        artist: currentSound.artist || 'LullaBaby',
+        artist: currentSound.category || 'Lullaby',
         album: currentSound.category || 'Lullabies',
         imageUrl: currentSound.thumbnailUrl,
         audioUrl: fullAudioUrl,
@@ -196,18 +204,9 @@ ref
         duration: duration,
         volume: volume, // Include current volume
       });
-    } else if (!isPlaying && currentSound) {
-      // Update to show paused state
-      const fullAudioUrl = getFullAudioUrl(currentSound.audioUrl);
-      mediaNotificationService.updateMediaNotification({
-        title: currentSound.title,
-        artist: currentSound.artist || 'LullaBaby',
-        album: currentSound.category || 'Lullabies',
-        imageUrl: currentSound.thumbnailUrl,
-        audioUrl: fullAudioUrl,
-        isPlaying: false,
-        volume: volume, // Include current volume
-      });
+    } else if (!isPlaying) {
+      // Hide notification when playback stops
+      mediaNotificationService.hideMediaNotification();
     }
   }, [isPlaying, currentSound, volume]); // Added volume to dependencies
 
@@ -232,6 +231,46 @@ ref
     if (useRaspberryPi) {
       syncWithPi();
     }
+  }, [useRaspberryPi]);
+
+  // AppState listener pentru sincronizare când aplicația revine în foreground
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', async (nextAppState) => {
+      if (nextAppState === 'active') {
+        console.log('📱 App became active - syncing with saved state...');
+        // Sincronizează UI-ul cu starea salvată (care poate fi fost modificată de notificare în background)
+        try {
+          const savedState = await AsyncStorage.getItem('musicPlayerState');
+          if (savedState) {
+            const state = JSON.parse(savedState);
+            console.log('Restoring state:', state);
+            
+            if (state.currentSound) {
+              setCurrentSound(state.currentSound);
+            }
+            if (state.currentIndex !== undefined) {
+              setCurrentIndex(state.currentIndex);
+            }
+            if (state.isPlaying !== undefined) {
+              setIsPlaying(state.isPlaying);
+              setPiStatus(state.isPlaying ? 'playing' : 'paused');
+            }
+            if (state.playlist) {
+              setPlaylist(state.playlist);
+            }
+          }
+          
+          // Sincronizează și cu Pi pentru a fi sigur
+          if (useRaspberryPi) {
+            await syncWithPi();
+          }
+        } catch (error) {
+          console.error('Error syncing state on app resume:', error);
+        }
+      }
+    });
+
+    return () => subscription.remove();
   }, [useRaspberryPi]);
 
   // Load last played sound and volume from AsyncStorage on mount
@@ -620,6 +659,16 @@ ref
           setIsPlaying(false);
           setPiStatus('idle');
           
+          // Update AsyncStorage immediately
+          const savedState = await AsyncStorage.getItem('musicPlayerState');
+          if (savedState) {
+            const state = JSON.parse(savedState);
+            await AsyncStorage.setItem('musicPlayerState', JSON.stringify({
+              ...state,
+              isPlaying: false
+            }));
+          }
+          
           // Stop progress simulation
           if (progressIntervalRef.current) {
             clearInterval(progressIntervalRef.current);
@@ -630,8 +679,8 @@ ref
           setPosition(0);
           startTimeRef.current = null;
           
-          // Hide notification when stopped
-          await mediaNotificationService.hideMediaNotification();
+          // Don't hide notification - keep it visible in paused state
+          // The notification will update to show pause button via useEffect
         }
       } else {
         // Pause on phone
@@ -753,6 +802,13 @@ ref
     saveLastPlayedSound(nextSound);
     playSound(nextSound);
   };
+
+  // Update refs when functions change
+  useEffect(() => {
+    togglePlayPauseRef.current = togglePlayPause;
+    handleNextRef.current = handleNext;
+    handlePreviousRef.current = handlePrevious;
+  }, [togglePlayPause, handleNext, handlePrevious]); // Add dependencies
 
   const { theme } = useTheme();
 
