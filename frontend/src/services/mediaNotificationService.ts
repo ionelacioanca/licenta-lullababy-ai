@@ -41,21 +41,21 @@ try {
     Notifications.setNotificationCategoryAsync('media_controls', [
       {
         identifier: 'play_pause',
-        buttonTitle: '⏹️ Stop',
+        buttonTitle: 'Stop',
         options: {
           opensAppToForeground: false,
         },
       },
       {
         identifier: 'volume_down',
-        buttonTitle: '🔉',
+        buttonTitle: 'Vol -',
         options: {
           opensAppToForeground: false,
         },
       },
       {
         identifier: 'volume_up',
-        buttonTitle: '🔊',
+        buttonTitle: 'Vol +',
         options: {
           opensAppToForeground: false,
         },
@@ -124,7 +124,7 @@ class MediaNotificationService {
             name: 'Media Playback',
             importance: Notifications.AndroidImportance.HIGH,
             vibrationPattern: [0],
-            lightColor: '#4CAF50',
+            lightColor: '#A2E884', // LullaBaby green
             sound: null,
             enableVibrate: false,
             showBadge: false,
@@ -284,8 +284,8 @@ class MediaNotificationService {
 
       // Build notification content based on platform
       const content: any = {
-        title: `${isPlaying ? '▶️' : '⏸️'} ${title}`,
-        body: `${artist} • Volume: ${volumePercent}%`,
+        title: `${isPlaying ? '🎵' : '⏸'} ${title}`,
+        body: `${artist} • Volume ${volumePercent}%`,
         data: { 
           type: 'media', 
           isPlaying,
@@ -300,11 +300,11 @@ class MediaNotificationService {
         content.priority = Notifications.AndroidNotificationPriority.MAX;
         content.channelId = 'media';
         content.categoryIdentifier = 'media_controls';
-        content.color = '#4CAF50'; // Green theme color - hex string format
+        content.color = '#A2E884'; // LullaBaby green theme
       } else {
         // iOS supports categories with actions
         content.categoryIdentifier = 'media_controls';
-        content.color = '#4CAF50';
+        content.color = '#A2E884';
       }
 
       const notificationId = await Notifications.scheduleNotificationAsync({

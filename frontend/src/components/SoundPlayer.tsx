@@ -196,7 +196,7 @@ ref
       const fullAudioUrl = getFullAudioUrl(currentSound.audioUrl);
       mediaNotificationService.showMediaNotification({
         title: currentSound.title,
-        artist: currentSound.artist || 'LullaBaby',
+        artist: currentSound.category || 'Lullaby',
         album: currentSound.category || 'Lullabies',
         imageUrl: currentSound.thumbnailUrl,
         audioUrl: fullAudioUrl,
