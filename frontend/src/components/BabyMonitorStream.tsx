@@ -10,6 +10,7 @@ import {
   Image,
   useWindowDimensions,
   ScrollView,
+  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Audio, Video, AVPlaybackStatus, ResizeMode } from "expo-av";
@@ -36,9 +37,12 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const [audioPermission, requestAudioPermission] = Audio.usePermissions();
-  const [currentUrl, setCurrentUrl] = useState(`${SNAPSHOT_URL}?t=${Date.now()}`);
-  const [nextUrl, setNextUrl] = useState(`${SNAPSHOT_URL}?t=${Date.now()}`);
-  const [isNextLoaded, setIsNextLoaded] = useState(false);
+  
+  // Double buffering - două imagini, exact ca pe iOS unde a mers perfect
+  const [imageA, setImageA] = useState(`${SNAPSHOT_URL}?t=${Date.now()}`);
+  const [imageB, setImageB] = useState(`${SNAPSHOT_URL}?t=${Date.now()}`);
+  const [showImageA, setShowImageA] = useState(true);
+  
   const intervalRef = useRef<number | null>(null);
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
   const [recordings, setRecordings] = useState<string[]>([]);
@@ -55,17 +59,24 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
 
   // Start/stop video refresh when component mounts/unmounts
   useEffect(() => {
-    // Pregătim următorul frame la fiecare 50ms (~20 FPS) - echilibru între smooth și performanță
     intervalRef.current = setInterval(() => {
-      setNextUrl(`${SNAPSHOT_URL}?t=${Date.now()}`);
-    }, 50);
+      const timestamp = Date.now();
+      const newUrl = `${SNAPSHOT_URL}?t=${timestamp}`;
+      
+      // Pre-fetching: Forțăm Android să descarce imaginea în fundal înainte de a o afișa
+      Image.prefetch(newUrl);
+
+      if (showImageA) {
+        setImageB(newUrl);
+      } else {
+        setImageA(newUrl);
+      }
+    }, 400); // Am crescut ușor la 400ms pentru a da timp procesorului de Android să decodeze JPEG-ul
 
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
+      if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, []);
+  }, [showImageA]);
 
   // Update clock every second
   useEffect(() => {
@@ -232,41 +243,43 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
           </View>
         )}
 
-        {/* Video Stream from Raspberry Pi */}
+        {/* Video Stream from Raspberry Pi - Double Buffering cu zIndex */}
         <View style={styles.videoWrapper}>
-          {/* Imaginea curentă - mereu vizibilă */}
+          {/* Imaginea A */}
           <Image
-            source={{ uri: currentUrl }}
-            style={
-              isFullscreenMode 
-                ? { position: 'absolute', width: height, height: width, transform: [{ rotate: '90deg' }] }
-                : StyleSheet.absoluteFill
-            }
-            resizeMode="cover"
-            fadeDuration={0}
-          />
-          {/* Imaginea nouă - preîncărcată invizibil, apoi swap instant */}
-          <Image
-            source={{ uri: nextUrl }}
+            source={{ 
+              uri: imageA,
+              // Folosim 'force-cache' împreună cu timestamp-ul din URL pentru a evita flicker-ul
+              cache: 'force-cache' 
+            }}
             style={[
               isFullscreenMode 
                 ? { position: 'absolute', width: height, height: width, transform: [{ rotate: '90deg' }] }
                 : StyleSheet.absoluteFill,
-              { opacity: 0 } // Invizibilă până se încarcă
+              { zIndex: showImageA ? 2 : 1 } // Folosim zIndex în loc de opacitate 0 pentru a păstra imaginea veche sub cea nouă
             ]}
             resizeMode="cover"
-            fadeDuration={0}
             onLoad={() => {
-              // Când frame-ul nou e complet încărcat, face swap instant
-              setIsNextLoaded(true);
-              setCurrentUrl(nextUrl);
-              setIsNextLoaded(false);
+              // Switch-ul se face doar după ce imaginea e încărcată complet
+              if (!showImageA) setShowImageA(true);
             }}
-            onLoadStart={() => {
-              setIsNextLoaded(false);
+          />
+          
+          {/* Imaginea B */}
+          <Image
+            source={{ 
+              uri: imageB,
+              cache: 'force-cache'
             }}
-            onError={(error) => {
-              console.error('Frame error:', error.nativeEvent.error);
+            style={[
+              isFullscreenMode 
+                ? { position: 'absolute', width: height, height: width, transform: [{ rotate: '90deg' }] }
+                : StyleSheet.absoluteFill,
+              { zIndex: showImageA ? 1 : 2 }
+            ]}
+            resizeMode="cover"
+            onLoad={() => {
+              if (showImageA) setShowImageA(false);
             }}
           />
         </View>

@@ -175,8 +175,8 @@ eas build --profile production --platform android
 
 ### "Network request failed" în app
 - Backend-ul trebuie să ruleze
-- Verifică IP-ul în cod (192.168.1.14)
-- Test: deschide `http://192.168.1.14:5000` în browser-ul de pe telefon
+- Verifică IP-ul în cod (192.168.1.20)
+- Test: deschide `http://192.168.1.20:5000` în browser-ul de pe telefon
 
 ### Build-ul eșuează
 - Verifică că ai făcut login: `eas whoami`
