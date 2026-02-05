@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from "react";
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle, useCallback } from "react";
 import {
   View,
   Text,
@@ -103,44 +103,76 @@ ref
     useRaspberryPiRef.current = useRaspberryPi;
   }, [useRaspberryPi]);
 
+  // Save state to AsyncStorage for background handlers
+  useEffect(() => {
+    const saveState = async () => {
+      try {
+        await AsyncStorage.setItem('musicPlayerState', JSON.stringify({
+          isPlaying,
+          currentSound,
+          currentIndex,
+          playlist,
+        }));
+      } catch (error) {
+        console.error('Error saving music player state:', error);
+      }
+    };
+    
+    if (currentSound) {
+      saveState();
+    }
+  }, [isPlaying, currentSound, currentIndex, playlist]);
+
+  // Handler simplu pentru STOP din notificare - funcționează în background
+  const handleStopFromNotification = async () => {
+    console.log('🛑 Stop from notification (background-safe)');
+    try {
+      const stopResponse = await fetch(STOP_AUDIO_URL, { method: 'POST' });
+      console.log('Stop response:', stopResponse.status);
+      
+      if (stopResponse.ok) {
+        // Actualizează AsyncStorage
+        const savedState = await AsyncStorage.getItem('musicPlayerState');
+        if (savedState) {
+          const state = JSON.parse(savedState);
+          await AsyncStorage.setItem('musicPlayerState', JSON.stringify({ ...state, isPlaying: false }));
+        }
+        
+        // Actualizează UI
+        setIsPlaying(false);
+        setPiStatus('paused');
+        console.log('✅ Playback stopped from notification');
+      }
+    } catch (error) {
+      console.error('❌ Error stopping from notification:', error);
+    }
+  };
+
   // Initialize media notification service
   useEffect(() => {
     const initNotifications = async () => {
       const success = await mediaNotificationService.initialize();
       if (success) {
-        // Register notification handlers using refs to avoid stale closures
+        console.log('📱 Registering notification handlers (simplified - STOP + Volume only)...');
+        // Înregistrăm doar STOP și Volume (Next/Previous eliminate)
         mediaNotificationService.registerHandlers(
-          () => {
-            console.log('🎵 Toggle play/pause from notification');
-            if (togglePlayPauseRef.current) {
-              togglePlayPauseRef.current();
-            }
-          },
-          () => {
-            console.log('⏭️ Next from notification');
-            if (handleNextRef.current) {
-              handleNextRef.current();
-            }
-          },
-          () => {
-            console.log('⏮️ Previous from notification');
-            if (handlePreviousRef.current) {
-              handlePreviousRef.current();
-            }
-          },
+          handleStopFromNotification, // STOP/Play-Pause → doar STOP
+          () => {}, // Next → eliminat (funcție goală)
+          () => {}, // Previous → eliminat (funcție goală)
           async () => {
-            console.log('🔊 Volume up from notification - using refs');
+            console.log('🔊 Volume up from notification');
             const newVolume = Math.min(1, volumeRef.current + 0.1);
             setVolume(newVolume);
             await setVolumeOnDevice(newVolume);
           },
           async () => {
-            console.log('🔉 Volume down from notification - using refs');
+            console.log('🔉 Volume down from notification');
             const newVolume = Math.max(0, volumeRef.current - 0.1);
             setVolume(newVolume);
             await setVolumeOnDevice(newVolume);
           }
         );
+        console.log('✅ Notification handlers registered (STOP + Volume)');
       }
     };
 
@@ -150,7 +182,7 @@ ref
     return () => {
       mediaNotificationService.cleanup();
     };
-  }, []);
+  }, []); // Fără dependințe - înregistrăm o singură dată
 
   // Update notification ONLY when playback state or song changes - NOT on position updates
   useEffect(() => {
@@ -202,6 +234,46 @@ ref
     if (useRaspberryPi) {
       syncWithPi();
     }
+  }, [useRaspberryPi]);
+
+  // AppState listener pentru sincronizare când aplicația revine în foreground
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', async (nextAppState) => {
+      if (nextAppState === 'active') {
+        console.log('📱 App became active - syncing with saved state...');
+        // Sincronizează UI-ul cu starea salvată (care poate fi fost modificată de notificare în background)
+        try {
+          const savedState = await AsyncStorage.getItem('musicPlayerState');
+          if (savedState) {
+            const state = JSON.parse(savedState);
+            console.log('Restoring state:', state);
+            
+            if (state.currentSound) {
+              setCurrentSound(state.currentSound);
+            }
+            if (state.currentIndex !== undefined) {
+              setCurrentIndex(state.currentIndex);
+            }
+            if (state.isPlaying !== undefined) {
+              setIsPlaying(state.isPlaying);
+              setPiStatus(state.isPlaying ? 'playing' : 'paused');
+            }
+            if (state.playlist) {
+              setPlaylist(state.playlist);
+            }
+          }
+          
+          // Sincronizează și cu Pi pentru a fi sigur
+          if (useRaspberryPi) {
+            await syncWithPi();
+          }
+        } catch (error) {
+          console.error('Error syncing state on app resume:', error);
+        }
+      }
+    });
+
+    return () => subscription.remove();
   }, [useRaspberryPi]);
 
   // Load last played sound and volume from AsyncStorage on mount
@@ -590,6 +662,16 @@ ref
           setIsPlaying(false);
           setPiStatus('idle');
           
+          // Update AsyncStorage immediately
+          const savedState = await AsyncStorage.getItem('musicPlayerState');
+          if (savedState) {
+            const state = JSON.parse(savedState);
+            await AsyncStorage.setItem('musicPlayerState', JSON.stringify({
+              ...state,
+              isPlaying: false
+            }));
+          }
+          
           // Stop progress simulation
           if (progressIntervalRef.current) {
             clearInterval(progressIntervalRef.current);
@@ -729,7 +811,7 @@ ref
     togglePlayPauseRef.current = togglePlayPause;
     handleNextRef.current = handleNext;
     handlePreviousRef.current = handlePrevious;
-  });
+  }, [togglePlayPause, handleNext, handlePrevious]); // Add dependencies
 
   const { theme } = useTheme();
 

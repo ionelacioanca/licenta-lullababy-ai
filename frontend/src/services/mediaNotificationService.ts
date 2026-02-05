@@ -36,25 +36,12 @@ try {
   }
 
   // Set up notification categories with actions (for iOS and some Android versions)
+  // Simplified controls: STOP + Volume only (no Next/Previous)
   if (Notifications && Notifications.setNotificationCategoryAsync) {
     Notifications.setNotificationCategoryAsync('media_controls', [
       {
-        identifier: 'previous',
-        buttonTitle: '⏮️',
-        options: {
-          opensAppToForeground: false,
-        },
-      },
-      {
         identifier: 'play_pause',
-        buttonTitle: '⏯️',
-        options: {
-          opensAppToForeground: false,
-        },
-      },
-      {
-        identifier: 'next',
-        buttonTitle: '⏭️',
+        buttonTitle: '⏹️ Stop',
         options: {
           opensAppToForeground: false,
         },
