@@ -249,10 +249,14 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
             source={{ uri: bufferUrl, cache: 'force-cache' }}
             style={{ width: 0, height: 0, opacity: 0 }} // Complet invizibilă
             onLoad={() => {
-              // DOAR ACUM mutăm URL-ul gata încărcat în imaginea principală
+              // 1. Mutăm URL-ul imediat în imaginea vizibilă
               setCurrentUrl(bufferUrl);
-              // Așteptăm puțin pentru fluiditate și cerem următorul cadru
-              setTimeout(() => setRefreshTrigger(prev => prev + 1), 100);
+              
+              // 2. Reducem timpul de așteptare la 15ms.
+              // 100ms era prea mult (tăia practic 10 cadre pe secundă).
+              // 15ms este imperceptibil pentru ochiul uman, dar oferă procesorului
+              // un moment de răsuflare să nu blocheze interfața (UI Thread).
+              setTimeout(() => setRefreshTrigger(prev => prev + 1), 15);
             }}
           />
         </View>
