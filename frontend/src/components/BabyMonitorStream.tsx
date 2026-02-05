@@ -38,10 +38,10 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const [audioPermission, requestAudioPermission] = Audio.usePermissions();
   
-  // Double buffering - două imagini, exact ca pe iOS unde a mers perfect
-  const [imageA, setImageA] = useState(`${SNAPSHOT_URL}?t=${Date.now()}`);
-  const [imageB, setImageB] = useState(`${SNAPSHOT_URL}?t=${Date.now()}`);
-  const [showImageA, setShowImageA] = useState(true);
+  // Ghost Buffer strategy - Main image + invisible buffer
+  const [currentUrl, setCurrentUrl] = useState(`${SNAPSHOT_URL}?t=${Date.now()}`);
+  const [bufferUrl, setBufferUrl] = useState(`${SNAPSHOT_URL}?t=${Date.now()}`);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   
   const intervalRef = useRef<number | null>(null);
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
@@ -59,24 +59,12 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
 
   // Start/stop video refresh when component mounts/unmounts
   useEffect(() => {
-    intervalRef.current = setInterval(() => {
+    const triggerNext = () => {
       const timestamp = Date.now();
-      const newUrl = `${SNAPSHOT_URL}?t=${timestamp}`;
-      
-      // Pre-fetching: Forțăm Android să descarce imaginea în fundal înainte de a o afișa
-      Image.prefetch(newUrl);
-
-      if (showImageA) {
-        setImageB(newUrl);
-      } else {
-        setImageA(newUrl);
-      }
-    }, 400); // Am crescut ușor la 400ms pentru a da timp procesorului de Android să decodeze JPEG-ul
-
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
+      setBufferUrl(`${SNAPSHOT_URL}?t=${timestamp}`);
     };
-  }, [showImageA]);
+    triggerNext();
+  }, [refreshTrigger]);
 
   // Update clock every second
   useEffect(() => {
@@ -243,43 +231,28 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
           </View>
         )}
 
-        {/* Video Stream from Raspberry Pi - Double Buffering cu zIndex */}
+        {/* Video Stream from Raspberry Pi - Ghost Buffer Strategy */}
         <View style={styles.videoWrapper}>
-          {/* Imaginea A */}
+          {/* IMAGINEA PRINCIPALĂ (Cea vizibilă) */}
           <Image
-            source={{ 
-              uri: imageA,
-              // Folosim 'force-cache' împreună cu timestamp-ul din URL pentru a evita flicker-ul
-              cache: 'force-cache' 
-            }}
-            style={[
+            source={{ uri: currentUrl, cache: 'force-cache' }}
+            style={
               isFullscreenMode 
                 ? { position: 'absolute', width: height, height: width, transform: [{ rotate: '90deg' }] }
-                : StyleSheet.absoluteFill,
-              { zIndex: showImageA ? 2 : 1 } // Folosim zIndex în loc de opacitate 0 pentru a păstra imaginea veche sub cea nouă
-            ]}
+                : StyleSheet.absoluteFill
+            }
             resizeMode="cover"
-            onLoad={() => {
-              // Switch-ul se face doar după ce imaginea e încărcată complet
-              if (!showImageA) setShowImageA(true);
-            }}
           />
-          
-          {/* Imaginea B */}
+
+          {/* IMAGINEA BUFFER (Invizibilă, doar pentru pre-încărcare) */}
           <Image
-            source={{ 
-              uri: imageB,
-              cache: 'force-cache'
-            }}
-            style={[
-              isFullscreenMode 
-                ? { position: 'absolute', width: height, height: width, transform: [{ rotate: '90deg' }] }
-                : StyleSheet.absoluteFill,
-              { zIndex: showImageA ? 1 : 2 }
-            ]}
-            resizeMode="cover"
+            source={{ uri: bufferUrl, cache: 'force-cache' }}
+            style={{ width: 0, height: 0, opacity: 0 }} // Complet invizibilă
             onLoad={() => {
-              if (showImageA) setShowImageA(false);
+              // DOAR ACUM mutăm URL-ul gata încărcat în imaginea principală
+              setCurrentUrl(bufferUrl);
+              // Așteptăm puțin pentru fluiditate și cerem următorul cadru
+              setTimeout(() => setRefreshTrigger(prev => prev + 1), 100);
             }}
           />
         </View>
