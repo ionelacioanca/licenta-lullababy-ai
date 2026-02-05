@@ -10,6 +10,7 @@ import {
   Image,
   useWindowDimensions,
   ScrollView,
+  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Audio, Video, AVPlaybackStatus, ResizeMode } from "expo-av";
@@ -36,8 +37,12 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const [audioPermission, requestAudioPermission] = Audio.usePermissions();
+  
+  // Ghost Buffer strategy - Main image + invisible buffer
   const [currentUrl, setCurrentUrl] = useState(`${SNAPSHOT_URL}?t=${Date.now()}`);
-  const [nextUrl, setNextUrl] = useState(`${SNAPSHOT_URL}?t=${Date.now()}`);
+  const [bufferUrl, setBufferUrl] = useState(`${SNAPSHOT_URL}?t=${Date.now()}`);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  
   const intervalRef = useRef<number | null>(null);
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
   const [recordings, setRecordings] = useState<string[]>([]);
@@ -54,17 +59,12 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
 
   // Start/stop video refresh when component mounts/unmounts
   useEffect(() => {
-    // Pregătim următorul frame la fiecare 100ms
-    intervalRef.current = setInterval(() => {
-      setNextUrl(`${SNAPSHOT_URL}?t=${Date.now()}`);
-    }, 100);
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
+    const triggerNext = () => {
+      const timestamp = Date.now();
+      setBufferUrl(`${SNAPSHOT_URL}?t=${timestamp}`);
     };
-  }, []);
+    triggerNext();
+  }, [refreshTrigger]);
 
   // Update clock every second
   useEffect(() => {
@@ -231,35 +231,32 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
           </View>
         )}
 
-        {/* Video Stream from Raspberry Pi */}
+        {/* Video Stream from Raspberry Pi - Ghost Buffer Strategy */}
         <View style={styles.videoWrapper}>
-          {/* Imaginea de fundal (frame-ul vechi) */}
+          {/* IMAGINEA PRINCIPALĂ (Cea vizibilă) */}
           <Image
-            source={{ uri: currentUrl }}
+            source={{ uri: currentUrl, cache: 'force-cache' }}
             style={
               isFullscreenMode 
                 ? { position: 'absolute', width: height, height: width, transform: [{ rotate: '90deg' }] }
                 : StyleSheet.absoluteFill
             }
             resizeMode="cover"
-            fadeDuration={0}
           />
-          {/* Imaginea nouă care se încarcă deasupra */}
+
+          {/* IMAGINEA BUFFER (Invizibilă, doar pentru pre-încărcare) */}
           <Image
-            source={{ uri: nextUrl }}
-            style={
-              isFullscreenMode 
-                ? { position: 'absolute', width: height, height: width, transform: [{ rotate: '90deg' }] }
-                : StyleSheet.absoluteFill
-            }
-            resizeMode="cover"
-            fadeDuration={0}
+            source={{ uri: bufferUrl, cache: 'force-cache' }}
+            style={{ width: 0, height: 0, opacity: 0 }} // Complet invizibilă
             onLoad={() => {
-              // Când frame-ul nou e gata, devine frame-ul curent
-              setCurrentUrl(nextUrl);
-            }}
-            onError={(error) => {
-              console.error('Frame error:', error.nativeEvent.error);
+              // 1. Mutăm URL-ul imediat în imaginea vizibilă
+              setCurrentUrl(bufferUrl);
+              
+              // 2. Reducem timpul de așteptare la 15ms.
+              // 100ms era prea mult (tăia practic 10 cadre pe secundă).
+              // 15ms este imperceptibil pentru ochiul uman, dar oferă procesorului
+              // un moment de răsuflare să nu blocheze interfața (UI Thread).
+              setTimeout(() => setRefreshTrigger(prev => prev + 1), 15);
             }}
           />
         </View>

@@ -57,7 +57,7 @@ const BabiesListPage: React.FC = () => {
       }
 
       const response = await fetch(
-        `http://192.168.1.11:5000/api/baby/parent/${parentId}`,
+        `http://192.168.1.20:5000/api/baby/parent/${parentId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -80,7 +80,7 @@ const BabiesListPage: React.FC = () => {
         const babiesWithAvatars = data.map((baby: any) => ({
           ...baby,
           avatarColor: baby.avatarColor || "#00CFFF",
-          avatarImage: baby.avatarImage ? `http://192.168.1.11:5000${baby.avatarImage}` : null,
+          avatarImage: baby.avatarImage ? `http://192.168.1.20:5000${baby.avatarImage}` : null,
         }));
         setBabies(babiesWithAvatars);
         console.log("Babies loaded with avatars:", babiesWithAvatars);

@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   Image,
   Alert,
+  AppState,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Audio } from "expo-av";
@@ -14,6 +15,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Sound, getDefaultSounds } from "../services/soundService";
 import { useTheme } from "../contexts/ThemeContext";
 import { useLanguage } from "../contexts/LanguageContext";
+import { mediaNotificationService } from "../services/mediaNotificationService";
 
 // Raspberry Pi Configuration
 const PI_IP = "192.168.1.44:5001";
@@ -23,7 +25,7 @@ const SET_VOLUME_URL = `http://${PI_IP}/set_volume`;
 const STATUS_URL = `http://${PI_IP}/status`;
 
 // Backend server configuration
-const BACKEND_SERVER = "http://192.168.1.11:5000";
+const BACKEND_SERVER = "http://192.168.1.20:5000";
 
 // Helper function to get full audio URL
 const getFullAudioUrl = (audioUrl: string): string => {
@@ -67,9 +69,13 @@ ref
   const startTimeRef = useRef<number | null>(null); // Track when playback started
   const currentIndexRef = useRef<number>(0); // Ref to always have current index
   const playlistRef = useRef<Sound[]>([]); // Ref to always have current playlist
+  const currentSoundRef = useRef<Sound | null>(null); // Ref to always have current sound
+  const volumeRef = useRef<number>(0.7); // Ref to always have current volume
+  const isPlayingRef = useRef<boolean>(false); // Ref to always have current playing state
+  const useRaspberryPiRef = useRef<boolean>(useRaspberryPi); // Ref for useRaspberryPi prop
   const { t } = useLanguage();
 
-  // Update refs when playlist or currentIndex changes
+  // Update refs when state changes
   useEffect(() => {
     playlistRef.current = playlist;
   }, [playlist]);
@@ -77,6 +83,142 @@ ref
   useEffect(() => {
     currentIndexRef.current = currentIndex;
   }, [currentIndex]);
+
+  useEffect(() => {
+    currentSoundRef.current = currentSound;
+  }, [currentSound]);
+
+  useEffect(() => {
+    volumeRef.current = volume;
+  }, [volume]);
+
+  useEffect(() => {
+    isPlayingRef.current = isPlaying;
+  }, [isPlaying]);
+
+  useEffect(() => {
+    useRaspberryPiRef.current = useRaspberryPi;
+  }, [useRaspberryPi]);
+
+  // Initialize media notification service
+  useEffect(() => {
+    const initNotifications = async () => {
+      const success = await mediaNotificationService.initialize();
+      if (success) {
+        // Register notification handlers using refs to avoid stale closures
+        mediaNotificationService.registerHandlers(
+          () => {
+            console.log('🎵 Toggle play/pause from notification - using refs');
+            console.log('Current playing state:', isPlayingRef.current);
+            console.log('Current sound:', currentSoundRef.current?.name);
+            
+            if (isPlayingRef.current) {
+              // Pause
+              console.log('⏸️ Pausing sound...');
+              pauseSound();
+            } else {
+              // Play/Resume
+              console.log('▶️ Playing sound...');
+              if (useRaspberryPiRef.current) {
+                // For Raspberry Pi, always play the current sound
+                if (currentSoundRef.current) {
+                  playSound(currentSoundRef.current);
+                }
+              } else {
+                // For phone, check if sound is loaded
+                if (soundRef.current) {
+                  resumeSound();
+                } else if (currentSoundRef.current) {
+                  playSound(currentSoundRef.current);
+                }
+              }
+            }
+          },
+          () => {
+            console.log('⏭️ Next from notification - using refs');
+            if (playlistRef.current.length === 0) return;
+            const newIndex = currentIndexRef.current < playlistRef.current.length - 1 
+              ? currentIndexRef.current + 1 
+              : 0;
+            const nextSound = playlistRef.current[newIndex];
+            setCurrentIndex(newIndex);
+            setCurrentSound(nextSound);
+            saveLastPlayedSound(nextSound);
+            playSound(nextSound);
+          },
+          () => {
+            console.log('⏮️ Previous from notification - using refs');
+            if (playlistRef.current.length === 0) return;
+            const newIndex = currentIndexRef.current > 0 
+              ? currentIndexRef.current - 1 
+              : playlistRef.current.length - 1;
+            const prevSound = playlistRef.current[newIndex];
+            setCurrentIndex(newIndex);
+            setCurrentSound(prevSound);
+            saveLastPlayedSound(prevSound);
+            playSound(prevSound);
+          },
+          async () => {
+            console.log('🔊 Volume up from notification - using refs');
+            const newVolume = Math.min(1, volumeRef.current + 0.1);
+            setVolume(newVolume);
+            await setVolumeOnDevice(newVolume);
+          },
+          async () => {
+            console.log('🔉 Volume down from notification - using refs');
+            const newVolume = Math.max(0, volumeRef.current - 0.1);
+            setVolume(newVolume);
+            await setVolumeOnDevice(newVolume);
+          }
+        );
+      }
+    };
+
+    initNotifications();
+
+    // Cleanup on unmount
+    return () => {
+      mediaNotificationService.cleanup();
+    };
+  }, []);
+
+  // Update notification ONLY when playback state or song changes - NOT on position updates
+  useEffect(() => {
+    if (currentSound && isPlaying) {
+      const fullAudioUrl = getFullAudioUrl(currentSound.audioUrl);
+      mediaNotificationService.showMediaNotification({
+        title: currentSound.title,
+        artist: currentSound.artist || 'LullaBaby',
+        album: currentSound.category || 'Lullabies',
+        imageUrl: currentSound.thumbnailUrl,
+        audioUrl: fullAudioUrl,
+        isPlaying: true,
+        duration: duration,
+        volume: volume, // Include current volume
+      });
+    } else if (!isPlaying && currentSound) {
+      // Update to show paused state
+      const fullAudioUrl = getFullAudioUrl(currentSound.audioUrl);
+      mediaNotificationService.updateMediaNotification({
+        title: currentSound.title,
+        artist: currentSound.artist || 'LullaBaby',
+        album: currentSound.category || 'Lullabies',
+        imageUrl: currentSound.thumbnailUrl,
+        audioUrl: fullAudioUrl,
+        isPlaying: false,
+        volume: volume, // Include current volume
+      });
+    }
+  }, [isPlaying, currentSound, volume]); // Added volume to dependencies
+
+  // Hide notification when component unmounts or sound is stopped
+  useEffect(() => {
+    return () => {
+      if (!isPlaying) {
+        mediaNotificationService.hideMediaNotification();
+      }
+    };
+  }, [isPlaying]);
 
   // Expose stopPlayback method to parent components
   useImperativeHandle(ref, () => ({
@@ -487,6 +629,9 @@ ref
           // Reset position and start time
           setPosition(0);
           startTimeRef.current = null;
+          
+          // Hide notification when stopped
+          await mediaNotificationService.hideMediaNotification();
         }
       } else {
         // Pause on phone

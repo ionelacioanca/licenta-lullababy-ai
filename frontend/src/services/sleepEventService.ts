@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_URL = 'http://192.168.1.11:5000/api/sleep-events';
+const API_URL = 'http://192.168.1.20:5000/api/sleep-events';
 
 export interface SleepEvent {
   _id: string;
