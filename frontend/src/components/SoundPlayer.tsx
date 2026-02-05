@@ -65,7 +65,7 @@ ref
   const [playlist, setPlaylist] = useState<Sound[]>([]); // Available sounds
   const [currentIndex, setCurrentIndex] = useState(0); // Current sound index in playlist
   const soundRef = useRef<Audio.Sound | null>(null);
-  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const progressIntervalRef = useRef<number | null>(null);
   const startTimeRef = useRef<number | null>(null); // Track when playback started
   const currentIndexRef = useRef<number>(0); // Ref to always have current index
   const playlistRef = useRef<Sound[]>([]); // Ref to always have current playlist
@@ -73,6 +73,9 @@ ref
   const volumeRef = useRef<number>(0.7); // Ref to always have current volume
   const isPlayingRef = useRef<boolean>(false); // Ref to always have current playing state
   const useRaspberryPiRef = useRef<boolean>(useRaspberryPi); // Ref for useRaspberryPi prop
+  const togglePlayPauseRef = useRef<(() => void) | null>(null); // Ref for togglePlayPause function
+  const handleNextRef = useRef<(() => void) | null>(null); // Ref for handleNext function
+  const handlePreviousRef = useRef<(() => void) | null>(null); // Ref for handlePrevious function
   const { t } = useLanguage();
 
   // Update refs when state changes
@@ -108,55 +111,22 @@ ref
         // Register notification handlers using refs to avoid stale closures
         mediaNotificationService.registerHandlers(
           () => {
-            console.log('🎵 Toggle play/pause from notification - using refs');
-            console.log('Current playing state:', isPlayingRef.current);
-            console.log('Current sound:', currentSoundRef.current?.name);
-            
-            if (isPlayingRef.current) {
-              // Pause
-              console.log('⏸️ Pausing sound...');
-              pauseSound();
-            } else {
-              // Play/Resume
-              console.log('▶️ Playing sound...');
-              if (useRaspberryPiRef.current) {
-                // For Raspberry Pi, always play the current sound
-                if (currentSoundRef.current) {
-                  playSound(currentSoundRef.current);
-                }
-              } else {
-                // For phone, check if sound is loaded
-                if (soundRef.current) {
-                  resumeSound();
-                } else if (currentSoundRef.current) {
-                  playSound(currentSoundRef.current);
-                }
-              }
+            console.log('🎵 Toggle play/pause from notification');
+            if (togglePlayPauseRef.current) {
+              togglePlayPauseRef.current();
             }
           },
           () => {
-            console.log('⏭️ Next from notification - using refs');
-            if (playlistRef.current.length === 0) return;
-            const newIndex = currentIndexRef.current < playlistRef.current.length - 1 
-              ? currentIndexRef.current + 1 
-              : 0;
-            const nextSound = playlistRef.current[newIndex];
-            setCurrentIndex(newIndex);
-            setCurrentSound(nextSound);
-            saveLastPlayedSound(nextSound);
-            playSound(nextSound);
+            console.log('⏭️ Next from notification');
+            if (handleNextRef.current) {
+              handleNextRef.current();
+            }
           },
           () => {
-            console.log('⏮️ Previous from notification - using refs');
-            if (playlistRef.current.length === 0) return;
-            const newIndex = currentIndexRef.current > 0 
-              ? currentIndexRef.current - 1 
-              : playlistRef.current.length - 1;
-            const prevSound = playlistRef.current[newIndex];
-            setCurrentIndex(newIndex);
-            setCurrentSound(prevSound);
-            saveLastPlayedSound(prevSound);
-            playSound(prevSound);
+            console.log('⏮️ Previous from notification');
+            if (handlePreviousRef.current) {
+              handlePreviousRef.current();
+            }
           },
           async () => {
             console.log('🔊 Volume up from notification - using refs');
@@ -630,8 +600,8 @@ ref
           setPosition(0);
           startTimeRef.current = null;
           
-          // Hide notification when stopped
-          await mediaNotificationService.hideMediaNotification();
+          // Don't hide notification - keep it visible in paused state
+          // The notification will update to show pause button via useEffect
         }
       } else {
         // Pause on phone
@@ -753,6 +723,13 @@ ref
     saveLastPlayedSound(nextSound);
     playSound(nextSound);
   };
+
+  // Update refs when functions change
+  useEffect(() => {
+    togglePlayPauseRef.current = togglePlayPause;
+    handleNextRef.current = handleNext;
+    handlePreviousRef.current = handlePrevious;
+  });
 
   const { theme } = useTheme();
 
