@@ -138,6 +138,9 @@ ref
           await AsyncStorage.setItem('musicPlayerState', JSON.stringify({ ...state, isPlaying: false }));
         }
         
+        // Ascunde notificarea
+        mediaNotificationService.hideMediaNotification();
+        
         // Actualizează UI
         setIsPlaying(false);
         setPiStatus('paused');
@@ -151,6 +154,9 @@ ref
   // Initialize media notification service
   useEffect(() => {
     const initNotifications = async () => {
+      // Clear any old notifications from previous sessions
+      await mediaNotificationService.clearAllNotifications();
+      
       const success = await mediaNotificationService.initialize();
       if (success) {
         console.log('📱 Registering notification handlers (simplified - STOP + Volume only)...');
@@ -198,18 +204,9 @@ ref
         duration: duration,
         volume: volume, // Include current volume
       });
-    } else if (!isPlaying && currentSound) {
-      // Update to show paused state
-      const fullAudioUrl = getFullAudioUrl(currentSound.audioUrl);
-      mediaNotificationService.updateMediaNotification({
-        title: currentSound.title,
-        artist: currentSound.artist || 'LullaBaby',
-        album: currentSound.category || 'Lullabies',
-        imageUrl: currentSound.thumbnailUrl,
-        audioUrl: fullAudioUrl,
-        isPlaying: false,
-        volume: volume, // Include current volume
-      });
+    } else if (!isPlaying) {
+      // Hide notification when playback stops
+      mediaNotificationService.hideMediaNotification();
     }
   }, [isPlaying, currentSound, volume]); // Added volume to dependencies
 
