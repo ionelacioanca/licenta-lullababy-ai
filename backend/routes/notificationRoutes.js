@@ -93,6 +93,13 @@ router.post('/motion-detected', async (req, res) => {
         // Send push notifications
         const pushPromises = users.map(async (user) => {
             try {
+                console.log(`📤 [NOTIFICATION] Sending push to user ${user.email}, pushToken: ${user.pushToken ? user.pushToken.substring(0, 30) + '...' : 'UNDEFINED'}`);
+                
+                if (!user.pushToken) {
+                    console.error(`❌ [NOTIFICATION] User ${user.email} has no pushToken!`);
+                    return { success: false, error: 'No push token' };
+                }
+                
                 const result = await sendPushNotification(
                     user.pushToken,
                     '🚼 Motion Detected',
@@ -100,7 +107,7 @@ router.post('/motion-detected', async (req, res) => {
                     { type: 'motion-detected' }
                 );
                 
-                console.log('Push notification result:', result);
+                console.log(`✅ [NOTIFICATION] Push result for ${user.email}:`, result);
                 return result;
             } catch (error) {
                 console.error(`Error sending push to user ${user._id}:`, error);
@@ -163,6 +170,13 @@ router.post('/baby-woke-up', async (req, res) => {
         
         const pushPromises = users.map(async (user) => {
             try {
+                console.log(`📤 [NOTIFICATION] Sending push to user ${user.email}, pushToken: ${user.pushToken ? user.pushToken.substring(0, 30) + '...' : 'UNDEFINED'}`);
+                
+                if (!user.pushToken) {
+                    console.error(`❌ [NOTIFICATION] User ${user.email} has no pushToken!`);
+                    return { success: false, error: 'No push token' };
+                }
+                
                 const result = await sendPushNotification(
                     user.pushToken,
                     '👶 Baby Woke Up',
@@ -170,6 +184,7 @@ router.post('/baby-woke-up', async (req, res) => {
                     { type: 'baby-woke-up' }
                 );
                 
+                console.log(`✅ [NOTIFICATION] Push result for ${user.email}:`, result);
                 return result;
             } catch (error) {
                 console.error(`Error sending push:`, error);
@@ -224,6 +239,13 @@ router.post('/baby-crying', async (req, res) => {
         
         const pushPromises = users.map(async (user) => {
             try {
+                console.log(`📤 [NOTIFICATION] Sending push to user ${user.email}, pushToken: ${user.pushToken ? user.pushToken.substring(0, 30) + '...' : 'UNDEFINED'}`);
+                
+                if (!user.pushToken) {
+                    console.error(`❌ [NOTIFICATION] User ${user.email} has no pushToken!`);
+                    return { success: false, error: 'No push token' };
+                }
+                
                 const result = await sendPushNotification(
                     user.pushToken,
                     '😢 Baby Crying',
@@ -231,6 +253,7 @@ router.post('/baby-crying', async (req, res) => {
                     { type: 'baby-crying', priority: 'high' }
                 );
                 
+                console.log(`✅ [NOTIFICATION] Push result for ${user.email}:`, result);
                 return result;
             } catch (error) {
                 console.error(`Error sending push:`, error);

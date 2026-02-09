@@ -124,6 +124,34 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// Register push token for notifications
+router.post('/register-push-token', auth, async (req, res) => {
+  try {
+    const { pushToken } = req.body;
+    const userId = req.user.userId;
+
+    if (!pushToken) {
+      return res.status(400).json({ message: 'Push token is required' });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { pushToken },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    console.log(`✅ Push token registered for user ${user.email}: ${pushToken}`);
+    res.json({ message: 'Push token registered successfully', pushToken });
+  } catch (error) {
+    console.error('❌ Error registering push token:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
 // Google OAuth - Check if user exists
 router.post('/auth/google/check', async (req, res) => {
   const { email, name, googleId, picture } = req.body;
