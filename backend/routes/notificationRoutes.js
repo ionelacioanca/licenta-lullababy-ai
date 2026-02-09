@@ -163,24 +163,23 @@ router.post('/baby-woke-up', async (req, res) => {
         
         const pushPromises = users.map(async (user) => {
             try {
-                const message = {
-                    to: user.pushToken,
-                    sound: 'default',
-                    title: '👶 Baby Woke Up',
-                    body: 'Your baby just woke up!',
-                    data: { type: 'baby-woke-up' }
-                };
-                
-                const response = await fetch('https://exp.host/--/api/v2/push/send', {
-                    method: 'POST',
-                    heresult = await sendPushNotification(
+                const result = await sendPushNotification(
                     user.pushToken,
                     '👶 Baby Woke Up',
                     'Your baby just woke up!',
                     { type: 'baby-woke-up' }
                 );
                 
-                return resultifications sent successfully' });
+                return result;
+            } catch (error) {
+                console.error(`Error sending push:`, error);
+                return null;
+            }
+        });
+        
+        await Promise.all(pushPromises);
+        
+        res.status(200).json({ message: 'Notifications sent successfully' });
     } catch (error) {
         console.error('❌ [NOTIFICATION] Error:', error);
         res.status(500).json({ error: 'Failed to process notification' });
@@ -225,15 +224,6 @@ router.post('/baby-crying', async (req, res) => {
         
         const pushPromises = users.map(async (user) => {
             try {
-                const message = {
-                    to: user.pushToken,
-                    sound: 'default',
-                    title: '😢 Baby Crying',
-                    body: 'Your baby is crying! Please check on them.',
-                    data: { type: 'baby-crying' },
-                    priority: 'high'
-                };
-                
                 const result = await sendPushNotification(
                     user.pushToken,
                     '😢 Baby Crying',
@@ -241,7 +231,15 @@ router.post('/baby-crying', async (req, res) => {
                     { type: 'baby-crying', priority: 'high' }
                 );
                 
-                return result
+                return result;
+            } catch (error) {
+                console.error(`Error sending push:`, error);
+                return null;
+            }
+        });
+        
+        await Promise.all(pushPromises);
+        
         res.status(200).json({ message: 'Notifications sent successfully' });
     } catch (error) {
         console.error('❌ [NOTIFICATION] Error:', error);
