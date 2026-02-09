@@ -3,6 +3,7 @@ import User from '../models/User.js';
 import Baby from '../models/Baby.js';
 import Alert from '../models/Alert.js';
 import LinkRequest from '../models/LinkRequest.js';
+import { sendPushNotification } from '../services/pushNotificationService.js';
 
 const router = express.Router();
 
@@ -92,24 +93,14 @@ router.post('/motion-detected', async (req, res) => {
         // Send push notifications
         const pushPromises = users.map(async (user) => {
             try {
-                const message = {
-                    to: user.pushToken,
-                    sound: 'default',
-                    title: '🚼 Motion Detected',
-                    body: 'Your baby is moving! Check the monitor.',
-                    data: { type: 'motion-detected' }
-                };
+                const result = await sendPushNotification(
+                    user.pushToken,
+                    '🚼 Motion Detected',
+                    'Your baby is moving! Check the monitor.',
+                    { type: 'motion-detected' }
+                );
                 
-                const response = await fetch('https://exp.host/--/api/v2/push/send', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(message)
-                });
-                
-                const result = await response.json();
-                console.log('Push notification sent:', result);
+                console.log('Push notification result:', result);
                 return result;
             } catch (error) {
                 console.error(`Error sending push to user ${user._id}:`, error);
@@ -182,23 +173,14 @@ router.post('/baby-woke-up', async (req, res) => {
                 
                 const response = await fetch('https://exp.host/--/api/v2/push/send', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(message)
-                });
+                    heresult = await sendPushNotification(
+                    user.pushToken,
+                    '👶 Baby Woke Up',
+                    'Your baby just woke up!',
+                    { type: 'baby-woke-up' }
+                );
                 
-                return await response.json();
-            } catch (error) {
-                console.error(`Error sending push:`, error);
-                return null;
-            }
-        });
-        
-        await Promise.all(pushPromises);
-        console.log('✅ [NOTIFICATION] Wake up notifications sent');
-        
-        res.status(200).json({ message: 'Notifications sent successfully' });
+                return resultifications sent successfully' });
     } catch (error) {
         console.error('❌ [NOTIFICATION] Error:', error);
         res.status(500).json({ error: 'Failed to process notification' });
@@ -252,24 +234,14 @@ router.post('/baby-crying', async (req, res) => {
                     priority: 'high'
                 };
                 
-                const response = await fetch('https://exp.host/--/api/v2/push/send', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(message)
-                });
+                const result = await sendPushNotification(
+                    user.pushToken,
+                    '😢 Baby Crying',
+                    'Your baby is crying! Please check on them.',
+                    { type: 'baby-crying', priority: 'high' }
+                );
                 
-                return await response.json();
-            } catch (error) {
-                console.error(`Error sending push:`, error);
-                return null;
-            }
-        });
-        
-        await Promise.all(pushPromises);
-        console.log('✅ [NOTIFICATION] Crying notifications sent');
-        
+                return result
         res.status(200).json({ message: 'Notifications sent successfully' });
     } catch (error) {
         console.error('❌ [NOTIFICATION] Error:', error);
