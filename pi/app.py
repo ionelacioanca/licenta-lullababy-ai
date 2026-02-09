@@ -114,17 +114,16 @@ def background_frame_reader():
                             is_moving = motion_score > 50000
                             
                             if is_moving:
-                                    
-                                    # Trimite notificare de motion detected cu cooldown
-                                    global last_motion_notification_time
-                                    current_time = time.time()
-                                    if current_time - last_motion_notification_time > NOTIFICATION_COOLDOWN:
-                                        print("📤 [NOTIFICARE] Trimit notificare de motion detected")
-                                        threading.Thread(target=send_notification, args=('motion-detected',)).start()
-                                        last_motion_notification_time = current_time
-                                    else:
-                                        time_remaining = int(NOTIFICATION_COOLDOWN - (current_time - last_motion_notification_time))
-                                        print(f"⏳ [NOTIFICARE] Cooldown activ - {time_remaining}s rămase până la următoarea notificare")
+                                # Trimite notificare de motion detected cu cooldown
+                                global last_motion_notification_time
+                                current_time = time.time()
+                                if current_time - last_motion_notification_time > NOTIFICATION_COOLDOWN:
+                                    print("📤 [NOTIFICARE] Trimit notificare de motion detected")
+                                    threading.Thread(target=send_notification, args=('motion-detected',)).start()
+                                    last_motion_notification_time = current_time
+                                else:
+                                    time_remaining = int(NOTIFICATION_COOLDOWN - (current_time - last_motion_notification_time))
+                                    print(f"⏳ [NOTIFICARE] Cooldown activ - {time_remaining}s rămase până la următoarea notificare")
                                 
                                 last_activity_time = time.time() # Update activitate
                                 if not motion_detected:
@@ -135,18 +134,7 @@ def background_frame_reader():
                             
                             if time.time() > recording_until:
                                 motion_detected = False
-
-                                        
-                                        # Trimite notificare că bebelușul s-a trezit cu cooldown
-                                        global last_wakeup_notification_time
-                                        current_time = time.time()
-                                        if current_time - last_wakeup_notification_time > NOTIFICATION_COOLDOWN:
-                                            print("📤 [NOTIFICARE] Trimit notificare de baby woke up")
-                                            threading.Thread(target=send_notification, args=('baby-woke-up',)).start()
-                                            last_wakeup_notification_time = current_time
-                                        else:
-                                            time_remaining = int(NOTIFICATION_COOLDOWN - (current_time - last_wakeup_notification_time))
-                                            print(f"⏳ [NOTIFICARE] Cooldown activ pentru wake-up - {time_remaining}s rămase")
+                            
                             # LOGICĂ SOMN
                             if is_moving:
                                 if current_baby_status == "Adormit":
@@ -159,6 +147,17 @@ def background_frame_reader():
                                         status_start_time = time.time()
                                         motion_start_time = None
                                         print("--- [EVENT] Bebelușul s-a trezit! ---")
+                                        
+                                        # Trimite notificare că bebelușul s-a trezit cu cooldown
+                                        global last_wakeup_notification_time
+                                        current_time = time.time()
+                                        if current_time - last_wakeup_notification_time > NOTIFICATION_COOLDOWN:
+                                            print("📤 [NOTIFICARE] Trimit notificare de baby woke up")
+                                            threading.Thread(target=send_notification, args=('baby-woke-up',)).start()
+                                            last_wakeup_notification_time = current_time
+                                        else:
+                                            time_remaining = int(NOTIFICATION_COOLDOWN - (current_time - last_wakeup_notification_time))
+                                            print(f"⏳ [NOTIFICARE] Cooldown activ pentru wake-up - {time_remaining}s rămase")
                             else:
                                 # NU e mișcare
                                 motion_start_time = None # Resetăm confirmarea trezirii
