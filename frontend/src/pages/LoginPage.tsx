@@ -15,6 +15,7 @@ import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import ForgotPasswordModal from "../components/ForgotPasswordModal";
 import { useLanguage } from "../contexts/LanguageContext";
+import { pushNotificationService } from "../services/pushNotificationService";
 
 const LoginPage: React.FC = () => {
   const router = useRouter();
@@ -137,6 +138,17 @@ const LoginPage: React.FC = () => {
 
         await saveUserData(data);
         setMessage("Login successful!");
+        
+        // Initialize push notifications after login
+        try {
+          console.log('🚀 Initializing push notifications after login...');
+          const pushToken = await pushNotificationService.initialize();
+          if (pushToken) {
+            console.log('✅ Push notifications registered:', pushToken);
+          }
+        } catch (pushError) {
+          console.warn('⚠️ Failed to initialize push notifications:', pushError);
+        }
         
         // Navigate to dashboard after a brief delay to ensure storage is complete
         setTimeout(() => {
