@@ -14,6 +14,7 @@ import linkRequestRouter from './routes/linkRequestRoutes.js';
 import messageRouter from './routes/messageRoutes.js';
 import alertRouter from './routes/alertRoutes.js';
 import sleepEventRouter from './routes/sleepEventRoutes.js';
+import notificationRouter from './routes/notificationRoutes.js';
 import auth from './middleware/authMiddleware.js';
 import cors from 'cors';
 import emailService from './services/emailService.js';
@@ -40,6 +41,7 @@ app.use('/api/link-request', linkRequestRouter);
 app.use('/api/messages', messageRouter);
 app.use('/api/alerts', alertRouter);
 app.use('/api/sleep-events', sleepEventRouter);
+app.use('/api/notifications', notificationRouter);
 console.log('Chatbot routes registered at /api');
 console.log('Growth routes registered at /api/growth');
 console.log('Calendar routes registered at /api/calendar');
@@ -67,7 +69,7 @@ async function main() {
         const server = app.listen(PORT, () => {
             console.log(`Server running on port ${PORT}`);
             console.log(`Server accessible at:`);
-            console.log(`  - http://localhost:${PORT}`);
+            console.log(`  - http://localhost:$1PORT}`);
             console.log(`  - http://192.168.1.20:${PORT} (WiFi)`);
         });
 
