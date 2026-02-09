@@ -5,6 +5,7 @@ import subprocess
 import time
 import threading
 import datetime
+import requests
 from pymongo import MongoClient
 from flask import Flask, Response, request, jsonify, send_from_directory, send_file
 
@@ -12,6 +13,7 @@ app = Flask(__name__)
 
 # --- CONFIGURARE ---
 ALSA_DEVICE = "hw:0,0"
+BACKEND_SERVER = "http://192.168.1.21:5000"  # Backend server pentru notificări
 
 current_playback = {
     "status": "stopped",
@@ -34,6 +36,11 @@ except Exception as e:
 RECORDINGS_DIR = "/home/pi/recordings"
 if not os.path.exists(RECORDINGS_DIR):
     os.makedirs(RECORDINGS_DIR)
+
+# Cooldown pentru notificări (în secunde)
+NOTIFICATION_COOLDOWN = 60  # 1 minut între notificări
+last_motion_notification_time = 0
+last_wakeup_notification_time = 0
 
 last_frame = None
 frame_lock = threading.Lock()
@@ -107,6 +114,18 @@ def background_frame_reader():
                             is_moving = motion_score > 50000
                             
                             if is_moving:
+                                    
+                                    # Trimite notificare de motion detected cu cooldown
+                                    global last_motion_notification_time
+                                    current_time = time.time()
+                                    if current_time - last_motion_notification_time > NOTIFICATION_COOLDOWN:
+                                        print("📤 [NOTIFICARE] Trimit notificare de motion detected")
+                                        threading.Thread(target=send_notification, args=('motion-detected',)).start()
+                                        last_motion_notification_time = current_time
+                                    else:
+                                        time_remaining = int(NOTIFICATION_COOLDOWN - (current_time - last_motion_notification_time))
+                                        print(f"⏳ [NOTIFICARE] Cooldown activ - {time_remaining}s rămase până la următoarea notificare")
+                                
                                 last_activity_time = time.time() # Update activitate
                                 if not motion_detected:
                                     print(f"DEBUG: Miscare detectata (Score: {motion_score})")
@@ -117,6 +136,17 @@ def background_frame_reader():
                             if time.time() > recording_until:
                                 motion_detected = False
 
+                                        
+                                        # Trimite notificare că bebelușul s-a trezit cu cooldown
+                                        global last_wakeup_notification_time
+                                        current_time = time.time()
+                                        if current_time - last_wakeup_notification_time > NOTIFICATION_COOLDOWN:
+                                            print("📤 [NOTIFICARE] Trimit notificare de baby woke up")
+                                            threading.Thread(target=send_notification, args=('baby-woke-up',)).start()
+                                            last_wakeup_notification_time = current_time
+                                        else:
+                                            time_remaining = int(NOTIFICATION_COOLDOWN - (current_time - last_wakeup_notification_time))
+                                            print(f"⏳ [NOTIFICARE] Cooldown activ pentru wake-up - {time_remaining}s rămase")
                             # LOGICĂ SOMN
                             if is_moving:
                                 if current_baby_status == "Adormit":
@@ -175,7 +205,46 @@ def start_recording_event():
         except Exception as e:
             print(f"Eroare: {e}")
 
-        finally:
+     end_notification(notification_type, user_id=None, baby_id=None):
+    """
+    Trimite notificare push către backend prin cerere POST
+    notification_type: 'motion-detected', 'baby-woke-up', 'baby-crying'
+    """
+    try:
+        url = f"{BACKEND_SERVER}/api/notifications/{notification_type}"
+        # Construim obiectul data astfel încât să nu trimitem 'None' dacă nu avem ID-uri
+        data = {}
+        if user_id:
+            data['userId'] = user_id
+        if baby_id:
+            data['babyId'] = baby_id
+        
+        # DEBUG: Afișăm exact ce trimitem
+        print(f"🔄 [NOTIFICARE] Trimit către: {url}")
+        print(f"🔄 [NOTIFICARE] Cu date: {data}")
+            
+        # Trimitem cererea cu un timeout de 5 secunde
+        response = requests.post(url, json=data, timeout=5)
+        
+        # DEBUG: Afișăm răspunsul complet
+        print(f"🔄 [NOTIFICARE] Status Code: {response.status_code}")
+        print(f"🔄 [NOTIFICARE] Response: {response.text}")
+        
+        if response.status_code == 200:
+            print(f"✅ [NOTIFICARE] Backend-ul a procesat alerta: {notification_type}")
+        else:
+            print(f"⚠️ [NOTIFICARE] Backend-ul a răspuns cu codul: {response.status_code}")
+    except requests.exceptions.Timeout:
+        print(f"⏱️ [NOTIFICARE] Timeout - Backend-ul nu răspunde în 5 secunde")
+    except requests.exceptions.ConnectionError as e:
+        print(f"🔌 [NOTIFICARE] Eroare de conexiune - Backend offline sau probleme de rețea")
+        print(f"🔌 [NOTIFICARE] Detalii: {e}")
+    except requests.exceptions.RequestException as e:
+        print(f"❌ [NOTIFICARE] Eroare de rețea: {e}")
+    except Exception as e:
+        print(f"❌ [NOTIFICARE] Eroare neprevăzută: {e}")
+
+def s   finally:
             if out is not None:
                 out.release()
 
@@ -267,6 +336,10 @@ def get_thumbnail(filename):
 @app.route('/get_video/<filename>')
 def get_video(filename):
     # Această rută este cea pe care o apelezi din aplicație/browser
+# Pornim thread-ul de curățare automată a înregistrărilor vechi
+cleanup_thread = threading.Thread(target=cleanup_loop, daemon=True)
+cleanup_thread.start()
+
     return send_from_directory(RECORDINGS_DIR, filename, mimetype='video/mp4')
 
 # Endpoint pentru Frontend să vadă lista de videoclipuri
