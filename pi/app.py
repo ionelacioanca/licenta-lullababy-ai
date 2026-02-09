@@ -204,8 +204,30 @@ def start_recording_event():
 
         except Exception as e:
             print(f"Eroare: {e}")
+        finally:
+            if out is not None:
+                out.release()
 
-     end_notification(notification_type, user_id=None, baby_id=None):
+            # --- MODIFICARE AICI: Adăugăm flag-ul -r 10 în FFmpeg ---
+            avi_path = filepath
+            mp4_path = filepath.replace('.avi', '.mp4')
+
+            if os.path.exists(avi_path):
+                try:
+                    subprocess.run([
+                        'ffmpeg', '-i', avi_path,
+                        '-r', '10', # <--- Această linie fixează viteza
+                        '-c:v', 'copy',
+                        mp4_path, '-y'
+                    ], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+                    os.remove(avi_path)
+                    print(f"Conversie OK: {mp4_path}")
+                except Exception as e:
+                    print(f"Eroare FFmpeg: {e}")
+
+    threading.Thread(target=record).start()
+
+def send_notification(notification_type, user_id=None, baby_id=None):
     """
     Trimite notificare push către backend prin cerere POST
     notification_type: 'motion-detected', 'baby-woke-up', 'baby-crying'
@@ -243,29 +265,6 @@ def start_recording_event():
         print(f"❌ [NOTIFICARE] Eroare de rețea: {e}")
     except Exception as e:
         print(f"❌ [NOTIFICARE] Eroare neprevăzută: {e}")
-
-def s   finally:
-            if out is not None:
-                out.release()
-
-            # --- MODIFICARE AICI: Adăugăm flag-ul -r 10 în FFmpeg ---
-            avi_path = filepath
-            mp4_path = filepath.replace('.avi', '.mp4')
-
-            if os.path.exists(avi_path):
-                try:
-                    subprocess.run([
-                        'ffmpeg', '-i', avi_path,
-                        '-r', '10', # <--- Această linie fixează viteza
-                        '-c:v', 'copy',
-                        mp4_path, '-y'
-                    ], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
-                    os.remove(avi_path)
-                    print(f"Conversie OK: {mp4_path}")
-                except Exception as e:
-                    print(f"Eroare FFmpeg: {e}")
-
-    threading.Thread(target=record).start()
 
 def save_status_to_atlas(status, duration_minutes):
     try:
@@ -335,11 +334,6 @@ def get_thumbnail(filename):
 
 @app.route('/get_video/<filename>')
 def get_video(filename):
-    # Această rută este cea pe care o apelezi din aplicație/browser
-# Pornim thread-ul de curățare automată a înregistrărilor vechi
-cleanup_thread = threading.Thread(target=cleanup_loop, daemon=True)
-cleanup_thread.start()
-
     return send_from_directory(RECORDINGS_DIR, filename, mimetype='video/mp4')
 
 # Endpoint pentru Frontend să vadă lista de videoclipuri
@@ -489,6 +483,10 @@ def talkback():
         if os.path.exists(audio_path):
             os.remove(audio_path)
     return "OK", 200
+
+# Pornim thread-ul de curățare automată a înregistrărilor vechi
+cleanup_thread = threading.Thread(target=cleanup_loop, daemon=True)
+cleanup_thread.start()
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5001, threaded=True)
