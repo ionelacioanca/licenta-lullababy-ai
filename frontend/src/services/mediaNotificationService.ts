@@ -124,7 +124,7 @@ class MediaNotificationService {
             name: 'Media Playback',
             importance: Notifications.AndroidImportance.HIGH,
             vibrationPattern: [0],
-            lightColor: '#A2E884', // LullaBaby green
+            lightColor: '#A2E884', // Lullababy green
             sound: null,
             enableVibrate: false,
             showBadge: false,
@@ -259,7 +259,7 @@ class MediaNotificationService {
 
       const {
         title,
-        artist = 'LullaBaby',
+        artist = 'Lullababy',
         isPlaying,
         volume = 0.7,
       } = config;
@@ -300,7 +300,7 @@ class MediaNotificationService {
         content.priority = Notifications.AndroidNotificationPriority.MAX;
         content.channelId = 'media';
         content.categoryIdentifier = 'media_controls';
-        content.color = '#A2E884'; // LullaBaby green theme
+        content.color = '#A2E884'; // Lullababy green theme
       } else {
         // iOS supports categories with actions
         content.categoryIdentifier = 'media_controls';

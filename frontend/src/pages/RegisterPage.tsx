@@ -90,7 +90,7 @@ const RegisterPage: React.FC = () => {
         // For nanny/others, show message about link request
         if ((role === "nanny" || role === "others") && hasRelatedParent) {
           Alert.alert(
-            "Welcome to LullaBaby!",
+            "Welcome to Lullababy!",
             "A link request has been sent to the parent. Once they approve it, you'll be able to access their baby information.",
             [{ text: "OK", onPress: () => router.push("/dashboard") }]
           );
@@ -99,7 +99,7 @@ const RegisterPage: React.FC = () => {
         
         // Ask user if they want to add a baby now or later
         Alert.alert(
-          "Welcome to LullaBaby!",
+          "Welcome to Lullababy!",
           "Would you like to add your baby now?",
           [
             {

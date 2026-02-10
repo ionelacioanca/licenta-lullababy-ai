@@ -1,7 +1,7 @@
 # Google OAuth Setup Guide
 
 ## Overview
-This guide will help you set up Google OAuth authentication for LullaBaby AI.
+This guide will help you set up Google OAuth authentication for Lullababy AI.
 
 ## Prerequisites
 - Google Cloud Console account
@@ -13,7 +13,7 @@ This guide will help you set up Google OAuth authentication for LullaBaby AI.
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
 2. Click "Select a project" → "NEW PROJECT"
-3. Enter project name: "LullaBaby AI"
+3. Enter project name: "Lullababy AI"
 4. Click "CREATE"
 
 ### 2. Enable Google Sign-In API
@@ -27,7 +27,7 @@ This guide will help you set up Google OAuth authentication for LullaBaby AI.
 1. Go to "APIs & Services" → "OAuth consent screen"
 2. Select "External" user type
 3. Fill in required information:
-   - App name: **LullaBaby AI**
+   - App name: **Lullababy AI**
    - User support email: Your email
    - Developer contact email: Your email
 4. Click "SAVE AND CONTINUE"
@@ -44,7 +44,7 @@ This guide will help you set up Google OAuth authentication for LullaBaby AI.
 1. Go to "APIs & Services" → "Credentials"
 2. Click "CREATE CREDENTIALS" → "OAuth client ID"
 3. Select "Web application"
-4. Name: "LullaBaby Web"
+4. Name: "Lullababy Web"
 5. Add **BOTH** of these Authorized redirect URIs:
    ```
    https://auth.expo.io/@ionela.cioanca/licenta-lullababy-ai
@@ -63,7 +63,7 @@ This guide will help you set up Google OAuth authentication for LullaBaby AI.
 
 1. Click "CREATE CREDENTIALS" → "OAuth client ID"
 2. Select "Android"
-3. Name: "LullaBaby Android"
+3. Name: "Lullababy Android"
 4. Get your SHA-1 certificate fingerprint:
    ```bash
    cd frontend/android
@@ -82,7 +82,7 @@ This guide will help you set up Google OAuth authentication for LullaBaby AI.
 
 1. Click "CREATE CREDENTIALS" → "OAuth client ID"
 2. Select "iOS"
-3. Name: "LullaBaby iOS"
+3. Name: "Lullababy iOS"
 4. Bundle ID: Get from Xcode project or EAS build (e.g., `com.ionelacioanca.lullababy`)
 5. Click "CREATE"
 6. **COPY THE CLIENT ID**

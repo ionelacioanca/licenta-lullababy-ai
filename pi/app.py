@@ -41,6 +41,7 @@ if not os.path.exists(RECORDINGS_DIR):
 NOTIFICATION_COOLDOWN = 60  # 1 minut între notificări
 last_motion_notification_time = 0
 last_wakeup_notification_time = 0
+last_sleeping_notification_time = 0
 
 last_frame = None
 frame_lock = threading.Lock()
@@ -114,6 +115,9 @@ def background_frame_reader():
                             is_moving = motion_score > 50000
                             
                             if is_moving:
+                                # Update timestamp pentru ultima mișcare
+                                global last_sleeping_notification_time
+                                
                                 # Trimite notificare de motion detected cu cooldown
                                 global last_motion_notification_time
                                 current_time = time.time()
@@ -168,6 +172,17 @@ def background_frame_reader():
                                     current_baby_status = "Adormit"
                                     status_start_time = time.time()
                                     print("--- [EVENT] Bebelușul a adormit (Liniste detectata) ---")
+                                    
+                                    # Trimite notificare că bebelușul a adormit cu cooldown
+                                    global last_sleeping_notification_time
+                                    current_time = time.time()
+                                    if current_time - last_sleeping_notification_time > NOTIFICATION_COOLDOWN:
+                                        print("📤 [NOTIFICARE] Trimit notificare de baby fell asleep")
+                                        threading.Thread(target=send_notification, args=('baby-might-be-sleeping',)).start()
+                                        last_sleeping_notification_time = current_time
+                                    else:
+                                        time_remaining = int(NOTIFICATION_COOLDOWN - (current_time - last_sleeping_notification_time))
+                                        print(f"⏳ [NOTIFICARE] Cooldown activ pentru sleep - {time_remaining}s rămase")
 
                         prev_gray = gray
         except Exception as e:

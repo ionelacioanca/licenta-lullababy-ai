@@ -270,4 +270,73 @@ router.post('/baby-crying', async (req, res) => {
     }
 });
 
+// POST /api/notifications/baby-might-be-sleeping
+router.post('/baby-might-be-sleeping', async (req, res) => {
+    try {
+        console.log('🔔 [NOTIFICATION] Baby might be sleeping notification received');
+        
+        const users = await User.find({ pushToken: { $exists: true, $ne: null } });
+        
+        if (users.length === 0) {
+            return res.status(200).json({ message: 'No users with push tokens found' });
+        }
+        
+        const allAlertPromises = users.map(async (user) => {
+            const allBabies = await getAllUserBabies(user._id);
+            
+            if (allBabies.length === 0) {
+                return [];
+            }
+            
+            const babyAlerts = allBabies.map(async (userBaby) => {
+                const alert = await Alert.create({
+                    babyId: userBaby._id,
+                    type: 'system',
+                    title: '😴 Baby Might Be Sleeping',
+                    message: `${userBaby.name} might be sleeping - no motion detected for a while.`,
+                    severity: 'low',
+                    isRead: false,
+                    timestamp: new Date()
+                });
+                return alert;
+            });
+            
+            return Promise.all(babyAlerts);
+        });
+        
+        await Promise.all(allAlertPromises);
+        
+        const pushPromises = users.map(async (user) => {
+            try {
+                console.log(`📤 [NOTIFICATION] Sending push to user ${user.email}, pushToken: ${user.pushToken ? user.pushToken.substring(0, 30) + '...' : 'UNDEFINED'}`);
+                
+                if (!user.pushToken) {
+                    console.error(`❌ [NOTIFICATION] User ${user.email} has no pushToken!`);
+                    return { success: false, error: 'No push token' };
+                }
+                
+                const result = await sendPushNotification(
+                    user.pushToken,
+                    '😴 Baby Might Be Sleeping',
+                    'No motion detected for a while - baby might be sleeping.',
+                    { type: 'baby-might-be-sleeping' }
+                );
+                
+                console.log(`✅ [NOTIFICATION] Push result for ${user.email}:`, result);
+                return result;
+            } catch (error) {
+                console.error(`Error sending push:`, error);
+                return null;
+            }
+        });
+        
+        await Promise.all(pushPromises);
+        
+        res.status(200).json({ message: 'Notifications sent successfully' });
+    } catch (error) {
+        console.error('❌ [NOTIFICATION] Error:', error);
+        res.status(500).json({ error: 'Failed to process notification' });
+    }
+});
+
 export default router;
