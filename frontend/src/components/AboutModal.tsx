@@ -108,7 +108,7 @@ export default function AboutModal({ visible, onClose }: AboutModalProps) {
                 <View style={[styles.appIcon, { backgroundColor: theme.primary }]}>
                   <Ionicons name="heart" size={32} color="white" />
                 </View>
-                <Text style={[styles.appName, { color: theme.text }]}>LullaBaby AI</Text>
+                <Text style={[styles.appName, { color: theme.text }]}>Lullababy AI</Text>
                 <Text style={[styles.appVersion, { color: theme.textSecondary }]}>
                   {t('about.version')} 1.0.0
                 </Text>

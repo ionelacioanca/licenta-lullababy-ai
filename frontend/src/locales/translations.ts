@@ -3,7 +3,7 @@ export const translations = {
     // Open Page
     open: {
       welcome: 'Welcome to',
-      appName: 'LullaBaby AI',
+      appName: 'Lullababy AI',
       tagline: 'Your AI-powered parenting companion',
       selectLanguage: 'Select Language',
       login: 'Login',
@@ -305,7 +305,7 @@ export const translations = {
       specialization: 'Specialization',
       project: 'Project',
       version: 'Version',
-      description: 'LullaBaby AI is an innovative mobile application designed to support parents in caring for their babies. This comprehensive parenting companion integrates artificial intelligence to provide personalized advice, real-time monitoring, and smart insights for your baby\'s wellbeing.',
+      description: 'Lullababy AI is an innovative mobile application designed to support parents in caring for their babies. This comprehensive parenting companion integrates artificial intelligence to provide personalized advice, real-time monitoring, and smart insights for your baby\'s wellbeing.',
       features: 'Key Features:',
       feature1: 'Baby monitor with live streaming',
       feature2: 'AI-powered chatbot for parenting advice',
