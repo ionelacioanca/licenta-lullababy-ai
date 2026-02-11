@@ -15,7 +15,7 @@ const addGrowthRecord = async (req, res) => {
       });
     }
 
-    const record = await growthService.addGrowthRecord(
+    const result = await growthService.addGrowthRecord(
       babyId,
       parseFloat(weight),
       parseFloat(length),
@@ -42,7 +42,8 @@ const addGrowthRecord = async (req, res) => {
 
     res.status(201).json({
       message: 'Growth record added successfully',
-      data: record
+      data: result.growthRecord,
+      evaluation: result.evaluation
     });
   } catch (error) {
     console.error('Error adding growth record:', error);
