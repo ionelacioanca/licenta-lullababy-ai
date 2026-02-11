@@ -14,13 +14,29 @@ export interface GrowthRecord {
   updatedAt: string;
 }
 
+export interface GrowthEvaluation {
+  feedback: string;
+  weightStatus: string;
+  lengthStatus: string;
+  reference: {
+    weight: { min: number; median: number; max: number };
+    length: { min: number; median: number; max: number };
+    ageMonths: number;
+  };
+}
+
+export interface AddGrowthRecordResponse {
+  data: GrowthRecord;
+  evaluation: GrowthEvaluation;
+}
+
 // Add a new growth record
 export const addGrowthRecord = async (
   babyId: string,
   weight: string,
   length: string,
   notes?: string
-): Promise<GrowthRecord> => {
+): Promise<AddGrowthRecordResponse> => {
   try {
     const token = await AsyncStorage.getItem("token");
     console.log("Adding growth record:", { babyId, weight, length, notes });
@@ -42,9 +58,12 @@ export const addGrowthRecord = async (
       throw new Error(`Failed to add growth record: ${response.status}`);
     }
 
-    const data = await response.json();
-    console.log("Growth record added successfully:", data);
-    return data.data;
+    const responseData = await response.json();
+    console.log("Growth record added successfully:", responseData);
+    return {
+      data: responseData.data,
+      evaluation: responseData.evaluation
+    };
   } catch (error) {
     console.error("Error adding growth record:", error);
     throw error;

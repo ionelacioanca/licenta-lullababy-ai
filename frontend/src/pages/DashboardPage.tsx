@@ -462,9 +462,15 @@ const DashboardPage: React.FC = () => {
     if (!babyId) return;
     
     try {
-      await addGrowthRecord(babyId, weight, length);
+      const response = await addGrowthRecord(babyId, weight, length);
       setCurrentWeight(weight);
       setCurrentLength(length);
+      
+      // Show evaluation feedback
+      if (response.evaluation && response.evaluation.feedback) {
+        Alert.alert('Growth Evaluation', response.evaluation.feedback);
+      }
+      
       // Reload growth data
       await loadGrowthData(babyId, birthWeight || undefined, birthLength || undefined);
       setGrowthTrackingOpen(false);
