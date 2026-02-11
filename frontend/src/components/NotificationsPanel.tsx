@@ -259,6 +259,7 @@ export default function NotificationsPanel({
   // Growth notification handlers
   const handleGrowthNotificationPress = async (notification: GrowthNotification) => {
     try {
+      // Mark as read and navigate to growth tracking
       if (!notification.read) {
         await growthNotificationService.markAsRead(notification._id);
         setGrowthNotifications(prev => {
@@ -277,46 +278,41 @@ export default function NotificationsPanel({
         });
       }
       
-      // Navigate to child profile
+      // Navigate to child profile growth tracking section
       await AsyncStorage.setItem('selectedBabyId', notification.babyId._id);
       onClose();
-      router.push('/childProfile');
+      router.push('/childProfile?tab=growth');
     } catch (error) {
       console.error('Error handling growth notification:', error);
     }
   };
 
-  const handleMarkGrowthCompleted = async (notificationId: string) => {
+  const handleRecordGrowth = async (notification: GrowthNotification) => {
     try {
-      await growthNotificationService.markAsCompleted(notificationId);
-      RNAlert.alert('Success', 'Measurement reminder completed! Next reminder scheduled.');
-      loadGrowthNotifications();
+      // Mark as read (not completed, just read)
+      if (!notification.read) {
+        await growthNotificationService.markAsRead(notification._id);
+      }
+      
+      // Navigate to growth tracking to record measurement
+      await AsyncStorage.setItem('selectedBabyId', notification.babyId._id);
+      onClose();
+      router.push('/childProfile?tab=growth');
     } catch (error) {
-      console.error('Error marking growth notification as completed:', error);
-      RNAlert.alert('Error', 'Failed to complete notification');
+      console.error('Error navigating to growth tracking:', error);
+      RNAlert.alert('Error', 'Failed to open growth tracking');
     }
   };
 
-  const handleDismissGrowth = async (notificationId: string) => {
-    RNAlert.alert(
-      'Dismiss Reminder',
-      'Are you sure you want to dismiss this measurement reminder?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Dismiss',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await growthNotificationService.dismissNotification(notificationId);
-              loadGrowthNotifications();
-            } catch (error) {
-              console.error('Error dismissing growth notification:', error);
-            }
-          },
-        },
-      ]
-    );
+  const handleDismissGrowth = async (notificationId: string, e: any) => {
+    e.stopPropagation();
+    try {
+      await growthNotificationService.dismissNotification(notificationId);
+      loadGrowthNotifications();
+    } catch (error) {
+      console.error('Error dismissing growth notification:', error);
+      RNAlert.alert('Error', 'Failed to dismiss notification');
+    }
   };
 
   const formatGrowthDate = (dateString: string) => {
@@ -335,16 +331,6 @@ export default function NotificationsPanel({
       day: 'numeric',
       year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
     });
-  };
-
-  const getGrowthStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed': return '#4CAF50';
-      case 'dismissed': return '#9E9E9E';
-      case 'sent': return '#FF9800';
-      case 'pending': return '#2196F3';
-      default: return '#757575';
-    }
   };
 
   return (
@@ -567,53 +553,19 @@ export default function NotificationsPanel({
                         {notification.body}
                       </Text>
                       
-                      <View style={styles.growthMeta}>
-                        <View style={styles.statusBadge}>
-                          <Ionicons 
-                            name={
-                              notification.status === 'completed' ? 'checkmark-circle' :
-                              notification.status === 'dismissed' ? 'close-circle' :
-                              notification.status === 'sent' ? 'notifications' : 'time'
-                            } 
-                            size={12} 
-                            color={getGrowthStatusColor(notification.status)} 
-                          />
-                          <Text style={[styles.statusText, { color: getGrowthStatusColor(notification.status) }]}>
-                            {notification.status.charAt(0).toUpperCase() + notification.status.slice(1)}
-                          </Text>
-                        </View>
-                        <Text style={[styles.alertTime, { color: theme.textSecondary }]}>
-                          {formatGrowthDate(notification.scheduledDate)}
-                        </Text>
-                      </View>
-
-                      {/* Action Buttons */}
-                      {canTakeAction && (
-                        <View style={styles.growthActions}>
-                          <TouchableOpacity
-                            style={[styles.growthActionButton, { backgroundColor: theme.primary }]}
-                            onPress={(e) => {
-                              e.stopPropagation();
-                              handleMarkGrowthCompleted(notification._id);
-                            }}
-                          >
-                            <Ionicons name="checkmark" size={14} color="#fff" />
-                            <Text style={styles.growthActionText}>Recorded</Text>
-                          </TouchableOpacity>
-
-                          <TouchableOpacity
-                            style={[styles.growthActionButton, { backgroundColor: theme.textSecondary }]}
-                            onPress={(e) => {
-                              e.stopPropagation();
-                              handleDismissGrowth(notification._id);
-                            }}
-                          >
-                            <Ionicons name="close" size={14} color="#fff" />
-                            <Text style={styles.growthActionText}>Dismiss</Text>
-                          </TouchableOpacity>
-                        </View>
-                      )}
+                      <Text style={[styles.alertTime, { color: theme.textSecondary, marginTop: 4 }]}>
+                        {formatGrowthDate(notification.scheduledDate)}
+                      </Text>
                     </View>
+
+                    {/* Delete icon */}
+                    <TouchableOpacity
+                      style={styles.deleteButton}
+                      onPress={(e) => handleDismissGrowth(notification._id, e)}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                      <Ionicons name="trash-outline" size={20} color={theme.textSecondary} />
+                    </TouchableOpacity>
 
                     {isUnread && (
                       <View style={[styles.unreadDot, { backgroundColor: theme.primary }]} />
@@ -767,38 +719,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#fff',
-  },
-  growthMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 4,
-  },
-  statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  statusText: {
-    fontSize: 11,
-    fontWeight: '500',
-  },
-  growthActions: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 12,
-  },
-  growthActionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-    gap: 4,
-  },
-  growthActionText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
   },
 });
