@@ -8,11 +8,14 @@ import {
   ScrollView,
   ActivityIndicator,
   RefreshControl,
+  Alert as RNAlert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { growthNotificationService, GrowthNotification } from '../services/growthNotificationService';
+import { useRouter } from 'expo-router';
 
 type Alert = {
   _id: string;
@@ -44,7 +47,10 @@ export default function NotificationsPanel({
 }: NotificationsPanelProps) {
   const { theme } = useTheme();
   const { t } = useLanguage();
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState<'alerts' | 'growth'>('alerts');
   const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [growthNotifications, setGrowthNotifications] = useState<GrowthNotification[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 

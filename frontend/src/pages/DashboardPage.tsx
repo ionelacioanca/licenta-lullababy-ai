@@ -489,7 +489,7 @@ const DashboardPage: React.FC = () => {
         avatarColor={avatarColor}
         avatarImage={avatarImage}
         onEditProfile={() => router.push("/babiesList")}
-        onNotifications={() => router.push("/notifications")}
+        onNotifications={() => setNotificationsPanelOpen(true)}
         onMessages={() => setMessagesInboxOpen(true)}
         unreadNotifications={notificationsCount + pendingRequestsCount + growthNotificationsCount}
         unreadMessages={unreadMessagesCount}
