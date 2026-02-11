@@ -545,15 +545,17 @@ export default function NotificationsPanel({
                     style={[
                       styles.alertItem,
                       { backgroundColor: theme.card, borderColor: theme.border },
-                      isUnread && { backgroundColor: theme.surface, borderLeftWidth: 4, borderLeftColor: theme.primary }
+                      isUnread && { backgroundColor: theme.surface, borderLeftWidth: 4, borderLeftColor: '#4CAF50' }
                     ]}
                     onPress={() => handleGrowthNotificationPress(notification)}
                   >
-                    {/* Baby Avatar */}
-                    <View style={[styles.growthAvatar, { backgroundColor: notification.babyId.avatarColor || theme.primary }]}>
-                      <Text style={styles.growthAvatarText}>
-                        {notification.babyId.name.charAt(0).toUpperCase()}
-                      </Text>
+                    {/* Growth Icon */}
+                    <View style={styles.alertIconContainer}>
+                      <Ionicons
+                        name="analytics-outline"
+                        size={24}
+                        color="#4CAF50"
+                      />
                     </View>
 
                     {/* Content */}
@@ -720,18 +722,5 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 10,
     fontWeight: 'bold',
-  },
-  growthAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  growthAvatarText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#fff',
   },
 });
