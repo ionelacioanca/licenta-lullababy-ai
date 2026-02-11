@@ -79,8 +79,14 @@ export default function NotificationsPanel({
         const data = await response.json();
         setAlerts(data);
         
-        // Update unread count
-        updateTotalUnreadCount();
+        // Update count with fresh data
+        const alertsUnread = data.filter((a: Alert) => !a.isRead).length;
+        const growthUnread = growthNotifications.filter((g) => !g.read && g.status === 'sent').length;
+        const totalUnread = alertsUnread + growthUnread;
+        
+        if (onNotificationCountChange) {
+          onNotificationCountChange(totalUnread);
+        }
       }
     } catch (error) {
       console.error('Error loading alerts:', error);
@@ -92,21 +98,22 @@ export default function NotificationsPanel({
 
   const loadGrowthNotifications = async () => {
     try {
+      console.log('📊 Loading growth notifications...');
       const data = await growthNotificationService.getUserNotifications(true);
+      console.log('📊 Growth notifications response:', data);
+      console.log('📊 Number of notifications:', data.notifications.length);
       setGrowthNotifications(data.notifications);
-      updateTotalUnreadCount();
+      
+      // Update count immediately with the fresh data
+      const alertsUnread = alerts.filter((a: Alert) => !a.isRead).length;
+      const growthUnread = data.notifications.filter((g) => !g.read && g.status === 'sent').length;
+      const totalUnread = alertsUnread + growthUnread;
+      
+      if (onNotificationCountChange) {
+        onNotificationCountChange(totalUnread);
+      }
     } catch (error) {
-      console.error('Error loading growth notifications:', error);
-    }
-  };
-
-  const updateTotalUnreadCount = () => {
-    const alertsUnread = alerts.filter((a: Alert) => !a.isRead).length;
-    const growthUnread = growthNotifications.filter((g) => !g.read && g.status === 'sent').length;
-    const totalUnread = alertsUnread + growthUnread;
-    
-    if (onNotificationCountChange) {
-      onNotificationCountChange(totalUnread);
+      console.error('❌ Error loading growth notifications:', error);
     }
   };
 
@@ -125,17 +132,22 @@ export default function NotificationsPanel({
       );
 
       if (response.ok) {
-        setAlerts(prev =>
-          prev.map(alert =>
+        setAlerts(prev => {
+          const updated = prev.map(alert =>
             alert._id === alertId ? { ...alert, isRead: true } : alert
-          )
-        );
-        
-        // Update unread count
-        const unreadCount = alerts.filter(a => !a.isRead && a._id !== alertId).length;
-        if (onNotificationCountChange) {
-          onNotificationCountChange(unreadCount);
-        }
+          );
+          
+          // Update count with fresh data
+          const alertsUnread = updated.filter(a => !a.isRead).length;
+          const growthUnread = growthNotifications.filter((g) => !g.read && g.status === 'sent').length;
+          const totalUnread = alertsUnread + growthUnread;
+          
+          if (onNotificationCountChange) {
+            onNotificationCountChange(totalUnread);
+          }
+          
+          return updated;
+        });
       }
     } catch (error) {
       console.error('Error marking alert as read:', error);
@@ -158,8 +170,12 @@ export default function NotificationsPanel({
 
       if (response.ok) {
         setAlerts(prev => prev.map(alert => ({ ...alert, isRead: true })));
+        
+        // Update count - alerts are all read, but growth notifications may still be unread
+        const growthUnread = growthNotifications.filter((g) => !g.read && g.status === 'sent').length;
+        
         if (onNotificationCountChange) {
-          onNotificationCountChange(0);
+          onNotificationCountChange(growthUnread);
         }
       }
     } catch (error) {
@@ -182,13 +198,20 @@ export default function NotificationsPanel({
       );
 
       if (response.ok) {
-        const wasUnread = alerts.find(a => a._id === alertId)?.isRead === false;
-        setAlerts(prev => prev.filter(alert => alert._id !== alertId));
-        
-        if (wasUnread && onNotificationCountChange) {
-          const unreadCount = alerts.filter(a => !a.isRead && a._id !== alertId).length;
-          onNotificationCountChange(unreadCount);
-        }
+        setAlerts(prev => {
+          const updated = prev.filter(alert => alert._id !== alertId);
+          
+          // Update count with fresh data
+          const alertsUnread = updated.filter(a => !a.isRead).length;
+          const growthUnread = growthNotifications.filter((g) => !g.read && g.status === 'sent').length;
+          const totalUnread = alertsUnread + growthUnread;
+          
+          if (onNotificationCountChange) {
+            onNotificationCountChange(totalUnread);
+          }
+          
+          return updated;
+        });
       }
     } catch (error) {
       console.error('Error deleting alert:', error);
@@ -238,10 +261,20 @@ export default function NotificationsPanel({
     try {
       if (!notification.read) {
         await growthNotificationService.markAsRead(notification._id);
-        setGrowthNotifications(prev =>
-          prev.map(n => n._id === notification._id ? { ...n, read: true } : n)
-        );
-        updateTotalUnreadCount();
+        setGrowthNotifications(prev => {
+          const updated = prev.map(n => n._id === notification._id ? { ...n, read: true } : n);
+          
+          // Update count with fresh data
+          const alertsUnread = alerts.filter((a: Alert) => !a.isRead).length;
+          const growthUnread = updated.filter((g) => !g.read && g.status === 'sent').length;
+          const totalUnread = alertsUnread + growthUnread;
+          
+          if (onNotificationCountChange) {
+            onNotificationCountChange(totalUnread);
+          }
+          
+          return updated;
+        });
       }
       
       // Navigate to child profile
