@@ -92,13 +92,8 @@ class GrowthNotificationService {
           userId: user._id,
           scheduledDate: nextMeasurement.date,
           ageInMonths: nextMeasurement.ageInMonths,
-          title: `Time to measure ${baby.name}! 📏`,
-          body: `${baby.name} is ${nextMeasurement.ageInMonths} month${nextMeasurement.ageInMonths > 1 ? 's' : ''} old. Remember to record weight and length measurements.`,
-          status: 'pending'
-        });
-        
-        await notification.save();
-        notifications.push(notification);
+        title: `Time to measure ${baby.name}`,
+        body: `${baby.name} is ${nextMeasurement.ageInMonths} month${nextMeasurement.ageInMonths > 1 ? 's' : ''} old. Record weight and length.`,
       }
 
       console.log(`✅ Scheduled ${notifications.length} growth notifications for baby ${baby.name}`);
@@ -202,8 +197,8 @@ class GrowthNotificationService {
         userId: userId,
         scheduledDate: nextMeasurement.date,
         ageInMonths: nextMeasurement.ageInMonths,
-        title: `Time to measure ${baby.name}! 📏`,
-        body: `${baby.name} is ${nextMeasurement.ageInMonths} month${nextMeasurement.ageInMonths > 1 ? 's' : ''} old. Remember to record weight and length measurements.`,
+        title: `Time to measure ${baby.name}`,
+        body: `${baby.name} is ${nextMeasurement.ageInMonths} month${nextMeasurement.ageInMonths > 1 ? 's' : ''} old. Record weight and length.`,
         status: 'pending'
       });
       

@@ -563,7 +563,6 @@ export default function NotificationsPanel({
                       </Text>
                       <Text
                         style={[styles.alertMessage, { color: theme.textSecondary }]}
-                        numberOfLines={2}
                       >
                         {notification.body}
                       </Text>
