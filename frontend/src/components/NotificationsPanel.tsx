@@ -57,6 +57,7 @@ export default function NotificationsPanel({
   useEffect(() => {
     if (visible && babyId) {
       loadAlerts();
+      loadGrowthNotifications();
     }
   }, [visible, babyId]);
 
@@ -79,16 +80,33 @@ export default function NotificationsPanel({
         setAlerts(data);
         
         // Update unread count
-        const unreadCount = data.filter((a: Alert) => !a.isRead).length;
-        if (onNotificationCountChange) {
-          onNotificationCountChange(unreadCount);
-        }
+        updateTotalUnreadCount();
       }
     } catch (error) {
       console.error('Error loading alerts:', error);
     } finally {
       setLoading(false);
       setRefreshing(false);
+    }
+  };
+
+  const loadGrowthNotifications = async () => {
+    try {
+      const data = await growthNotificationService.getUserNotifications(true);
+      setGrowthNotifications(data.notifications);
+      updateTotalUnreadCount();
+    } catch (error) {
+      console.error('Error loading growth notifications:', error);
+    }
+  };
+
+  const updateTotalUnreadCount = () => {
+    const alertsUnread = alerts.filter((a: Alert) => !a.isRead).length;
+    const growthUnread = growthNotifications.filter((g) => !g.read && g.status === 'sent').length;
+    const totalUnread = alertsUnread + growthUnread;
+    
+    if (onNotificationCountChange) {
+      onNotificationCountChange(totalUnread);
     }
   };
 
@@ -208,7 +226,92 @@ export default function NotificationsPanel({
 
   const onRefresh = () => {
     setRefreshing(true);
-    loadAlerts();
+    if (activeTab === 'alerts') {
+      loadAlerts();
+    } else {
+      loadGrowthNotifications().finally(() => setRefreshing(false));
+    }
+  };
+
+  // Growth notification handlers
+  const handleGrowthNotificationPress = async (notification: GrowthNotification) => {
+    try {
+      if (!notification.read) {
+        await growthNotificationService.markAsRead(notification._id);
+        setGrowthNotifications(prev =>
+          prev.map(n => n._id === notification._id ? { ...n, read: true } : n)
+        );
+        updateTotalUnreadCount();
+      }
+      
+      // Navigate to child profile
+      await AsyncStorage.setItem('selectedBabyId', notification.babyId._id);
+      onClose();
+      router.push('/childProfile');
+    } catch (error) {
+      console.error('Error handling growth notification:', error);
+    }
+  };
+
+  const handleMarkGrowthCompleted = async (notificationId: string) => {
+    try {
+      await growthNotificationService.markAsCompleted(notificationId);
+      RNAlert.alert('Success', 'Measurement reminder completed! Next reminder scheduled.');
+      loadGrowthNotifications();
+    } catch (error) {
+      console.error('Error marking growth notification as completed:', error);
+      RNAlert.alert('Error', 'Failed to complete notification');
+    }
+  };
+
+  const handleDismissGrowth = async (notificationId: string) => {
+    RNAlert.alert(
+      'Dismiss Reminder',
+      'Are you sure you want to dismiss this measurement reminder?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Dismiss',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await growthNotificationService.dismissNotification(notificationId);
+              loadGrowthNotifications();
+            } catch (error) {
+              console.error('Error dismissing growth notification:', error);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const formatGrowthDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+    
+    return date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric',
+      year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+    });
+  };
+
+  const getGrowthStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed': return '#4CAF50';
+      case 'dismissed': return '#9E9E9E';
+      case 'sent': return '#FF9800';
+      case 'pending': return '#2196F3';
+      default: return '#757575';
+    }
   };
 
   return (
@@ -229,7 +332,7 @@ export default function NotificationsPanel({
               </Text>
             </View>
             <View style={styles.headerRight}>
-              {alerts.some(a => !a.isRead) && (
+              {activeTab === 'alerts' && alerts.some(a => !a.isRead) && (
                 <TouchableOpacity onPress={markAllAsRead} style={styles.markAllButton}>
                   <Text style={[styles.markAllText, { color: theme.primary }]}>
                     Mark all read
@@ -242,26 +345,91 @@ export default function NotificationsPanel({
             </View>
           </View>
 
-          {/* Content */}
-          {loading && alerts.length === 0 ? (
-            <View style={styles.centered}>
-              <ActivityIndicator size="large" color={theme.primary} />
-            </View>
-          ) : alerts.length === 0 ? (
-            <View style={styles.centered}>
-              <Ionicons name="notifications-off-outline" size={64} color={theme.textSecondary} />
-              <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
-                No notifications
-              </Text>
-            </View>
-          ) : (
-            <ScrollView
-              style={styles.alertsList}
-              refreshControl={
-                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-              }
+          {/* Tabs */}
+          <View style={[styles.tabsContainer, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
+            <TouchableOpacity
+              style={[
+                styles.tab,
+                activeTab === 'alerts' && styles.activeTab,
+                activeTab === 'alerts' && { borderBottomColor: theme.primary }
+              ]}
+              onPress={() => setActiveTab('alerts')}
             >
-              {alerts.map((alert) => (
+              <Ionicons 
+                name="alert-circle" 
+                size={20} 
+                color={activeTab === 'alerts' ? theme.primary : theme.textSecondary} 
+              />
+              <Text
+                style={[
+                  styles.tabText,
+                  { color: activeTab === 'alerts' ? theme.primary : theme.textSecondary }
+                ]}
+              >
+                Alerts
+              </Text>
+              {alerts.filter(a => !a.isRead).length > 0 && (
+                <View style={[styles.badge, { backgroundColor: theme.primary }]}>
+                  <Text style={styles.badgeText}>
+                    {alerts.filter(a => !a.isRead).length}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.tab,
+                activeTab === 'growth' && styles.activeTab,
+                activeTab === 'growth' && { borderBottomColor: theme.primary }
+              ]}
+              onPress={() => setActiveTab('growth')}
+            >
+              <Ionicons 
+                name="trending-up" 
+                size={20} 
+                color={activeTab === 'growth' ? theme.primary : theme.textSecondary} 
+              />
+              <Text
+                style={[
+                  styles.tabText,
+                  { color: activeTab === 'growth' ? theme.primary : theme.textSecondary }
+                ]}
+              >
+                Growth
+              </Text>
+              {growthNotifications.filter(g => !g.read && g.status === 'sent').length > 0 && (
+                <View style={[styles.badge, { backgroundColor: theme.primary }]}>
+                  <Text style={styles.badgeText}>
+                    {growthNotifications.filter(g => !g.read && g.status === 'sent').length}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          {/* Content */}
+          {activeTab === 'alerts' ? (
+            // Alerts Tab
+            loading && alerts.length === 0 ? (
+              <View style={styles.centered}>
+                <ActivityIndicator size="large" color={theme.primary} />
+              </View>
+            ) : alerts.length === 0 ? (
+              <View style={styles.centered}>
+                <Ionicons name="notifications-off-outline" size={64} color={theme.textSecondary} />
+                <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
+                  No alerts
+                </Text>
+              </View>
+            ) : (
+              <ScrollView
+                style={styles.alertsList}
+                refreshControl={
+                  <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+                }
+              >
+                {alerts.map((alert) => (
                 <TouchableOpacity
                   key={alert._id}
                   style={[
@@ -312,7 +480,117 @@ export default function NotificationsPanel({
                 </TouchableOpacity>
               ))}
             </ScrollView>
-          )}
+          )
+        ) : (
+          // Growth Tab
+          loading && growthNotifications.length === 0 ? (
+            <View style={styles.centered}>
+              <ActivityIndicator size="large" color={theme.primary} />
+            </View>
+          ) : growthNotifications.length === 0 ? (
+            <View style={styles.centered}>
+              <Ionicons name="trending-up-outline" size={64} color={theme.textSecondary} />
+              <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
+                No growth reminders
+              </Text>
+            </View>
+          ) : (
+            <ScrollView
+              style={styles.alertsList}
+              refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+              }
+            >
+              {growthNotifications.map((notification) => {
+                const isUnread = !notification.read;
+                const canTakeAction = notification.status === 'sent' || notification.status === 'pending';
+
+                return (
+                  <TouchableOpacity
+                    key={notification._id}
+                    style={[
+                      styles.alertItem,
+                      { backgroundColor: theme.card, borderColor: theme.border },
+                      isUnread && { backgroundColor: theme.surface, borderLeftWidth: 4, borderLeftColor: theme.primary }
+                    ]}
+                    onPress={() => handleGrowthNotificationPress(notification)}
+                  >
+                    {/* Baby Avatar */}
+                    <View style={[styles.growthAvatar, { backgroundColor: notification.babyId.avatarColor || theme.primary }]}>
+                      <Text style={styles.growthAvatarText}>
+                        {notification.babyId.name.charAt(0).toUpperCase()}
+                      </Text>
+                    </View>
+
+                    {/* Content */}
+                    <View style={styles.alertContent}>
+                      <Text style={[styles.alertTitle, { color: theme.text }]}>
+                        {notification.title}
+                      </Text>
+                      <Text
+                        style={[styles.alertMessage, { color: theme.textSecondary }]}
+                        numberOfLines={2}
+                      >
+                        {notification.body}
+                      </Text>
+                      
+                      <View style={styles.growthMeta}>
+                        <View style={styles.statusBadge}>
+                          <Ionicons 
+                            name={
+                              notification.status === 'completed' ? 'checkmark-circle' :
+                              notification.status === 'dismissed' ? 'close-circle' :
+                              notification.status === 'sent' ? 'notifications' : 'time'
+                            } 
+                            size={12} 
+                            color={getGrowthStatusColor(notification.status)} 
+                          />
+                          <Text style={[styles.statusText, { color: getGrowthStatusColor(notification.status) }]}>
+                            {notification.status.charAt(0).toUpperCase() + notification.status.slice(1)}
+                          </Text>
+                        </View>
+                        <Text style={[styles.alertTime, { color: theme.textSecondary }]}>
+                          {formatGrowthDate(notification.scheduledDate)}
+                        </Text>
+                      </View>
+
+                      {/* Action Buttons */}
+                      {canTakeAction && (
+                        <View style={styles.growthActions}>
+                          <TouchableOpacity
+                            style={[styles.growthActionButton, { backgroundColor: theme.primary }]}
+                            onPress={(e) => {
+                              e.stopPropagation();
+                              handleMarkGrowthCompleted(notification._id);
+                            }}
+                          >
+                            <Ionicons name="checkmark" size={14} color="#fff" />
+                            <Text style={styles.growthActionText}>Recorded</Text>
+                          </TouchableOpacity>
+
+                          <TouchableOpacity
+                            style={[styles.growthActionButton, { backgroundColor: theme.textSecondary }]}
+                            onPress={(e) => {
+                              e.stopPropagation();
+                              handleDismissGrowth(notification._id);
+                            }}
+                          >
+                            <Ionicons name="close" size={14} color="#fff" />
+                            <Text style={styles.growthActionText}>Dismiss</Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </View>
+
+                    {isUnread && (
+                      <View style={[styles.unreadDot, { backgroundColor: theme.primary }]} />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          )
+        )}
         </View>
       </View>
     </Modal>
@@ -407,5 +685,87 @@ const styles = StyleSheet.create({
   deleteButton: {
     padding: 4,
     marginLeft: 8,
+  },
+  tabsContainer: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    backgroundColor: '#fff',
+  },
+  tab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    gap: 6,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  activeTab: {
+    borderBottomWidth: 2,
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  badge: {
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#00CFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  badgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  growthAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  growthAvatarText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  growthMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 4,
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  statusText: {
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  growthActions: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 12,
+  },
+  growthActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    gap: 4,
+  },
+  growthActionText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
   },
 });
