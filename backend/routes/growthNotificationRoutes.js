@@ -13,8 +13,12 @@ router.use(authMiddleware);
  */
 router.get('/', async (req, res) => {
   try {
-    const userId = req.user._id;
+    const userId = req.user.userId || req.user._id || req.user.id;
     const { includeRead, limit, skip } = req.query;
+
+    console.log('📊 GET /api/growth-notifications - userId:', userId);
+    console.log('   req.user:', req.user);
+    console.log('   Query params:', { includeRead, limit, skip });
 
     const options = {
       includeRead: includeRead !== 'false',
@@ -23,6 +27,12 @@ router.get('/', async (req, res) => {
     };
 
     const result = await growthNotificationService.getUserNotifications(userId, options);
+
+    console.log('   Result:', { 
+      notificationsCount: result.notifications.length, 
+      unreadCount: result.unreadCount, 
+      total: result.total 
+    });
 
     res.status(200).json({
       message: 'Notifications retrieved successfully',
@@ -90,7 +100,7 @@ router.put('/:notificationId/read', async (req, res) => {
 router.put('/:notificationId/complete', async (req, res) => {
   try {
     const { notificationId } = req.params;
-    const userId = req.user._id;
+    const userId = req.user.userId || req.user._id || req.user.id;
     
     const notification = await growthNotificationService.markAsCompleted(notificationId, userId);
 
@@ -158,7 +168,7 @@ router.post('/send-pending', async (req, res) => {
  */
 router.get('/unread-count', async (req, res) => {
   try {
-    const userId = req.user._id;
+    const userId = req.user.userId || req.user._id || req.user.id;
     
     const result = await growthNotificationService.getUserNotifications(userId, {
       includeRead: false,

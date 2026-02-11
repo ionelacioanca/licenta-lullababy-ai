@@ -290,7 +290,31 @@ class GrowthNotificationService {
     try {
       const { includeRead = true, limit = 50, skip = 0 } = options;
       
-      const query = { userId };
+      // Get all babies the user has access to (using same logic as getBabiesByParentId)
+      const currentUser = await User.findById(userId);
+      const parentIds = [userId];
+      
+      if (currentUser) {
+        // For nanny or others with relatedParentIds: add all linked parents from array
+        if (currentUser.relatedParentIds && currentUser.relatedParentIds.length > 0) {
+          parentIds.push(...currentUser.relatedParentIds);
+        }
+        // For mother/father/others: also add single linked parent if exists
+        if (currentUser.relatedParentId) {
+          parentIds.push(currentUser.relatedParentId);
+        }
+      }
+      
+      // Get all babies from all parent IDs
+      const babies = await Baby.find({ parentId: { $in: parentIds } }).select('_id');
+      const babyIds = babies.map(b => b._id);
+      
+      // Build query to find notifications for these babies
+      // Only show sent and dismissed notifications (not pending or completed)
+      const query = { 
+        babyId: { $in: babyIds },
+        status: { $in: ['sent', 'dismissed'] }
+      };
       if (!includeRead) {
         query.read = false;
       }
@@ -303,7 +327,7 @@ class GrowthNotificationService {
         .lean();
 
       const unreadCount = await GrowthNotification.countDocuments({
-        userId,
+        babyId: { $in: babyIds },
         read: false,
         status: 'sent'
       });
