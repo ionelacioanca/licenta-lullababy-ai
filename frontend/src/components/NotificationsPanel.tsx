@@ -319,13 +319,27 @@ export default function NotificationsPanel({
   const formatGrowthDate = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
-    const diffTime = now.getTime() - date.getTime();
+    const diffTime = date.getTime() - now.getTime();
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
-    if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 7) return `${diffDays} days ago`;
-    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+    // Future dates
+    if (diffDays > 0) {
+      if (diffDays === 1) return 'Tomorrow';
+      if (diffDays < 7) return `In ${diffDays} days`;
+      if (diffDays < 30) return `In ${Math.ceil(diffDays / 7)} weeks`;
+      return date.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric',
+        year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+      });
+    }
+    
+    // Past dates
+    const daysPast = Math.abs(diffDays);
+    if (daysPast === 0) return 'Today';
+    if (daysPast === 1) return 'Yesterday';
+    if (daysPast < 7) return `${daysPast} days ago`;
+    if (daysPast < 30) return `${Math.floor(daysPast / 7)} weeks ago`;
     
     return date.toLocaleDateString('en-US', { 
       month: 'short', 
