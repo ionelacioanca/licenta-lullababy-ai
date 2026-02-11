@@ -8,11 +8,14 @@ import {
   ScrollView,
   ActivityIndicator,
   RefreshControl,
+  Alert as RNAlert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { growthNotificationService, GrowthNotification } from '../services/growthNotificationService';
+import { useRouter } from 'expo-router';
 
 type Alert = {
   _id: string;
@@ -44,13 +47,17 @@ export default function NotificationsPanel({
 }: NotificationsPanelProps) {
   const { theme } = useTheme();
   const { t } = useLanguage();
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState<'alerts' | 'growth'>('alerts');
   const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [growthNotifications, setGrowthNotifications] = useState<GrowthNotification[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     if (visible && babyId) {
       loadAlerts();
+      loadGrowthNotifications();
     }
   }, [visible, babyId]);
 
@@ -72,10 +79,13 @@ export default function NotificationsPanel({
         const data = await response.json();
         setAlerts(data);
         
-        // Update unread count
-        const unreadCount = data.filter((a: Alert) => !a.isRead).length;
+        // Update count with fresh data
+        const alertsUnread = data.filter((a: Alert) => !a.isRead).length;
+        const growthUnread = growthNotifications.filter((g) => !g.read && g.status === 'sent').length;
+        const totalUnread = alertsUnread + growthUnread;
+        
         if (onNotificationCountChange) {
-          onNotificationCountChange(unreadCount);
+          onNotificationCountChange(totalUnread);
         }
       }
     } catch (error) {
@@ -83,6 +93,27 @@ export default function NotificationsPanel({
     } finally {
       setLoading(false);
       setRefreshing(false);
+    }
+  };
+
+  const loadGrowthNotifications = async () => {
+    try {
+      console.log('📊 Loading growth notifications...');
+      const data = await growthNotificationService.getUserNotifications(true);
+      console.log('📊 Growth notifications response:', data);
+      console.log('📊 Number of notifications:', data.notifications.length);
+      setGrowthNotifications(data.notifications);
+      
+      // Update count immediately with the fresh data
+      const alertsUnread = alerts.filter((a: Alert) => !a.isRead).length;
+      const growthUnread = data.notifications.filter((g) => !g.read && g.status === 'sent').length;
+      const totalUnread = alertsUnread + growthUnread;
+      
+      if (onNotificationCountChange) {
+        onNotificationCountChange(totalUnread);
+      }
+    } catch (error) {
+      console.error('❌ Error loading growth notifications:', error);
     }
   };
 
@@ -101,17 +132,22 @@ export default function NotificationsPanel({
       );
 
       if (response.ok) {
-        setAlerts(prev =>
-          prev.map(alert =>
+        setAlerts(prev => {
+          const updated = prev.map(alert =>
             alert._id === alertId ? { ...alert, isRead: true } : alert
-          )
-        );
-        
-        // Update unread count
-        const unreadCount = alerts.filter(a => !a.isRead && a._id !== alertId).length;
-        if (onNotificationCountChange) {
-          onNotificationCountChange(unreadCount);
-        }
+          );
+          
+          // Update count with fresh data
+          const alertsUnread = updated.filter(a => !a.isRead).length;
+          const growthUnread = growthNotifications.filter((g) => !g.read && g.status === 'sent').length;
+          const totalUnread = alertsUnread + growthUnread;
+          
+          if (onNotificationCountChange) {
+            onNotificationCountChange(totalUnread);
+          }
+          
+          return updated;
+        });
       }
     } catch (error) {
       console.error('Error marking alert as read:', error);
@@ -134,8 +170,12 @@ export default function NotificationsPanel({
 
       if (response.ok) {
         setAlerts(prev => prev.map(alert => ({ ...alert, isRead: true })));
+        
+        // Update count - alerts are all read, but growth notifications may still be unread
+        const growthUnread = growthNotifications.filter((g) => !g.read && g.status === 'sent').length;
+        
         if (onNotificationCountChange) {
-          onNotificationCountChange(0);
+          onNotificationCountChange(growthUnread);
         }
       }
     } catch (error) {
@@ -158,13 +198,20 @@ export default function NotificationsPanel({
       );
 
       if (response.ok) {
-        const wasUnread = alerts.find(a => a._id === alertId)?.isRead === false;
-        setAlerts(prev => prev.filter(alert => alert._id !== alertId));
-        
-        if (wasUnread && onNotificationCountChange) {
-          const unreadCount = alerts.filter(a => !a.isRead && a._id !== alertId).length;
-          onNotificationCountChange(unreadCount);
-        }
+        setAlerts(prev => {
+          const updated = prev.filter(alert => alert._id !== alertId);
+          
+          // Update count with fresh data
+          const alertsUnread = updated.filter(a => !a.isRead).length;
+          const growthUnread = growthNotifications.filter((g) => !g.read && g.status === 'sent').length;
+          const totalUnread = alertsUnread + growthUnread;
+          
+          if (onNotificationCountChange) {
+            onNotificationCountChange(totalUnread);
+          }
+          
+          return updated;
+        });
       }
     } catch (error) {
       console.error('Error deleting alert:', error);
@@ -202,7 +249,103 @@ export default function NotificationsPanel({
 
   const onRefresh = () => {
     setRefreshing(true);
-    loadAlerts();
+    if (activeTab === 'alerts') {
+      loadAlerts();
+    } else {
+      loadGrowthNotifications().finally(() => setRefreshing(false));
+    }
+  };
+
+  // Growth notification handlers
+  const handleGrowthNotificationPress = async (notification: GrowthNotification) => {
+    try {
+      // Mark as read and navigate to growth tracking
+      if (!notification.read) {
+        await growthNotificationService.markAsRead(notification._id);
+        setGrowthNotifications(prev => {
+          const updated = prev.map(n => n._id === notification._id ? { ...n, read: true } : n);
+          
+          // Update count with fresh data
+          const alertsUnread = alerts.filter((a: Alert) => !a.isRead).length;
+          const growthUnread = updated.filter((g) => !g.read && g.status === 'sent').length;
+          const totalUnread = alertsUnread + growthUnread;
+          
+          if (onNotificationCountChange) {
+            onNotificationCountChange(totalUnread);
+          }
+          
+          return updated;
+        });
+      }
+      
+      // Set flag to open growth tracking modal on dashboard
+      await AsyncStorage.setItem('selectedBabyId', notification.babyId._id);
+      await AsyncStorage.setItem('openGrowthTracking', 'true');
+      onClose();
+      router.push('/dashboard');
+    } catch (error) {
+      console.error('Error handling growth notification:', error);
+    }
+  };
+
+  const handleRecordGrowth = async (notification: GrowthNotification) => {
+    try {
+      // Mark as read (not completed, just read)
+      if (!notification.read) {
+        await growthNotificationService.markAsRead(notification._id);
+      }
+      
+      // Navigate to growth tracking to record measurement
+      await AsyncStorage.setItem('selectedBabyId', notification.babyId._id);
+      onClose();
+      router.push('/childProfile?tab=growth');
+    } catch (error) {
+      console.error('Error navigating to growth tracking:', error);
+      RNAlert.alert('Error', 'Failed to open growth tracking');
+    }
+  };
+
+  const handleDismissGrowth = async (notificationId: string, e: any) => {
+    e.stopPropagation();
+    try {
+      await growthNotificationService.dismissNotification(notificationId);
+      loadGrowthNotifications();
+    } catch (error) {
+      console.error('Error dismissing growth notification:', error);
+      RNAlert.alert('Error', 'Failed to dismiss notification');
+    }
+  };
+
+  const formatGrowthDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = date.getTime() - now.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+    // Future dates
+    if (diffDays > 0) {
+      if (diffDays === 1) return 'Next: tomorrow';
+      if (diffDays < 7) return `Next: in ${diffDays} days`;
+      if (diffDays < 30) return `Next: in ${Math.ceil(diffDays / 7)} weeks`;
+      return 'Next: ' + date.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric',
+        year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+      });
+    }
+    
+    // Past dates
+    const daysPast = Math.abs(diffDays);
+    if (daysPast === 0) return 'Today';
+    if (daysPast === 1) return 'Yesterday';
+    if (daysPast < 7) return `${daysPast} days ago`;
+    if (daysPast < 30) return `${Math.floor(daysPast / 7)} weeks ago`;
+    
+    return date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric',
+      year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+    });
   };
 
   return (
@@ -223,7 +366,7 @@ export default function NotificationsPanel({
               </Text>
             </View>
             <View style={styles.headerRight}>
-              {alerts.some(a => !a.isRead) && (
+              {activeTab === 'alerts' && alerts.some(a => !a.isRead) && (
                 <TouchableOpacity onPress={markAllAsRead} style={styles.markAllButton}>
                   <Text style={[styles.markAllText, { color: theme.primary }]}>
                     Mark all read
@@ -236,26 +379,91 @@ export default function NotificationsPanel({
             </View>
           </View>
 
-          {/* Content */}
-          {loading && alerts.length === 0 ? (
-            <View style={styles.centered}>
-              <ActivityIndicator size="large" color={theme.primary} />
-            </View>
-          ) : alerts.length === 0 ? (
-            <View style={styles.centered}>
-              <Ionicons name="notifications-off-outline" size={64} color={theme.textSecondary} />
-              <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
-                No notifications
-              </Text>
-            </View>
-          ) : (
-            <ScrollView
-              style={styles.alertsList}
-              refreshControl={
-                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-              }
+          {/* Tabs */}
+          <View style={[styles.tabsContainer, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
+            <TouchableOpacity
+              style={[
+                styles.tab,
+                activeTab === 'alerts' && styles.activeTab,
+                activeTab === 'alerts' && { borderBottomColor: theme.primary }
+              ]}
+              onPress={() => setActiveTab('alerts')}
             >
-              {alerts.map((alert) => (
+              <Ionicons 
+                name="information-circle-outline" 
+                size={20} 
+                color={activeTab === 'alerts' ? theme.primary : theme.textSecondary} 
+              />
+              <Text
+                style={[
+                  styles.tabText,
+                  { color: activeTab === 'alerts' ? theme.primary : theme.textSecondary }
+                ]}
+              >
+                Alerts
+              </Text>
+              {alerts.filter(a => !a.isRead).length > 0 && (
+                <View style={[styles.badge, { backgroundColor: theme.primary }]}>
+                  <Text style={styles.badgeText}>
+                    {alerts.filter(a => !a.isRead).length}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.tab,
+                activeTab === 'growth' && styles.activeTab,
+                activeTab === 'growth' && { borderBottomColor: theme.primary }
+              ]}
+              onPress={() => setActiveTab('growth')}
+            >
+              <Ionicons 
+                name="trending-up" 
+                size={20} 
+                color={activeTab === 'growth' ? theme.primary : theme.textSecondary} 
+              />
+              <Text
+                style={[
+                  styles.tabText,
+                  { color: activeTab === 'growth' ? theme.primary : theme.textSecondary }
+                ]}
+              >
+                Growth
+              </Text>
+              {growthNotifications.filter(g => !g.read && g.status === 'sent').length > 0 && (
+                <View style={[styles.badge, { backgroundColor: theme.primary }]}>
+                  <Text style={styles.badgeText}>
+                    {growthNotifications.filter(g => !g.read && g.status === 'sent').length}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          {/* Content */}
+          {activeTab === 'alerts' ? (
+            // Alerts Tab
+            loading && alerts.length === 0 ? (
+              <View style={styles.centered}>
+                <ActivityIndicator size="large" color={theme.primary} />
+              </View>
+            ) : alerts.length === 0 ? (
+              <View style={styles.centered}>
+                <Ionicons name="notifications-off-outline" size={64} color={theme.textSecondary} />
+                <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
+                  No alerts
+                </Text>
+              </View>
+            ) : (
+              <ScrollView
+                style={styles.alertsList}
+                refreshControl={
+                  <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+                }
+              >
+                {alerts.map((alert) => (
                 <TouchableOpacity
                   key={alert._id}
                   style={[
@@ -306,7 +514,84 @@ export default function NotificationsPanel({
                 </TouchableOpacity>
               ))}
             </ScrollView>
-          )}
+          )
+        ) : (
+          // Growth Tab
+          loading && growthNotifications.length === 0 ? (
+            <View style={styles.centered}>
+              <ActivityIndicator size="large" color={theme.primary} />
+            </View>
+          ) : growthNotifications.length === 0 ? (
+            <View style={styles.centered}>
+              <Ionicons name="trending-up-outline" size={64} color={theme.textSecondary} />
+              <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
+                No growth reminders
+              </Text>
+            </View>
+          ) : (
+            <ScrollView
+              style={styles.alertsList}
+              refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+              }
+            >
+              {growthNotifications.map((notification) => {
+                const isUnread = !notification.read;
+                const canTakeAction = notification.status === 'sent' || notification.status === 'pending';
+
+                return (
+                  <TouchableOpacity
+                    key={notification._id}
+                    style={[
+                      styles.alertItem,
+                      { backgroundColor: theme.card, borderColor: theme.border },
+                      isUnread && { backgroundColor: theme.surface, borderLeftWidth: 4, borderLeftColor: '#4CAF50' }
+                    ]}
+                    onPress={() => handleGrowthNotificationPress(notification)}
+                  >
+                    {/* Growth Icon */}
+                    <View style={styles.alertIconContainer}>
+                      <Ionicons
+                        name="analytics-outline"
+                        size={24}
+                        color="#4CAF50"
+                      />
+                    </View>
+
+                    {/* Content */}
+                    <View style={styles.alertContent}>
+                      <Text style={[styles.alertTitle, { color: theme.text }]}>
+                        {notification.title}
+                      </Text>
+                      <Text
+                        style={[styles.alertMessage, { color: theme.textSecondary }]}
+                      >
+                        {notification.body}
+                      </Text>
+                      
+                      <Text style={[styles.alertTime, { color: theme.textSecondary, marginTop: 4 }]}>
+                        {formatGrowthDate(notification.scheduledDate)}
+                      </Text>
+                    </View>
+
+                    {/* Delete icon */}
+                    <TouchableOpacity
+                      style={styles.deleteButton}
+                      onPress={(e) => handleDismissGrowth(notification._id, e)}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                      <Ionicons name="trash-outline" size={20} color={theme.textSecondary} />
+                    </TouchableOpacity>
+
+                    {isUnread && (
+                      <View style={[styles.unreadDot, { backgroundColor: theme.primary }]} />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          )
+        )}
         </View>
       </View>
     </Modal>
@@ -401,5 +686,41 @@ const styles = StyleSheet.create({
   deleteButton: {
     padding: 4,
     marginLeft: 8,
+  },
+  tabsContainer: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    backgroundColor: '#fff',
+  },
+  tab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    gap: 6,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  activeTab: {
+    borderBottomWidth: 2,
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  badge: {
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#00CFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  badgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: 'bold',
   },
 });

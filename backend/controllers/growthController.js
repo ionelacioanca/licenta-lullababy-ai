@@ -1,10 +1,13 @@
 import growthService from '../services/growthService.js';
+import growthNotificationService from '../services/growthNotificationService.js';
+import GrowthNotification from '../models/GrowthNotification.js';
 
 // Add a new growth record
 const addGrowthRecord = async (req, res) => {
   try {
     const { babyId } = req.params;
     const { weight, length, notes } = req.body;
+    const userId = req.user._id;
 
     if (!weight || !length) {
       return res.status(400).json({ 
@@ -18,6 +21,24 @@ const addGrowthRecord = async (req, res) => {
       parseFloat(length),
       notes
     );
+
+    // Mark any pending growth notifications as completed
+    try {
+      const pendingNotifications = await GrowthNotification.find({
+        babyId,
+        userId,
+        status: { $in: ['pending', 'sent'] }
+      });
+
+      for (const notification of pendingNotifications) {
+        await growthNotificationService.markAsCompleted(notification._id, userId);
+      }
+
+      console.log(`✅ Marked ${pendingNotifications.length} growth notifications as completed`);
+    } catch (notifError) {
+      console.error('Error marking notifications as completed:', notifError);
+      // Don't fail the whole request if notification update fails
+    }
 
     res.status(201).json({
       message: 'Growth record added successfully',
