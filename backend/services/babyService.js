@@ -1,10 +1,22 @@
 import BabyModel from '../models/Baby.js';
 import User from '../models/User.js';
+import growthNotificationService from './growthNotificationService.js';
 
 class BabyService {
-    static createBaby(babyData) {
+    static async createBaby(babyData) {
         const baby = new BabyModel(babyData);
-        return baby.save();
+        await baby.save();
+        
+        // Schedule initial growth notifications
+        try {
+            await growthNotificationService.scheduleInitialNotifications(baby._id);
+            console.log(`✅ Scheduled growth notifications for baby ${baby.name}`);
+        } catch (error) {
+            console.error('Error scheduling growth notifications:', error);
+            // Don't fail baby creation if notification scheduling fails
+        }
+        
+        return baby;
     }
 
     static async getAllBabies() {

@@ -26,6 +26,7 @@ import { getRecentEntries, JournalEntry } from "../services/journalService";
 import { getPendingRequestsCount } from "../services/linkRequestService";
 import { getUnreadCount } from "../services/messageService";
 import { getLastSleepSession, getCurrentSleepSession, SleepEvent } from "../services/sleepEventService";
+import { growthNotificationService } from "../services/growthNotificationService";
 import { useTheme } from "../contexts/ThemeContext";
 
 const DashboardPage: React.FC = () => {
@@ -59,6 +60,7 @@ const DashboardPage: React.FC = () => {
   const [sendLinkRequestOpen, setSendLinkRequestOpen] = useState(false);
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
   const [notificationsCount, setNotificationsCount] = useState(0);
+  const [growthNotificationsCount, setGrowthNotificationsCount] = useState(0);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [messagesInboxOpen, setMessagesInboxOpen] = useState(false);
   const [conversationOpen, setConversationOpen] = useState(false);
@@ -107,6 +109,15 @@ const DashboardPage: React.FC = () => {
       }
     } catch (error) {
       console.log('Error loading notifications count:', error);
+    }
+  };
+
+  const loadGrowthNotificationsCount = async () => {
+    try {
+      const count = await growthNotificationService.getUnreadCount();
+      setGrowthNotificationsCount(count);
+    } catch (error) {
+      console.log('Error loading growth notifications count:', error);
     }
   };
 
@@ -287,6 +298,7 @@ const DashboardPage: React.FC = () => {
   useEffect(() => {
     if (babyId) {
       loadNotificationsCount();
+      loadGrowthNotificationsCount();
     }
   }, [babyId]);
   
@@ -477,9 +489,9 @@ const DashboardPage: React.FC = () => {
         avatarColor={avatarColor}
         avatarImage={avatarImage}
         onEditProfile={() => router.push("/babiesList")}
-        onNotifications={() => setNotificationsPanelOpen(true)}
+        onNotifications={() => router.push("/notifications")}
         onMessages={() => setMessagesInboxOpen(true)}
-        unreadNotifications={notificationsCount + pendingRequestsCount}
+        unreadNotifications={notificationsCount + pendingRequestsCount + growthNotificationsCount}
         unreadMessages={unreadMessagesCount}
       />
       

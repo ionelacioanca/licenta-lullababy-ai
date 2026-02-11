@@ -8,6 +8,7 @@ import babyRouter from './routes/babyRoutes.js';
 import soundRouter from './routes/soundRoutes.js';
 import chatbotRoutes from './routes/chatbotRoutes.js';
 import growthRouter from './routes/growthRoutes.js';
+import growthNotificationRouter from './routes/growthNotificationRoutes.js';
 import calendarRouter from './routes/calendarRoutes.js';
 import journalRouter from './routes/journalRoutes.js';
 import linkRequestRouter from './routes/linkRequestRoutes.js';
@@ -19,6 +20,7 @@ import auth from './middleware/authMiddleware.js';
 import cors from 'cors';
 import emailService from './services/emailService.js';
 import { startEventCheckScheduler } from './services/calendarNotificationService.js';
+import growthNotificationService from './services/growthNotificationService.js';
 
 dotenv.config(); 
 const app = express();
@@ -35,6 +37,7 @@ app.use('/api', babyRouter);
 app.use('/api/sounds', soundRouter);
 app.use('/api', chatbotRoutes);
 app.use('/api/growth', growthRouter);
+app.use('/api/growth-notifications', growthNotificationRouter);
 app.use('/api/calendar', calendarRouter);
 app.use('/api/journal', journalRouter);
 app.use('/api/link-request', linkRequestRouter);
@@ -44,6 +47,7 @@ app.use('/api/sleep-events', sleepEventRouter);
 app.use('/api/notifications', notificationRouter);
 console.log('Chatbot routes registered at /api');
 console.log('Growth routes registered at /api/growth');
+console.log('Growth notifications registered at /api/growth-notifications');
 console.log('Calendar routes registered at /api/calendar');
 console.log('Journal routes registered at /api/journal');
 console.log('Link request routes registered at /api/link-request');
@@ -55,6 +59,24 @@ app.get('/api/private', auth, (req, res) => {
 });
 app.use('/users', userRouter);
 
+// Growth notification scheduler - check every hour for pending notifications
+const startGrowthNotificationScheduler = () => {
+    console.log('📅 Growth notification scheduler started');
+    
+    // Send immediately on startup
+    growthNotificationService.sendPendingNotifications().catch(err => {
+        console.error('Error in growth notification scheduler:', err);
+    });
+    
+    // Then check every hour
+    setInterval(async () => {
+        try {
+            await growthNotificationService.sendPendingNotifications();
+        } catch (error) {
+            console.error('Error in growth notification scheduler:', error);
+        }
+    }, 60 * 60 * 1000); // Every hour
+};
 
 async function main() {
     try {
@@ -65,6 +87,9 @@ async function main() {
         
         // Start calendar notification scheduler
         startEventCheckScheduler();
+        
+        // Start growth notification scheduler
+        startGrowthNotificationScheduler();
         
         const server = app.listen(PORT, () => {
             console.log(`Server running on port ${PORT}`);
