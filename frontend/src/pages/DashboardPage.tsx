@@ -273,6 +273,24 @@ const DashboardPage: React.FC = () => {
     React.useCallback(() => {
       loadBabyForParent();
       
+      // Check if should open growth tracking modal
+      const checkGrowthTrackingFlag = async () => {
+        try {
+          const shouldOpen = await AsyncStorage.getItem('openGrowthTracking');
+          if (shouldOpen === 'true') {
+            await AsyncStorage.removeItem('openGrowthTracking');
+            // Small delay to ensure dashboard is fully loaded
+            setTimeout(() => {
+              setGrowthTrackingOpen(true);
+            }, 300);
+          }
+        } catch (error) {
+          console.log('Error checking growth tracking flag:', error);
+        }
+      };
+      
+      checkGrowthTrackingFlag();
+      
       // Automatically check for calendar notifications
       const checkNotifications = async () => {
         try {

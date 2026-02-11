@@ -278,10 +278,11 @@ export default function NotificationsPanel({
         });
       }
       
-      // Navigate to child profile growth tracking section
+      // Set flag to open growth tracking modal on dashboard
       await AsyncStorage.setItem('selectedBabyId', notification.babyId._id);
+      await AsyncStorage.setItem('openGrowthTracking', 'true');
       onClose();
-      router.push('/childProfile?tab=growth');
+      router.push('/dashboard');
     } catch (error) {
       console.error('Error handling growth notification:', error);
     }
