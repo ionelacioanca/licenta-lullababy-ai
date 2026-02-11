@@ -81,8 +81,8 @@ class GrowthNotificationService {
       // Get all users who should receive notifications (parent + linked users)
       const users = await this.getAllUsersThatCanAccess(babyId);
 
-      // Calculate first measurement date (1 month from birth)
-      const nextMeasurement = this.calculateNextMeasurementDate(baby.birthDate);
+      // Calculate first measurement date that should happen
+      const nextMeasurement = this.calculateInitialMeasurementDate(baby.birthDate);
       
       // Create notifications for all relevant users
       const notifications = [];
@@ -93,7 +93,7 @@ class GrowthNotificationService {
           scheduledDate: nextMeasurement.date,
           ageInMonths: nextMeasurement.ageInMonths,
           title: `Time to measure ${baby.name}! 📏`,
-          body: `${baby.name} is ${nextMeasurement.ageInMonths} month${nextMeasurement.ageInMonths > 1 ? 's' : ''} old today. Remember to record weight and length measurements.`,
+          body: `${baby.name} is ${nextMeasurement.ageInMonths} month${nextMeasurement.ageInMonths > 1 ? 's' : ''} old. Remember to record weight and length measurements.`,
           status: 'pending'
         });
         
@@ -107,6 +107,67 @@ class GrowthNotificationService {
       console.error('Error scheduling initial notifications:', error);
       throw error;
     }
+  }
+
+  /**
+   * Calculate the next measurement date that should happen based on baby's age
+   * (Used for initial scheduling)
+   */
+  calculateInitialMeasurementDate(birthDate) {
+    const birth = new Date(birthDate);
+    const now = new Date();
+    const ageInMonths = this.calculateAgeInMonths(birth, now);
+    const dayOfBirth = birth.getDate();
+    
+    // Calculate what the current age's measurement date would be
+    const currentAgeMeasurement = new Date(birth);
+    currentAgeMeasurement.setMonth(birth.getMonth() + ageInMonths);
+    const maxDay = new Date(currentAgeMeasurement.getFullYear(), currentAgeMeasurement.getMonth() + 1, 0).getDate();
+    currentAgeMeasurement.setDate(Math.min(dayOfBirth, maxDay));
+    currentAgeMeasurement.setHours(10, 0, 0, 0);
+    
+    // Compare dates (ignore time) - if we're ON or BEFORE the measurement date for current age
+    const currentAgeDate = new Date(currentAgeMeasurement.getFullYear(), currentAgeMeasurement.getMonth(), currentAgeMeasurement.getDate());
+    const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    if (currentAgeDate >= todayDate && ageInMonths > 0) {
+      // Schedule for current age (we haven't passed that date yet)
+      return {
+        date: currentAgeMeasurement,
+        ageInMonths: ageInMonths,
+        intervalMonths: 0
+      };
+    }
+    
+    // Otherwise, determine next age based on intervals
+    let nextAgeInMonths;
+    if (ageInMonths < 6) {
+      // Monthly: next month
+      nextAgeInMonths = ageInMonths + 1;
+    } else if (ageInMonths < 12) {
+      // Every 2 months: round up to next 2-month interval
+      nextAgeInMonths = Math.ceil((ageInMonths + 1) / 2) * 2;
+    } else {
+      // Every 3 months: round up to next 3-month interval
+      nextAgeInMonths = Math.ceil((ageInMonths + 1) / 3) * 3;
+    }
+    
+    // Calculate date by adding months to birth date
+    const nextDate = new Date(birth);
+    nextDate.setMonth(birth.getMonth() + nextAgeInMonths);
+    
+    // Handle month overflow
+    const maxDayNext = new Date(nextDate.getFullYear(), nextDate.getMonth() + 1, 0).getDate();
+    nextDate.setDate(Math.min(dayOfBirth, maxDayNext));
+    
+    // Set time to 10:00 AM
+    nextDate.setHours(10, 0, 0, 0);
+    
+    return {
+      date: nextDate,
+      ageInMonths: nextAgeInMonths,
+      intervalMonths: nextAgeInMonths - ageInMonths
+    };
   }
 
   /**
@@ -335,6 +396,11 @@ class GrowthNotificationService {
       const baby = await Baby.findById(babyId).populate('parentId');
       if (!baby) {
         throw new Error('Baby not found');
+      }
+
+      if (!baby.parentId) {
+        console.warn(`⚠️  Baby ${baby.name} has no parentId assigned`);
+        return [];
       }
 
       const users = [baby.parentId];

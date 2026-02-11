@@ -8,14 +8,17 @@ import growthNotificationService from './services/growthNotificationService.js';
 
 dotenv.config();
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/lullababy';
+const MONGODB_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/lullababy';
 
 async function testGrowthNotifications() {
   try {
     console.log('🧪 Testing Growth Notification System\n');
     
     // Connect to database
-    await mongoose.connect(MONGODB_URI);
+    await mongoose.connect(MONGODB_URI, {
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+    });
     console.log('✅ Connected to MongoDB\n');
 
     // 1. Test: Calculate next measurement date
@@ -34,15 +37,16 @@ async function testGrowthNotifications() {
     const result3 = growthNotificationService.calculateNextMeasurementDate(testBirthDate, new Date('2025-02-15'));
     console.log(`  12+ months: Next date in ${result3.intervalMonths} month(s) - ${result3.date.toDateString()}\n`);
 
-    // 2. Test: Find a test baby
-    console.log('👶 Test 2: Finding test baby');
-    const testBaby = await Baby.findOne().populate('parentId');
+    // 2. Test: Find test baby Marcel
+    console.log('👶 Test 2: Finding test baby Marcel');
+    const testBaby = await Baby.findById('698c4f4ccdb5b46d7dbea206').populate('parentId');
     if (!testBaby) {
-      console.log('  ⚠️  No babies found. Create a baby first.\n');
+      console.log('  ⚠️  Baby Marcel not found.\n');
       return;
     }
     console.log(`  Found baby: ${testBaby.name} (ID: ${testBaby._id})`);
-    console.log(`  Birth date: ${testBaby.birthDate.toDateString()}\n`);
+    console.log(`  Birth date: ${testBaby.birthDate.toDateString()}`);
+    console.log(`  Parent ID: ${testBaby.parentId ? testBaby.parentId._id : 'none'}\n`);
 
     // 3. Test: Schedule initial notifications
     console.log('📬 Test 3: Schedule initial notifications');
