@@ -324,10 +324,10 @@ export default function NotificationsPanel({
 
     // Future dates
     if (diffDays > 0) {
-      if (diffDays === 1) return 'Tomorrow';
-      if (diffDays < 7) return `In ${diffDays} days`;
-      if (diffDays < 30) return `In ${Math.ceil(diffDays / 7)} weeks`;
-      return date.toLocaleDateString('en-US', { 
+      if (diffDays === 1) return 'Next: tomorrow';
+      if (diffDays < 7) return `Next: in ${diffDays} days`;
+      if (diffDays < 30) return `Next: in ${Math.ceil(diffDays / 7)} weeks`;
+      return 'Next: ' + date.toLocaleDateString('en-US', { 
         month: 'short', 
         day: 'numeric',
         year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
