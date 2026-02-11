@@ -356,7 +356,7 @@ export default function NotificationsPanel({
               onPress={() => setActiveTab('alerts')}
             >
               <Ionicons 
-                name="alert-circle" 
+                name="information-circle-outline" 
                 size={20} 
                 color={activeTab === 'alerts' ? theme.primary : theme.textSecondary} 
               />
