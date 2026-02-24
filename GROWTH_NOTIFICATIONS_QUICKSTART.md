@@ -46,7 +46,7 @@ npm start
 # În terminal, execută:
 curl -X POST \
   -H "Authorization: Bearer YOUR_TOKEN" \
-  http://192.168.1.21:5000/api/growth-notifications/send-pending
+  http://192.168.1.50:5000/api/growth-notifications/send-pending
 ```
 
 Sau modifică data programată în MongoDB să fie în trecut.
@@ -101,7 +101,7 @@ db.growthnotifications.find({
 # Obține token-ul utilizatorului din DB
 # Apoi trimite o notificare de test:
 
-curl -X POST http://192.168.1.21:5000/api/growth-notifications/send-pending \
+curl -X POST http://192.168.1.50:5000/api/growth-notifications/send-pending \
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
 

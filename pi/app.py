@@ -12,8 +12,9 @@ from flask import Flask, Response, request, jsonify, send_from_directory, send_f
 app = Flask(__name__)
 
 # --- CONFIGURARE ---
-ALSA_DEVICE = "hw:0,0"
-BACKEND_SERVER = "http://192.168.1.21:5000"  # Backend server pentru notificări
+ALSA_DEVICE = "hw:0,0"  # Device pentru boxă (output)
+ALSA_MICROPHONE_DEVICE = "hw:1,0"  # Device pentru microfon (input)
+BACKEND_SERVER = "http://192.168.1.50:5000"  # Backend server pentru notificări
 
 current_playback = {
     "status": "stopped",
@@ -420,6 +421,62 @@ def snapshot():
             'Pragma': 'no-cache',
             'Expires': '0'
         })
+
+@app.route('/audio_stream')
+def audio_stream():
+    """
+    Stream audio live de la microfon către aplicație
+    Folosește arecord pentru captură și streaming în format WAV
+    """
+    def generate_audio():
+        # Configurare arecord pentru streaming audio
+        # -D hw:1,0 = device ALSA pentru microfon
+        # -f S16_LE = format 16-bit signed little-endian
+        # -r 16000 = sample rate 16kHz (suficient pentru voce/sunete bebeluș)
+        # -c 1 = mono (economisește bandwidth)
+        cmd = [
+            'arecord',
+            '-D', ALSA_MICROPHONE_DEVICE,  # Device ALSA pentru microfon
+            '-f', 'S16_LE',
+            '-r', '16000',
+            '-c', '1',
+            '-t', 'wav',
+            '-'  # Output la stdout
+        ]
+        
+        try:
+            process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                bufsize=4096
+            )
+            
+            print("🎤 Audio streaming pornit...")
+            
+            while True:
+                chunk = process.stdout.read(4096)
+                if not chunk:
+                    break
+                yield chunk
+                
+        except Exception as e:
+            print(f"Eroare audio stream: {e}")
+        finally:
+            if process:
+                process.terminate()
+                process.wait()
+            print("🎤 Audio streaming oprit")
+    
+    return Response(
+        generate_audio(),
+        mimetype='audio/wav',
+        headers={
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+        }
+    )
 
 @app.route('/status', methods=['GET'])
 def get_status():
