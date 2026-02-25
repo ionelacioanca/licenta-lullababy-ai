@@ -75,6 +75,8 @@ SLEEP_THRESHOLD_SECONDS = 30
 
 def background_frame_reader():
     global current_baby_status, last_activity_time, status_start_time, motion_detected, last_frame, motion_start_time
+    global last_sleeping_notification_time, last_motion_notification_time, audio_streaming_active
+    global last_wakeup_notification_time, last_crying_detection_time
 
     os.system("sudo killall -9 rpicam-vid > /dev/null 2>&1")
     time.sleep(0.5)
@@ -131,18 +133,24 @@ def background_frame_reader():
                             
                             if is_moving:
                                 # Update timestamp pentru ultima mișcare
-                                global last_sleeping_notification_time
                                 
                                 # Trimite notificare de motion detected cu cooldown
-                                global last_motion_notification_time
-                                current_time = time.time()
-                                if current_time - last_motion_notification_time > NOTIFICATION_COOLDOWN:
-                                    print("📤 [NOTIFICARE] Trimit notificare de motion detected")
-                                    threading.Thread(target=send_notification, args=('motion-detected',)).start()
-                                    last_motion_notification_time = current_time
+                                # DAR nu trimite dacă părintele e deja conectat la audio streaming
+                                
+                                if audio_streaming_active:
+                                    # Părintele e conectat live - nu e nevoie de notificare
+                                    pass
                                 else:
-                                    time_remaining = int(NOTIFICATION_COOLDOWN - (current_time - last_motion_notification_time))
-                                    print(f"⏳ [NOTIFICARE] Cooldown activ - {time_remaining}s rămase până la următoarea notificare")
+                                    current_time = time.time()
+                                    if current_time - last_motion_notification_time > NOTIFICATION_COOLDOWN:
+                                        print("📤 [NOTIFICARE] Trimit notificare de motion detected")
+                                        threading.Thread(target=send_notification, args=('motion-detected',)).start()
+                                        last_motion_notification_time = current_time
+                                    else:
+                                        time_remaining = int(NOTIFICATION_COOLDOWN - (current_time - last_motion_notification_time))
+                                        # NU mai afișăm mesaj la fiecare frame - doar la fiecare 30 de frame-uri
+                                        if frame_count % 30 == 0:
+                                            print(f"⏳ [NOTIFICARE] Motion cooldown: {time_remaining}s rămase")
                                 
                                 last_activity_time = time.time() # Update activitate
                                 if not motion_detected:
@@ -168,22 +176,18 @@ def background_frame_reader():
                                         print("--- [EVENT] Bebelușul s-a trezit! ---")
                                         
                                         # Trimite notificare că bebelușul s-a trezit cu cooldown
-                                        global last_wakeup_notification_time
-                                        current_time = time.time()
-                                        if current_time - last_wakeup_notification_time > NOTIFICATION_COOLDOWN:
-                                            print("📤 [NOTIFICARE] Trimit notificare de baby woke up")
-                                            threading.Thread(target=send_notification, args=('baby-woke-up',)).start()
-                                            last_wakeup_notification_time = current_time
-                                        else:
-                                            time_remaining = int(NOTIFICATION_COOLDOWN - (current_time - last_wakeup_notification_time))
-                                            print(f"⏳ [NOTIFICARE] Cooldown activ pentru wake-up - {time_remaining}s rămase")
+                                        if not audio_streaming_active:  # Nu trimite dacă părintele e conectat
+                                            current_time = time.time()
+                                            if current_time - last_wakeup_notification_time > NOTIFICATION_COOLDOWN:
+                                                print("📤 [NOTIFICARE] Trimit notificare de baby woke up")
+                                                threading.Thread(target=send_notification, args=('baby-woke-up',)).start()
+                                                last_wakeup_notification_time = current_time
                             else:
                                 # NU e mișcare
                                 motion_start_time = None # Resetăm confirmarea trezirii
                                 time_since_last_move = time.time() - last_activity_time
                                 
                                 # Pentru somn: verificăm ATÂT lipsa mișcării ȘI lipsa plânsului
-                                global last_crying_detection_time
                                 time_since_last_crying = time.time() - last_crying_detection_time
                                 
                                 # Considerăm somn DOAR dacă:
@@ -198,15 +202,12 @@ def background_frame_reader():
                                     print("--- [EVENT] Bebelușul a adormit (Liniște completă detectată: fără mișcare + fără plâns) ---")
                                     
                                     # Trimite notificare că bebelușul a adormit cu cooldown
-                                    global last_sleeping_notification_time
-                                    current_time = time.time()
-                                    if current_time - last_sleeping_notification_time > NOTIFICATION_COOLDOWN:
-                                        print("📤 [NOTIFICARE] Trimit notificare de baby fell asleep")
-                                        threading.Thread(target=send_notification, args=('baby-might-be-sleeping',)).start()
-                                        last_sleeping_notification_time = current_time
-                                    else:
-                                        time_remaining = int(NOTIFICATION_COOLDOWN - (current_time - last_sleeping_notification_time))
-                                        print(f"⏳ [NOTIFICARE] Cooldown activ pentru sleep - {time_remaining}s rămase")
+                                    if not audio_streaming_active:  # Nu trimite dacă părintele e conectat
+                                        current_time = time.time()
+                                        if current_time - last_sleeping_notification_time > NOTIFICATION_COOLDOWN:
+                                            print("📤 [NOTIFICARE] Trimit notificare de baby fell asleep")
+                                            threading.Thread(target=send_notification, args=('baby-might-be-sleeping',)).start()
+                                            last_sleeping_notification_time = current_time
 
                         prev_gray = gray
         except Exception as e:
@@ -378,8 +379,12 @@ def background_audio_monitor():
                     while audio_streaming_active:
                         time.sleep(0.5)
                     
-                    # Repornim procesul când streaming s-a terminat
-                    print("🔄 [AUDIO] Streaming terminat - REPORNESC monitorizare audio")
+                    # Streaming s-a terminat - așteptăm puțin pentru siguranță
+                    print("🔄 [AUDIO] Streaming terminat - Aștept eliberarea finală a microfonului...")
+                    time.sleep(0.5)  # Delay suplimentar pentru sincronizare
+                    
+                    # Repornim procesul când streaming s-a terminat COMPLET
+                    print("🔄 [AUDIO] REPORNESC monitorizare audio")
                     process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                     chunk_counter = 0
                     log_counter = 0
@@ -395,8 +400,15 @@ def background_audio_monitor():
                     print(f"🎤 [SISTEM] Thread audio activ - procesat {chunk_counter} chunk-uri")
                 
                 if not raw_data:
-                    print("⚠️ [AUDIO] Nu primesc date de la arecord!")
-                    break
+                    print("⚠️ [AUDIO] Nu primesc date de la arecord! Încerc să repornesc procesul...")
+                    # NU face break - repornește procesul!
+                    if process:
+                        process.terminate()
+                        process.wait()
+                    time.sleep(1.0)  # Așteaptă eliberarea device-ului
+                    print("🔄 [AUDIO] Repornesc proces arecord...")
+                    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    continue
                     
                 if len(raw_data) < CHUNK_SIZE * 2:
                     print(f"⚠️ [AUDIO] Chunk incomplet: {len(raw_data)} bytes în loc de {CHUNK_SIZE * 2}")
@@ -521,7 +533,10 @@ def background_audio_monitor():
                             print(f"😭 [STATS] RMS avg: {avg_rms:.4f}, Crying ratio avg: {avg_crying_ratio:.2f}, Match: {detection_percentage*100:.0f}%")
                             
                             # PASUL 1: Trimitem notificarea generală (cu cooldown)
-                            if current_time - last_crying_alert_time > CRYING_ALERT_COOLDOWN:
+                            # DAR nu trimite dacă părintele e conectat la streaming
+                            if audio_streaming_active:
+                                print(f"⏸️ [PLÂNS] Părintele e conectat live - NU trimit notificare")
+                            elif current_time - last_crying_alert_time > CRYING_ALERT_COOLDOWN:
                                 print(f"📤 [NOTIFICARE 1/2] Trimit alertă: Baby is crying")
                                 threading.Thread(target=send_notification, args=('baby-crying',)).start()
                                 last_crying_alert_time = current_time
@@ -551,7 +566,9 @@ def background_audio_monitor():
                                 
                                 # PASUL 3: Trimitem notificarea cu MOTIVUL DOAR dacă confidence >= MIN_CONFIDENCE
                                 if confidence >= MIN_CONFIDENCE:
-                                    if current_time - last_crying_reason_time > CRYING_REASON_COOLDOWN:
+                                    if audio_streaming_active:
+                                        print(f"⏸️ [CLASIFICARE] Părintele e conectat - NU trimit clasificare")
+                                    elif current_time - last_crying_reason_time > CRYING_REASON_COOLDOWN:
                                         print(f"📤 [NOTIFICARE 2/2] Trimit motivul: {type_ro} (Confidence {confidence}%)")
                                         time.sleep(2)  # Delay pentru a nu trimite simultan cu prima
                                         threading.Thread(target=send_notification, args=('crying-reason-identified', None, None, crying_type)).start()
@@ -855,6 +872,18 @@ def audio_stream():
             # SUSPENDĂM monitorizarea automată
             with streaming_lock:
                 audio_streaming_active = True
+            
+            # RESETĂM TOATE COOLDOWN-URILE când părintele se conectează live
+            # Dacă e conectat, înseamnă că e atent - vrem notificări imediate după deconectare
+            global last_motion_notification_time, last_crying_alert_time, last_crying_reason_time
+            global last_wakeup_notification_time, last_sleeping_notification_time
+            print("🔄 [STREAM] Resetez toate cooldown-urile (părinte conectat = atenție activă)")
+            last_motion_notification_time = 0
+            last_crying_alert_time = 0
+            last_crying_reason_time = 0
+            last_wakeup_notification_time = 0
+            last_sleeping_notification_time = 0
+            
             print("🎤 [STREAM] ========================================")
             print("🎤 [STREAM] Audio streaming PORNIT")
             print("🎤 [STREAM] Monitorizare plâns SUSPENDATĂ")
@@ -905,13 +934,9 @@ def audio_stream():
             import traceback
             traceback.print_exc()
         finally:
-            # REACTIVĂM monitorizarea automată
-            with streaming_lock:
-                audio_streaming_active = False
-            print("🎤 [STREAM] Audio streaming OPRIT")
-            print("🎤 [STREAM] Monitorizare plâns REACTIVATĂ")
-            print("🎤 [STREAM] ========================================")
+            print("🎤 [STREAM] Închid streaming...")
             
+            # PASUL 1: Terminăm procesul arecord din streaming
             if process:
                 # Verificăm dacă arecord a dat erori
                 if process.stderr:
@@ -921,7 +946,19 @@ def audio_stream():
                         print(stderr_output.decode('utf-8', errors='ignore'))
                 
                 process.terminate()
-                process.wait()
+                process.wait()  # Așteptăm să se termine complet
+                print("🎤 [STREAM] Proces arecord terminat")
+            
+            # PASUL 2: Așteptăm să se elibereze complet microfonul (CRITIC!)
+            print("🎤 [STREAM] Aștept eliberarea completă a microfonului...")
+            time.sleep(1.0)  # Delay pentru a fi SIGURI că device-ul e liber
+            
+            # PASUL 3: Doar ACUM reactivăm monitorizarea
+            with streaming_lock:
+                audio_streaming_active = False
+            print("🎤 [STREAM] Audio streaming OPRIT")
+            print("🎤 [STREAM] Monitorizare plâns REACTIVATĂ")
+            print("🎤 [STREAM] ========================================")
     
     return Response(
         generate_audio(),
