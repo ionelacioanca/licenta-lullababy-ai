@@ -104,10 +104,8 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({ visible, onClose }) 
         if (history && history.length > 0) {
           // Convert backend format to frontend format
           const loadedMessages: MessageItem[] = [];
-          
           // Backend returns {conversations: [{question: {...}, answer: {...}}]}
           for (const conv of history) {
-            // Add user question
             if (conv.question) {
               loadedMessages.push({
                 id: conv.question._id,
@@ -116,8 +114,6 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({ visible, onClose }) 
                 ts: new Date(conv.question.createdAt).getTime(),
               });
             }
-            
-            // Add AI answer
             if (conv.answer) {
               loadedMessages.push({
                 id: conv.answer._id,
@@ -127,9 +123,9 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({ visible, onClose }) 
               });
             }
           }
-          
+          // Inversează ordinea pentru a avea cele mai vechi la început, cele mai noi la final
+          loadedMessages.sort((a, b) => a.ts - b.ts);
           console.log('[Chatbot] Loaded', loadedMessages.length, 'messages from history');
-          
           if (loadedMessages.length > 0) {
             setMessages(loadedMessages);
             hasLoadedHistory.current = true;
