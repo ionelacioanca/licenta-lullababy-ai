@@ -367,13 +367,23 @@ def background_audio_monitor():
         log_counter = 0  # Pentru a reduce spam-ul de log-uri
         while True:
             try:
-                # Verificăm dacă audio streaming e activ - dacă da, SUSPENDĂM monitorizarea
+                # Verificăm dacă audio streaming e activ - dacă da, OPRIM PROCESUL pentru a elibera device-ul
                 global audio_streaming_active
                 if audio_streaming_active:
-                    if chunk_counter % 100 == 0:  # Mesaj ocazional
-                        print("⏸️ [AUDIO] Monitorizare suspendată - Audio streaming activ")
-                    time.sleep(0.5)  # Pauză scurtă
-                    continue  # SKIP procesarea audio
+                    print("⏸️ [AUDIO] Streaming activ - OPRESC proces arecord pentru a elibera microfonul")
+                    process.terminate()
+                    process.wait()
+                    
+                    # Așteptăm până se termină streaming
+                    while audio_streaming_active:
+                        time.sleep(0.5)
+                    
+                    # Repornim procesul când streaming s-a terminat
+                    print("🔄 [AUDIO] Streaming terminat - REPORNESC monitorizare audio")
+                    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    chunk_counter = 0
+                    log_counter = 0
+                    continue
                 
                 # Citim chunk de audio
                 raw_data = process.stdout.read(CHUNK_SIZE * 2)  # 2 bytes per sample (S16_LE)
@@ -845,12 +855,20 @@ def audio_stream():
             # SUSPENDĂM monitorizarea automată
             with streaming_lock:
                 audio_streaming_active = True
-            print("🎤 [STREAM] Audio streaming pornit - Monitorizare suspendată")
+            print("🎤 [STREAM] ========================================")
+            print("🎤 [STREAM] Audio streaming PORNIT")
+            print("🎤 [STREAM] Monitorizare plâns SUSPENDATĂ")
+            
+            # Așteptăm ca thread-ul de monitorizare să închidă procesul arecord și să elibereze microfonul
+            print("🎤 [STREAM] Aștept ca monitorizarea să elibereze microfonul...")
+            time.sleep(1.5)  # Mărit pentru a da timp thread-ului să termine procesul
+            print("🎤 [STREAM] Microfon eliberat, încep streaming...")
             
             # Configurare arecord pentru streaming audio
+            # Folosim plughw pentru acces simultan (în caz de race condition)
             cmd = [
                 'arecord',
-                '-D', ALSA_MICROPHONE_DEVICE,  # Acum putem folosi hw:1,0 direct
+                '-D', 'plughw:1,0',  # Plugin wrapper pentru compatibilitate
                 '-f', 'S16_LE',
                 '-r', '16000',
                 '-c', '1',
@@ -858,28 +876,50 @@ def audio_stream():
                 '-'  # Output la stdout
             ]
             
+            print(f"🎤 [STREAM] Comandă: {' '.join(cmd)}")
+            
             process = subprocess.Popen(
                 cmd,
                 stdout=subprocess.PIPE,
-                stderr=subprocess.DEVNULL,
+                stderr=subprocess.PIPE,  # CAPTURAM stderr pentru debugging
                 bufsize=4096
             )
+            
+            print("🎤 [STREAM] Proces arecord pornit, încep streaming...")
+            chunk_count = 0
             
             while True:
                 chunk = process.stdout.read(4096)
                 if not chunk:
+                    print("🎤 [STREAM] Stream terminat (no more chunks)")
                     break
+                
+                chunk_count += 1
+                if chunk_count % 50 == 0:  # La fiecare ~3 secunde
+                    print(f"🎤 [STREAM] Streaming activ - {chunk_count} chunk-uri trimise")
+                
                 yield chunk
                 
         except Exception as e:
-            print(f"❌ [STREAM] Eroare audio stream: {e}")
+            print(f"❌ [STREAM] EROARE audio stream: {e}")
+            import traceback
+            traceback.print_exc()
         finally:
             # REACTIVĂM monitorizarea automată
             with streaming_lock:
                 audio_streaming_active = False
-            print("🎤 [STREAM] Audio streaming oprit - Monitorizare reactivată")
+            print("🎤 [STREAM] Audio streaming OPRIT")
+            print("🎤 [STREAM] Monitorizare plâns REACTIVATĂ")
+            print("🎤 [STREAM] ========================================")
             
             if process:
+                # Verificăm dacă arecord a dat erori
+                if process.stderr:
+                    stderr_output = process.stderr.read()
+                    if stderr_output:
+                        print(f"⚠️ [STREAM] Erori de la arecord:")
+                        print(stderr_output.decode('utf-8', errors='ignore'))
+                
                 process.terminate()
                 process.wait()
     
