@@ -207,6 +207,36 @@ async function getChatbotReply(message, userLanguage, babyContext = null, userCo
   try {
     // Use explicit language preference if provided, otherwise detect from message
     const lang = userLanguage === 'ro' || userLanguage === 'en' ? userLanguage : detectLanguage(message);
+    // --- VALIDARE ÎNTREBARE ÎN DOMENIU ---
+    // Refacem mapping-ul aici pentru validare rapidă
+    const mapping = [
+      ["cry", "plâns", "plange", "plânge"],
+      ["sleep", "somn", "night"],
+      ["colic", "colici"],
+      ["tooth", "teeth", "dinte", "dinti", "dintișor", "dintisor"],
+      ["fever", "temperature", "febră", "febra", "temp"],
+      ["heart", "pulse", "puls", "vital"],
+      ["parent", "părinte", "parinte", "guilty", "bad mom", "bad dad"],
+      ["postpartum", "post partum", "recovery", "healing", "baby blues", "depression", "ppd", "after birth", "dupa nastere", "după naștere", "depresie postpartum"],
+      ["breastfeed", "breast feed", "breastfeeding", "nursing", "latch", "milk", "pump", "pumping", "weaning", "alăptare", "alaptare", "lapte matern", "sân"],
+    ];
+    const lowerQ = message.toLowerCase();
+    let found = false;
+    for (const keywords of mapping) {
+      if (keywords.some((k) => lowerQ.includes(k))) {
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      // Întrebare în afara domeniului
+      if (lang === 'ro') {
+        return "Îmi pare rău, nu am fost antrenat să răspund la această întrebare (ex: vremea, știri, sport). Pot însă să te ajut cu detalii despre copilul tău, sănătate, somn, colici, alăptare, febră, etc.";
+      } else {
+        return "Sorry, I am not trained to answer this type of question (e.g., weather, news, sports). But I can help you with topics about your baby, health, sleep, colic, breastfeeding, fever, and more.";
+      }
+    }
+    // --- CONTINUĂ CU LOGICA NORMALĂ ---
     const knowledge = getKnowledge(message);
     const prompt = buildPrompt(message, lang, knowledge, babyContext, userContext);
 
@@ -216,12 +246,11 @@ async function getChatbotReply(message, userLanguage, babyContext = null, userCo
     } else {
       console.log(`[Chatbot] WARNING: No baby context provided`);
     }
-    
     // Log the complete prompt to debug
     console.log('\n========== COMPLETE PROMPT ==========');
     console.log(prompt);
     console.log('=====================================\n');
-    
+
     const startTime = Date.now();
 
     // apelăm Ollama HTTP API – ai nevoie de modelul 'babybuddy' creat
