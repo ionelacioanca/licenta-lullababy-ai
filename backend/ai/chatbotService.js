@@ -207,6 +207,22 @@ async function getChatbotReply(message, userLanguage, babyContext = null, userCo
   try {
     // Use explicit language preference if provided, otherwise detect from message
     const lang = userLanguage === 'ro' || userLanguage === 'en' ? userLanguage : detectLanguage(message);
+    // --- DETECȚIE FRAZE DE MULȚUMIRE/CONFIRMARE ---
+    const lowerQ = message.toLowerCase();
+    const thanksPhrases = [
+      // Română
+      "multumesc", "mulțumesc", "ms", "merci", "ok", "bine", "super", "perfect", "mersi", "apreciez", "foarte bine", "e bine", "e ok",
+      // Engleză
+      "thank you", "thanks", "ok", "okay", "great", "awesome", "perfect", "good", "cool", "appreciate it"
+    ];
+    if (thanksPhrases.some((phrase) => lowerQ === phrase || lowerQ.startsWith(phrase + ' ') || lowerQ.endsWith(' ' + phrase) || lowerQ.includes(phrase))) {
+      if (lang === 'ro') {
+        return "Cu drag! Dacă mai ai nevoie de ajutor sau ai alte întrebări despre copilul tău, sunt aici pentru tine!";
+      } else {
+        return "You're welcome! If you need anything else or have more questions about your baby, I'm here to help!";
+      }
+    }
+
     // --- VALIDARE ÎNTREBARE ÎN DOMENIU ---
     // Refacem mapping-ul aici pentru validare rapidă
     const mapping = [
@@ -220,7 +236,6 @@ async function getChatbotReply(message, userLanguage, babyContext = null, userCo
       ["postpartum", "post partum", "recovery", "healing", "baby blues", "depression", "ppd", "after birth", "dupa nastere", "după naștere", "depresie postpartum"],
       ["breastfeed", "breast feed", "breastfeeding", "nursing", "latch", "milk", "pump", "pumping", "weaning", "alăptare", "alaptare", "lapte matern", "sân"],
     ];
-    const lowerQ = message.toLowerCase();
     let found = false;
     for (const keywords of mapping) {
       if (keywords.some((k) => lowerQ.includes(k))) {
