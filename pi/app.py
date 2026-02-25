@@ -60,6 +60,7 @@ streaming_lock = threading.Lock()
 
 last_frame = None
 frame_lock = threading.Lock()
+last_frame_time = 0  # Timestamp pentru ultima actualizare frame
 motion_detected = False
 # Variabile pentru logica de somn
 current_baby_status = "Necunoscut"
@@ -76,143 +77,164 @@ SLEEP_THRESHOLD_SECONDS = 30
 def background_frame_reader():
     global current_baby_status, last_activity_time, status_start_time, motion_detected, last_frame, motion_start_time
     global last_sleeping_notification_time, last_motion_notification_time, audio_streaming_active
-    global last_wakeup_notification_time, last_crying_detection_time
+    global last_wakeup_notification_time, last_crying_detection_time, last_frame_time
 
-    os.system("sudo killall -9 rpicam-vid > /dev/null 2>&1")
-    time.sleep(0.5)
-
-    cmd = [
-        'rpicam-vid', '-t', '0', '--inline', '--width', '1280', '--height', '720',
-        '--framerate', '15', '--codec', 'mjpeg', '--flush', '--nopreview',
-        '--saturation', '0', '-o', '-'
-    ]
-
-    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, bufsize=0)
-    buffer = b""
-
-    prev_gray = None
-    recording_until = 0
-    frame_count = 0 
-
-    print("--- [SISTEM] Analiza video a pornit ---")
-
-    while True:
+    while True:  # Loop infinit cu auto-restart
         try:
-            chunk = process.stdout.read(8192)
-            if not chunk: break
-            buffer += chunk
+            os.system("sudo killall -9 rpicam-vid > /dev/null 2>&1")
+            time.sleep(0.5)
 
-            a = buffer.find(b'\xff\xd8')
-            b = buffer.find(b'\xff\xd9')
+            cmd = [
+                'rpicam-vid', '-t', '0', '--inline', '--width', '1280', '--height', '720',
+                '--framerate', '15', '--codec', 'mjpeg', '--flush', '--nopreview',
+                '--saturation', '0', '-o', '-'
+            ]
 
-            if a != -1 and b != -1:
-                jpg_data = buffer[a:b+2]
-                buffer = buffer[b+2:]
+            process = subprocess.Popen(cmd, stdout=subprocess.PIPE, bufsize=0)
+            buffer = b""
 
-                with frame_lock:
-                    last_frame = jpg_data
+            prev_gray = None
+            recording_until = 0
+            frame_count = 0 
 
-                frame_count += 1
-                if frame_count % 10 == 0:
-                    nparr = np.frombuffer(jpg_data, np.uint8)
-                    full_frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+            print("📹 [CAMERA] Thread pornit - încep citirea frame-uri")
 
-                    if full_frame is not None:
-                        frame_small = cv2.resize(full_frame, (320, 180))
-                        gray = cv2.cvtColor(frame_small, cv2.COLOR_BGR2GRAY)
-                        gray = cv2.GaussianBlur(gray, (21, 21), 0)
+            while True:
+                try:
+                    chunk = process.stdout.read(8192)
+                    if not chunk:
+                        print("⚠️ [CAMERA] rpicam-vid s-a oprit - repornesc proces")
+                        break  # Ieșim din bucla internă pentru restart
+                    buffer += chunk
 
-                        if prev_gray is not None:
-                            frame_diff = cv2.absdiff(prev_gray, gray)
-                            thresh = cv2.threshold(frame_diff, 25, 255, cv2.THRESH_BINARY)[1]
-                            thresh = cv2.dilate(thresh, None, iterations=2)
-                            motion_score = np.sum(thresh)
+                    a = buffer.find(b'\xff\xd8')
+                    b = buffer.find(b'\xff\xd9')
 
-                            # LOGICĂ MIȘCARE / ÎNREGISTRARE
-                            is_moving = motion_score > 50000
-                            
-                            if is_moving:
-                                # Update timestamp pentru ultima mișcare
-                                
-                                # Trimite notificare de motion detected cu cooldown
-                                # DAR nu trimite dacă părintele e deja conectat la audio streaming
-                                
-                                if audio_streaming_active:
-                                    # Părintele e conectat live - nu e nevoie de notificare
-                                    pass
-                                else:
-                                    current_time = time.time()
-                                    if current_time - last_motion_notification_time > NOTIFICATION_COOLDOWN:
-                                        print("📤 [NOTIFICARE] Trimit notificare de motion detected")
-                                        threading.Thread(target=send_notification, args=('motion-detected',)).start()
-                                        last_motion_notification_time = current_time
-                                    else:
-                                        time_remaining = int(NOTIFICATION_COOLDOWN - (current_time - last_motion_notification_time))
-                                        # NU mai afișăm mesaj la fiecare frame - doar la fiecare 30 de frame-uri
-                                        if frame_count % 30 == 0:
-                                            print(f"⏳ [NOTIFICARE] Motion cooldown: {time_remaining}s rămase")
-                                
-                                last_activity_time = time.time() # Update activitate
-                                if not motion_detected:
-                                    print(f"DEBUG: Miscare detectata (Score: {motion_score})")
-                                    start_recording_event()
-                                    motion_detected = True
-                                recording_until = time.time() + 20
-                            
-                            if time.time() > recording_until:
-                                motion_detected = False
-                            
-                            # LOGICĂ SOMN
-                            if is_moving:
-                                if current_baby_status == "Adormit":
-                                    if motion_start_time is None:
-                                        motion_start_time = time.time()
-                                    elif time.time() - motion_start_time > AWAKE_CONFIRMATION_SECONDS:
-                                        duration_mins = (time.time() - status_start_time) / 60
-                                        finalize_sleep_in_atlas(duration_mins)
-                                        current_baby_status = "Treaz"
-                                        status_start_time = time.time()
-                                        motion_start_time = None
-                                        print("--- [EVENT] Bebelușul s-a trezit! ---")
-                                        
-                                        # Trimite notificare că bebelușul s-a trezit cu cooldown
-                                        if not audio_streaming_active:  # Nu trimite dacă părintele e conectat
-                                            current_time = time.time()
-                                            if current_time - last_wakeup_notification_time > NOTIFICATION_COOLDOWN:
-                                                print("📤 [NOTIFICARE] Trimit notificare de baby woke up")
-                                                threading.Thread(target=send_notification, args=('baby-woke-up',)).start()
-                                                last_wakeup_notification_time = current_time
-                            else:
-                                # NU e mișcare
-                                motion_start_time = None # Resetăm confirmarea trezirii
-                                time_since_last_move = time.time() - last_activity_time
-                                
-                                # Pentru somn: verificăm ATÂT lipsa mișcării ȘI lipsa plânsului
-                                time_since_last_crying = time.time() - last_crying_detection_time
-                                
-                                # Considerăm somn DOAR dacă:
-                                # 1. Nu e mișcare de 30s
-                                # 2. ȘI nu s-a detectat plâns de 30s (sau niciodată)
-                                if (current_baby_status != "Adormit" and 
-                                    time_since_last_move > SLEEP_THRESHOLD_SECONDS and
-                                    time_since_last_crying > SLEEP_THRESHOLD_SECONDS):
-                                    start_sleep_in_atlas()
-                                    current_baby_status = "Adormit"
-                                    status_start_time = time.time()
-                                    print("--- [EVENT] Bebelușul a adormit (Liniște completă detectată: fără mișcare + fără plâns) ---")
+                    if a != -1 and b != -1:
+                        jpg_data = buffer[a:b+2]
+                        buffer = buffer[b+2:]
+
+                        with frame_lock:
+                            last_frame = jpg_data
+                            last_frame_time = time.time()  # Actualizăm timestamp-ul
+
+                        frame_count += 1
+                        if frame_count % 10 == 0:
+                            nparr = np.frombuffer(jpg_data, np.uint8)
+                            full_frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+                            if full_frame is not None:
+                                frame_small = cv2.resize(full_frame, (320, 180))
+                                gray = cv2.cvtColor(frame_small, cv2.COLOR_BGR2GRAY)
+                                gray = cv2.GaussianBlur(gray, (21, 21), 0)
+
+                                if prev_gray is not None:
+                                    frame_diff = cv2.absdiff(prev_gray, gray)
+                                    thresh = cv2.threshold(frame_diff, 25, 255, cv2.THRESH_BINARY)[1]
+                                    thresh = cv2.dilate(thresh, None, iterations=2)
+                                    motion_score = np.sum(thresh)
+
+                                    # LOGICĂ MIȘCARE / ÎNREGISTRARE
+                                    is_moving = motion_score > 50000
                                     
-                                    # Trimite notificare că bebelușul a adormit cu cooldown
-                                    if not audio_streaming_active:  # Nu trimite dacă părintele e conectat
-                                        current_time = time.time()
-                                        if current_time - last_sleeping_notification_time > NOTIFICATION_COOLDOWN:
-                                            print("📤 [NOTIFICARE] Trimit notificare de baby fell asleep")
-                                            threading.Thread(target=send_notification, args=('baby-might-be-sleeping',)).start()
-                                            last_sleeping_notification_time = current_time
+                                    if is_moving:
+                                        # Update timestamp pentru ultima mișcare
+                                        
+                                        # Trimite notificare de motion detected cu cooldown
+                                        # DAR nu trimite dacă părintele e deja conectat la audio streaming
+                                        
+                                        if audio_streaming_active:
+                                            # Părintele e conectat live - nu e nevoie de notificare
+                                            pass
+                                        else:
+                                            current_time = time.time()
+                                            if current_time - last_motion_notification_time > NOTIFICATION_COOLDOWN:
+                                                print("📤 [NOTIFICARE] Trimit notificare de motion detected")
+                                                threading.Thread(target=send_notification, args=('motion-detected',)).start()
+                                                last_motion_notification_time = current_time
+                                            else:
+                                                time_remaining = int(NOTIFICATION_COOLDOWN - (current_time - last_motion_notification_time))
+                                                # NU mai afișăm mesaj la fiecare frame - doar la fiecare 30 de frame-uri
+                                                if frame_count % 30 == 0:
+                                                    print(f"⏳ [NOTIFICARE] Motion cooldown: {time_remaining}s rămase")
+                                        
+                                        last_activity_time = time.time() # Update activitate
+                                        if not motion_detected:
+                                            print(f"DEBUG: Miscare detectata (Score: {motion_score})")
+                                            start_recording_event()
+                                            motion_detected = True
+                                        recording_until = time.time() + 20
+                                    
+                                    if time.time() > recording_until:
+                                        motion_detected = False
+                                    
+                                    # LOGICĂ SOMN
+                                    if is_moving:
+                                        if current_baby_status == "Adormit":
+                                            if motion_start_time is None:
+                                                motion_start_time = time.time()
+                                            elif time.time() - motion_start_time > AWAKE_CONFIRMATION_SECONDS:
+                                                duration_mins = (time.time() - status_start_time) / 60
+                                                finalize_sleep_in_atlas(duration_mins)
+                                                current_baby_status = "Treaz"
+                                                status_start_time = time.time()
+                                                motion_start_time = None
+                                                print("--- [EVENT] Bebelușul s-a trezit! ---")
+                                                
+                                                # Trimite notificare că bebelușul s-a trezit cu cooldown
+                                                if not audio_streaming_active:  # Nu trimite dacă părintele e conectat
+                                                    current_time = time.time()
+                                                    if current_time - last_wakeup_notification_time > NOTIFICATION_COOLDOWN:
+                                                        print("📤 [NOTIFICARE] Trimit notificare de baby woke up")
+                                                        threading.Thread(target=send_notification, args=('baby-woke-up',)).start()
+                                                        last_wakeup_notification_time = current_time
+                                    else:
+                                        # NU e mișcare
+                                        motion_start_time = None # Resetăm confirmarea trezirii
+                                        time_since_last_move = time.time() - last_activity_time
+                                        
+                                        # Pentru somn: verificăm ATÂT lipsa mișcării ȘI lipsa plânsului
+                                        time_since_last_crying = time.time() - last_crying_detection_time
+                                        
+                                        # Considerăm somn DOAR dacă:
+                                        # 1. Nu e mișcare de 30s
+                                        # 2. ȘI nu s-a detectat plâns de 30s (sau niciodată)
+                                        if (current_baby_status != "Adormit" and 
+                                            time_since_last_move > SLEEP_THRESHOLD_SECONDS and
+                                            time_since_last_crying > SLEEP_THRESHOLD_SECONDS):
+                                            start_sleep_in_atlas()
+                                            current_baby_status = "Adormit"
+                                            status_start_time = time.time()
+                                            print("--- [EVENT] Bebelușul a adormit (Liniște completă detectată: fără mișcare + fără plâns) ---")
+                                            
+                                            # Trimite notificare că bebelușul a adormit cu cooldown
+                                            if not audio_streaming_active:  # Nu trimite dacă părintele e conectat
+                                                current_time = time.time()
+                                                if current_time - last_sleeping_notification_time > NOTIFICATION_COOLDOWN:
+                                                    print("📤 [NOTIFICARE] Trimit notificare de baby fell asleep")
+                                                    threading.Thread(target=send_notification, args=('baby-might-be-sleeping',)).start()
+                                                    last_sleeping_notification_time = current_time
+                                                else:
+                                                    time_remaining = int(NOTIFICATION_COOLDOWN - (current_time - last_sleeping_notification_time))
+                                                    print(f"🔇 [NOTIFICARE BLOCATĂ] Sleep notification - cooldown {time_remaining}s rămase")
+                                            else:
+                                                print("⏸️ [NOTIFICARE BLOCATĂ] Sleep notification - audio streaming activ")
 
-                        prev_gray = gray
+                                prev_gray = gray
+                except Exception as e:
+                    print(f"❌ [CAMERA] Eroare procesare cadru: {e}")
+                    time.sleep(0.1)
+                    
         except Exception as e:
-            print(f"Eroare procesare cadru: {e}")
-            time.sleep(0.1)
+            print(f"❌ [CAMERA] EROARE CRITICĂ - thread crash: {e}")
+            import traceback
+            traceback.print_exc()
+        finally:
+            if 'process' in locals():
+                process.terminate()
+                process.wait()
+            print("🔄 [CAMERA] Repornesc thread camera în 2 secunde...")
+            time.sleep(2)  # Așteptăm puțin înainte de restart
 
 def classify_crying_pattern(rms_values, crying_ratios, fft_magnitudes, fft_freqs):
     """
@@ -375,8 +397,12 @@ def background_audio_monitor():
                     process.terminate()
                     process.wait()
                     
-                    # Așteptăm până se termină streaming
+                    # Așteptăm până se termină streaming CU TIMEOUT pentru a evita blocarea indefinită
+                    wait_start = time.time()
                     while audio_streaming_active:
+                        if time.time() - wait_start > 30:  # Timeout 30 secunde
+                            print("⚠️ [AUDIO] TIMEOUT așteptare streaming! Repornesc oricum monitorizarea.")
+                            break
                         time.sleep(0.5)
                     
                     # Streaming s-a terminat - așteptăm puțin pentru siguranță
@@ -832,6 +858,42 @@ def get_baby_stats():
             "status": current_baby_status,
             "last_move": datetime.datetime.fromtimestamp(last_activity_time).strftime("%H:%M:%S"),
             "history": events
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/system_status')
+def system_status():
+    """Endpoint pentru debugging - arată starea internă a sistemului"""
+    try:
+        # Verificăm dacă camera funcționează REAL (nu doar dacă thread-ul e alive)
+        camera_functional = False
+        if camera_thread.is_alive():
+            time_since_last_frame = time.time() - last_frame_time if last_frame_time > 0 else float('inf')
+            camera_functional = time_since_last_frame < 5  # Frame recent în ultimele 5 secunde
+        
+        return jsonify({
+            "audio_streaming_active": audio_streaming_active,
+            "baby_status": current_baby_status,
+            "last_crying_detection": time.time() - last_crying_detection_time if last_crying_detection_time > 0 else "never",
+            "camera": {
+                "thread_alive": camera_thread.is_alive(),
+                "functional": camera_functional,
+                "last_frame_age": int(time.time() - last_frame_time) if last_frame_time > 0 else "never",
+                "has_frame": last_frame is not None
+            },
+            "cooldowns": {
+                "motion": int(time.time() - last_motion_notification_time) if last_motion_notification_time > 0 else 0,
+                "crying_alert": int(time.time() - last_crying_alert_time) if last_crying_alert_time > 0 else 0,
+                "crying_reason": int(time.time() - last_crying_reason_time) if last_crying_reason_time > 0 else 0,
+                "wakeup": int(time.time() - last_wakeup_notification_time) if last_wakeup_notification_time > 0 else 0,
+                "sleeping": int(time.time() - last_sleeping_notification_time) if last_sleeping_notification_time > 0 else 0
+            },
+            "threads": {
+                "camera": camera_thread.is_alive(),
+                "audio": audio_monitor_thread.is_alive(),
+                "cleanup": cleanup_thread.is_alive()
+            }
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
