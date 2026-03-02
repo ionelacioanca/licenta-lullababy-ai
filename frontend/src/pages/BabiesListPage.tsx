@@ -113,8 +113,24 @@ const BabiesListPage: React.FC = () => {
   };
 
   const handleSelectBaby = async (baby: Baby) => {
+    console.log('🔵 [Baby Selection] User clicked on baby:', baby.name, 'ID:', baby._id);
+    
     // Store selected baby ID for viewing data
     await AsyncStorage.setItem("selectedBabyId", baby._id);
+    console.log('💾 [Baby Selection] Saved selectedBabyId to AsyncStorage:', baby._id);
+    
+    // Check if this baby is already being monitored
+    const currentMonitoredBabyId = await AsyncStorage.getItem("monitoredBabyId");
+    console.log('🔍 [Baby Selection] Current monitoredBabyId:', currentMonitoredBabyId);
+    
+    if (currentMonitoredBabyId === baby._id) {
+      // This baby is already monitored - just navigate without asking
+      console.log('✅ [Baby Selection] Baby already monitored, navigating directly:', baby.name);
+      router.push("/dashboard");
+      return;
+    }
+    
+    console.log('❓ [Baby Selection] Baby not monitored yet - showing dialog');
     
     // Ask user if they want to enable LIVE sleep monitoring for this baby
     Alert.alert(
@@ -127,7 +143,8 @@ const BabiesListPage: React.FC = () => {
           style: 'cancel',
           onPress: () => {
             // User only wants to view data - don't set monitored baby
-            console.log('📊 [Baby Selection] View-only mode for:', baby.name);
+            console.log('📊 [Baby Selection] View-only mode for:', baby.name, 'ID:', baby._id);
+            console.log('📊 [Baby Selection] monitoredBabyId remains:', currentMonitoredBabyId);
             router.push("/dashboard");
           }
         },
@@ -136,7 +153,8 @@ const BabiesListPage: React.FC = () => {
           onPress: async () => {
             // User wants live monitoring - set monitored baby ID
             await AsyncStorage.setItem("monitoredBabyId", baby._id);
-            console.log('👁️ [Baby Selection] Live monitoring enabled for:', baby.name);
+            console.log('👁️ [Baby Selection] Live monitoring enabled for:', baby.name, 'ID:', baby._id);
+            console.log('💾 [Baby Selection] Saved monitoredBabyId to AsyncStorage:', baby._id);
             router.push("/dashboard");
           }
         }

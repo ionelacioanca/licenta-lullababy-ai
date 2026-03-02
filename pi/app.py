@@ -7,6 +7,7 @@ import threading
 import datetime
 import requests
 from pymongo import MongoClient
+from bson import ObjectId
 from flask import Flask, Response, request, jsonify, send_from_directory, send_file
 
 app = Flask(__name__)
@@ -779,7 +780,8 @@ def save_status_to_atlas(status, duration_minutes):
             "device_id": "lullababypi_01"
         }
         if current_baby_id:
-            event["babyId"] = current_baby_id
+            # Convert string babyId to ObjectId for MongoDB
+            event["babyId"] = ObjectId(current_baby_id)
             print(f"--- [ATLAS] Salvez eveniment pentru baby ID: {current_baby_id} ---")
         else:
             print("⚠️ [ATLAS] Nu există baby ID setat - evenimentul va fi salvat fără baby ID")
@@ -800,7 +802,8 @@ def start_sleep_in_atlas():
             "device_id": "lullababypi_01"
         }
         if current_baby_id:
-            event["babyId"] = current_baby_id
+            # Convert string babyId to ObjectId for MongoDB
+            event["babyId"] = ObjectId(current_baby_id)
             print(f"--- [ATLAS] Pornesc sesiune de somn pentru baby ID: {current_baby_id} ---")
         else:
             print("⚠️ [ATLAS] Nu există baby ID setat - sesiunea va fi pornită fără baby ID")
@@ -824,7 +827,8 @@ def finalize_sleep_in_atlas(duration_mins):
             
             # Adăugăm babyId dacă există (pentru cazul în care sesiunea a fost creată fără babyId)
             if current_baby_id:
-                update_data["babyId"] = current_baby_id
+                # Convert string babyId to ObjectId for MongoDB
+                update_data["babyId"] = ObjectId(current_baby_id)
                 print(f"--- [ATLAS] Finalizez sesiune pentru baby ID: {current_baby_id} ---")
             else:
                 print("⚠️ [ATLAS] Finalizez sesiune fără baby ID setat")

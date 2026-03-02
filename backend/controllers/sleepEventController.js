@@ -89,6 +89,26 @@ class SleepEventController {
     }
 
     /**
+     * Get sleep events by baby ID and date range
+     */
+    static async getSleepEventsByBabyAndDateRange(req, res) {
+        try {
+            const { babyId } = req.params;
+            const { startDate, endDate } = req.query;
+            
+            if (!startDate || !endDate) {
+                return res.status(400).json({ message: 'Start date and end date are required' });
+            }
+            
+            const events = await SleepEventService.getSleepEventsByBabyAndDateRange(babyId, startDate, endDate);
+            res.status(200).json(events);
+        } catch (error) {
+            console.error('Error fetching sleep events by baby and date range:', error);
+            res.status(500).json({ message: error.message });
+        }
+    }
+
+    /**
      * Get today's sleep statistics
      */
     static async getTodaySleepStats(req, res) {
@@ -98,6 +118,44 @@ class SleepEventController {
             res.status(200).json(stats);
         } catch (error) {
             console.error('Error fetching today sleep stats:', error);
+            res.status(500).json({ message: error.message });
+        }
+    }
+
+    /**
+     * Get current sleep session for a specific baby
+     */
+    static async getCurrentSleepSessionByBaby(req, res) {
+        try {
+            const { babyId } = req.params;
+            const session = await SleepEventService.getCurrentSleepSessionByBaby(babyId);
+            
+            if (!session) {
+                return res.status(200).json({ sleeping: false, session: null });
+            }
+            
+            res.status(200).json({ sleeping: true, session });
+        } catch (error) {
+            console.error('Error fetching current sleep session by baby:', error);
+            res.status(500).json({ message: error.message });
+        }
+    }
+
+    /**
+     * Get last sleep session for a specific baby
+     */
+    static async getLastSleepSessionByBaby(req, res) {
+        try {
+            const { babyId } = req.params;
+            const session = await SleepEventService.getLastSleepSessionByBaby(babyId);
+            
+            if (!session) {
+                return res.status(404).json({ message: 'No sleep session found for this baby' });
+            }
+            
+            res.status(200).json(session);
+        } catch (error) {
+            console.error('Error fetching last sleep session by baby:', error);
             res.status(500).json({ message: error.message });
         }
     }

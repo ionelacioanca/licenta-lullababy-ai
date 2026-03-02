@@ -25,7 +25,7 @@ import { getUpcomingEvents, CalendarEvent, generateVaccinationSchedule, generate
 import { getRecentEntries, JournalEntry } from "../services/journalService";
 import { getPendingRequestsCount } from "../services/linkRequestService";
 import { getUnreadCount } from "../services/messageService";
-import { getLastSleepSession, getCurrentSleepSession, SleepEvent } from "../services/sleepEventService";
+import { getLastSleepSession, getCurrentSleepSession, getLastSleepSessionByBaby, getCurrentSleepSessionByBaby, SleepEvent } from "../services/sleepEventService";
 import { growthNotificationService } from "../services/growthNotificationService";
 import { useTheme } from "../contexts/ThemeContext";
 
@@ -138,20 +138,33 @@ const DashboardPage: React.FC = () => {
 
   const loadSleepData = async () => {
     try {
-      const deviceId = "lullababypi_01"; // Your Raspberry Pi device ID
+      // Get the currently selected baby ID
+      const selectedBabyId = await AsyncStorage.getItem('selectedBabyId');
+      console.log("LOG [Dashboard] Loading sleep data for babyId:", selectedBabyId);
       
-      // Get last completed sleep session
-      const lastSession = await getLastSleepSession(deviceId);
+      if (!selectedBabyId) {
+        console.warn("No selectedBabyId found, skipping sleep data load");
+        return;
+      }
+      
+      // Get last completed sleep session for this baby
+      const lastSession = await getLastSleepSessionByBaby(selectedBabyId);
       setLastSleepSession(lastSession);
+      console.log("LOG [Dashboard] Last session loaded:", lastSession ? { babyId: lastSession.babyId, status: lastSession.status } : "null");
       
       // Get current sleep session (if baby is sleeping)
-      const currentSession = await getCurrentSleepSession(deviceId);
-      setIsSleeping(currentSession.sleeping);
-      setCurrentSleepSession(currentSession.session);
+      const currentSession = await getCurrentSleepSessionByBaby(selectedBabyId);
+      setIsSleeping(currentSession?.sleeping || false);
+      setCurrentSleepSession(currentSession?.session || null);
+      console.log("LOG [Dashboard] Current session loaded:", currentSession?.sleeping ? { babyId: currentSession.session?.babyId, status: currentSession.session?.status } : "not sleeping");
       
-      console.log("Sleep data loaded:", { lastSession, currentSession });
+      console.log("LOG ✅ [Dashboard] Sleep data loaded for babyId:", selectedBabyId);
     } catch (error) {
       console.error("Error loading sleep data:", error);
+      // Set default values on error
+      setLastSleepSession(null);
+      setIsSleeping(false);
+      setCurrentSleepSession(null);
     }
   };
 
@@ -212,18 +225,25 @@ const DashboardPage: React.FC = () => {
       if (data && Array.isArray(data) && data.length > 0) {
         // Check if there's a selected baby ID in AsyncStorage
         const selectedBabyId = await AsyncStorage.getItem("selectedBabyId");
+        console.log("🔍 [Dashboard] selectedBabyId from AsyncStorage:", selectedBabyId);
         
         // Find the selected baby, or default to the first one
         let baby;
         if (selectedBabyId) {
           baby = data.find((b: any) => b._id === selectedBabyId);
+          if (baby) {
+            console.log("✅ [Dashboard] Found baby matching selectedBabyId:", baby.name, baby._id);
+          } else {
+            console.warn("⚠️ [Dashboard] No baby found with selectedBabyId:", selectedBabyId);
+          }
         }
         if (!baby) {
           baby = data[0]; // Fallback to first baby if selected not found
+          console.log("📌 [Dashboard] Using first baby as fallback:", baby.name, baby._id);
           // Store the first baby as selected if no baby was previously selected
           if (baby && baby._id) {
             await AsyncStorage.setItem("selectedBabyId", baby._id);
-            console.log("Set default selectedBabyId:", baby._id);
+            console.log("💾 [Dashboard] Set default selectedBabyId:", baby._id);
           }
         }
         
@@ -231,7 +251,7 @@ const DashboardPage: React.FC = () => {
           setBabyName(baby.name);
           setChildInitial(baby.name.charAt(0).toUpperCase());
           setBabyId(baby._id);
-          console.log("Baby name set to:", baby.name);
+          console.log("✅ [Dashboard] Baby loaded:", baby.name, "ID:", baby._id);
           
           // Load avatar data from backend
           setAvatarColor(baby.avatarColor || "#00CFFF");

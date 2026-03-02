@@ -1,4 +1,5 @@
 import SleepEvent from '../models/SleepEvent.js';
+import mongoose from 'mongoose';
 
 class SleepEventService {
     /**
@@ -72,6 +73,30 @@ class SleepEventService {
     }
 
     /**
+     * Get sleep events for a specific baby within a date range
+     */
+    static async getSleepEventsByBabyAndDateRange(babyId, startDate, endDate) {
+        return SleepEvent.find({
+            babyId: new mongoose.Types.ObjectId(babyId),
+            $or: [
+                {
+                    start_time: {
+                        $gte: new Date(startDate),
+                        $lte: new Date(endDate)
+                    }
+                },
+                {
+                    end_time: {
+                        $gte: new Date(startDate),
+                        $lte: new Date(endDate)
+                    }
+                }
+            ]
+        })
+            .sort({ end_time: -1 });
+    }
+
+    /**
      * Get sleep statistics for today
      */
     static async getTodaySleepStats(deviceId) {
@@ -100,6 +125,29 @@ class SleepEventService {
             sessionCount,
             sessions
         };
+    }
+
+    /**
+     * Get current sleep session for a specific baby
+     */
+    static async getCurrentSleepSessionByBaby(babyId) {
+        return SleepEvent.findOne({ 
+            babyId: new mongoose.Types.ObjectId(babyId),
+            status: "Somn Inceput"
+        })
+            .sort({ start_time: -1 });
+    }
+
+    /**
+     * Get last completed sleep session for a specific baby
+     */
+    static async getLastSleepSessionByBaby(babyId) {
+        return SleepEvent.findOne({ 
+            babyId: new mongoose.Types.ObjectId(babyId),
+            status: { $in: ["Somn Incheiat", "Finalizat"] },
+            duration_minutes: { $gt: 0 }
+        })
+            .sort({ end_time: -1 });
     }
 }
 

@@ -18,6 +18,15 @@ sleepEventRouter.get('/device/:deviceId/current', SleepEventController.getCurren
 // Get sleep events by date range
 sleepEventRouter.get('/device/:deviceId/range', SleepEventController.getSleepEventsByDateRange);
 
+// Get sleep events by baby ID and date range
+sleepEventRouter.get('/baby/:babyId/range', SleepEventController.getSleepEventsByBabyAndDateRange);
+
+// Get current sleep session for a specific baby
+sleepEventRouter.get('/baby/:babyId/current', SleepEventController.getCurrentSleepSessionByBaby);
+
+// Get last sleep session for a specific baby
+sleepEventRouter.get('/baby/:babyId/last', SleepEventController.getLastSleepSessionByBaby);
+
 // Get today's sleep statistics
 sleepEventRouter.get('/device/:deviceId/today', SleepEventController.getTodaySleepStats);
 
