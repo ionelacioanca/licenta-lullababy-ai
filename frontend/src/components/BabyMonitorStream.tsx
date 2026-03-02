@@ -28,6 +28,7 @@ const SNAPSHOT_URL = `http://${PI_IP}/snapshot`;
 const TALKBACK_URL = `http://${PI_IP}/talkback`;
 const STOP_AUDIO_URL = `http://${PI_IP}/stop_audio`;
 const AUDIO_STREAM_URL = `http://${PI_IP}/audio_stream`;
+const VIDEO_HEARTBEAT_URL = `http://${PI_IP}/video_heartbeat`;
 
 const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
   babyName = "Baby",
@@ -152,6 +153,31 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
       if (recording) {
         recording.stopAndUnloadAsync();
       }
+    };
+  }, []);
+
+  // Video heartbeat - notify Pi that parent is watching video stream
+  // This suspends audio monitoring on Pi (parent can see/hear directly)
+  useEffect(() => {
+    console.log('📹 [Baby Monitor] Video stream opened - starting heartbeat');
+    
+    // Send initial heartbeat immediately
+    fetch(VIDEO_HEARTBEAT_URL, { method: 'POST' })
+      .then(() => console.log('✅ [Heartbeat] Initial heartbeat sent'))
+      .catch(err => console.warn('⚠️ [Heartbeat] Failed to send initial heartbeat:', err));
+    
+    // Send heartbeat every 5 seconds to keep video stream active
+    const heartbeatInterval = setInterval(() => {
+      fetch(VIDEO_HEARTBEAT_URL, { method: 'POST' })
+        .then(() => console.log('💓 [Heartbeat] Video heartbeat sent'))
+        .catch(err => console.warn('⚠️ [Heartbeat] Failed to send heartbeat:', err));
+    }, 5000);
+    
+    // Cleanup: stop heartbeat when component unmounts (video stream closes)
+    return () => {
+      console.log('📹 [Baby Monitor] Video stream closed - stopping heartbeat');
+      clearInterval(heartbeatInterval);
+      // Note: Pi will auto-resume monitoring after 15s timeout if heartbeat stops
     };
   }, []);
 

@@ -58,6 +58,13 @@ CRYING_CONFIRMATION_SECONDS = 1  # Confirmă plâns după 1 secundă (redus pent
 # Control pentru audio streaming (suspendă monitorizarea când streamăm live)
 audio_streaming_active = False
 streaming_lock = threading.Lock()
+last_audio_stream_heartbeat = 0  # Timestamp pentru detectarea streaming-urilor blocate
+AUDIO_STREAM_HEARTBEAT_TIMEOUT = 10  # Considerăm streaming blocat după 10 secunde fără heartbeat
+
+# Control pentru video streaming (suspendă monitorizarea când părintele se uită la video)
+video_stream_active = False
+last_video_heartbeat = 0
+VIDEO_HEARTBEAT_TIMEOUT = 15  # Considerăm stream inactiv dacă nu primim heartbeat timp de 15 secunde
 
 last_frame = None
 frame_lock = threading.Lock()
@@ -215,7 +222,7 @@ def background_frame_reader():
                                                 print("--- [EVENT] Bebelușul s-a trezit! ---")
                                                 
                                                 # Trimite notificare că bebelușul s-a trezit cu cooldown
-                                                if not audio_streaming_active:  # Nu trimite dacă părintele e conectat
+                                                if not (audio_streaming_active or video_stream_active):  # Nu trimite dacă părintele urmărește
                                                     current_time = time.time()
                                                     if current_time - last_wakeup_notification_time > NOTIFICATION_COOLDOWN:
                                                         print("📤 [NOTIFICARE] Trimit notificare de baby woke up")
@@ -241,7 +248,7 @@ def background_frame_reader():
                                             print("--- [EVENT] Bebelușul a adormit (Liniște completă detectată: fără mișcare + fără plâns) ---")
                                             
                                             # Trimite notificare că bebelușul a adormit cu cooldown
-                                            if not audio_streaming_active:  # Nu trimite dacă părintele e conectat
+                                            if not (audio_streaming_active or video_stream_active):  # Nu trimite dacă părintele urmărește
                                                 current_time = time.time()
                                                 if current_time - last_sleeping_notification_time > NOTIFICATION_COOLDOWN:
                                                     print("📤 [NOTIFICARE] Trimit notificare de baby fell asleep")
@@ -359,9 +366,10 @@ def background_audio_monitor():
     Monitorizare continuă audio pentru detectarea și clasificarea plânsului
     Folosește SLIDING WINDOW + pattern classification
     COOLDOWN SEPARAT: Alertă (3 min) | Clasificare (1 min)
+    SUSPENDĂ automat când părintele urmărește bebelușul (video SAU audio streaming activ)
     """
     global crying_detected, crying_start_time, last_crying_detection_time
-    global last_crying_alert_time, last_crying_reason_time
+    global last_crying_alert_time, last_crying_reason_time, video_stream_active
     
     from collections import deque
     
@@ -423,24 +431,62 @@ def background_audio_monitor():
         log_counter = 0  # Pentru a reduce spam-ul de log-uri
         while True:
             try:
-                # Verificăm dacă audio streaming e activ - dacă da, OPRIM PROCESUL pentru a elibera device-ul
-                global audio_streaming_active
-                if audio_streaming_active:
-                    print("⏸️ [AUDIO] Streaming activ - OPRESC proces arecord pentru a elibera microfonul")
+                # Verificăm dacă părintele urmărește activ bebelușul (video SAU audio)
+                global audio_streaming_active, video_stream_active
+                
+                # Update: verificăm dacă video stream e încă activ (heartbeat)
+                if time.time() - last_video_heartbeat > VIDEO_HEARTBEAT_TIMEOUT:
+                    if video_stream_active:
+                        print("⏸️ [VIDEO] Video stream inactiv (timeout heartbeat) - REACTIVEZ monitorizare audio")
+                        video_stream_active = False
+                
+                # Verificăm dacă audio streaming e blocat (fără heartbeat de mult timp)
+                if audio_streaming_active and last_audio_stream_heartbeat > 0:
+                    audio_heartbeat_age = time.time() - last_audio_stream_heartbeat
+                    if audio_heartbeat_age > AUDIO_STREAM_HEARTBEAT_TIMEOUT:
+                        print(f"⚠️ [AUDIO] Audio streaming blocat (heartbeat: {audio_heartbeat_age:.0f}s) - RESETEZ forțat flag-ul")
+                        with streaming_lock:
+                            audio_streaming_active = False
+                
+                if audio_streaming_active or video_stream_active:
+                    reason = "audio streaming" if audio_streaming_active else "video streaming"
+                    print(f"⏸️ [AUDIO] {reason} activ - OPRESC proces arecord (părinte urmărește bebelușul)")
                     process.terminate()
                     process.wait()
                     
                     # Așteptăm până se termină streaming CU TIMEOUT pentru a evita blocarea indefinită
                     wait_start = time.time()
-                    while audio_streaming_active:
+                    while audio_streaming_active or video_stream_active:
                         if time.time() - wait_start > 30:  # Timeout 30 secunde
                             print("⚠️ [AUDIO] TIMEOUT așteptare streaming! Repornesc oricum monitorizarea.")
+                            # RESETĂM FORȚAT flag-urile - streaming-ul probabil s-a blocat
+                            if audio_streaming_active:
+                                print("🔧 [FIX] Resetez forțat audio_streaming_active la False")
+                                with streaming_lock:
+                                    audio_streaming_active = False
+                            if video_stream_active:
+                                print("🔧 [FIX] Resetez forțat video_stream_active la False")
+                                video_stream_active = False
                             break
+                        # Update video stream status
+                        if time.time() - last_video_heartbeat > VIDEO_HEARTBEAT_TIMEOUT:
+                            video_stream_active = False
+                        # Update audio stream status (verificare heartbeat)
+                        if audio_streaming_active and last_audio_stream_heartbeat > 0:
+                            if time.time() - last_audio_stream_heartbeat > AUDIO_STREAM_HEARTBEAT_TIMEOUT:
+                                print("⏸️ [AUDIO] Audio streaming blocat (timeout heartbeat) - REACTIVEZ monitorizare")
+                                with streaming_lock:
+                                    audio_streaming_active = False
                         time.sleep(0.5)
                     
                     # Streaming s-a terminat - așteptăm puțin pentru siguranță
                     print("🔄 [AUDIO] Streaming terminat - Aștept eliberarea finală a microfonului...")
-                    time.sleep(0.5)  # Delay suplimentar pentru sincronizare
+                    time.sleep(1.0)  # Delay suplimentar pentru sincronizare
+                    
+                    # Omorâm FORȚAT toate procesele arecord rămase pentru a elibera device-ul
+                    print("🔧 [AUDIO] Cleanup - omor FORȚAT toate procesele arecord vechi")
+                    os.system("sudo killall -9 arecord > /dev/null 2>&1")
+                    time.sleep(0.5)  # Așteptăm eliberarea device-ului
                     
                     # Repornim procesul când streaming s-a terminat COMPLET
                     print("🔄 [AUDIO] REPORNESC monitorizare audio")
@@ -592,9 +638,10 @@ def background_audio_monitor():
                             print(f"😭 [STATS] RMS avg: {avg_rms:.4f}, Crying ratio avg: {avg_crying_ratio:.2f}, Match: {detection_percentage*100:.0f}%")
                             
                             # PASUL 1: Trimitem notificarea generală (cu cooldown)
-                            # DAR nu trimite dacă părintele e conectat la streaming
-                            if audio_streaming_active:
-                                print(f"⏸️ [PLÂNS] Părintele e conectat live - NU trimit notificare")
+                            # DAR nu trimite dacă părintele urmărește bebelușul (video SAU audio)
+                            if audio_streaming_active or video_stream_active:
+                                reason = "audio" if audio_streaming_active else "video"
+                                print(f"⏸️ [PLÂNS] Părintele urmărește ({reason}) - NU trimit notificare")
                             elif current_time - last_crying_alert_time > CRYING_ALERT_COOLDOWN:
                                 print(f"📤 [NOTIFICARE 1/2] Trimit alertă: Baby is crying")
                                 threading.Thread(target=send_notification, args=('baby-crying',)).start()
@@ -625,8 +672,9 @@ def background_audio_monitor():
                                 
                                 # PASUL 3: Trimitem notificarea cu MOTIVUL DOAR dacă confidence >= MIN_CONFIDENCE
                                 if confidence >= MIN_CONFIDENCE:
-                                    if audio_streaming_active:
-                                        print(f"⏸️ [CLASIFICARE] Părintele e conectat - NU trimit clasificare")
+                                    if audio_streaming_active or video_stream_active:
+                                        reason = "audio" if audio_streaming_active else "video"
+                                        print(f"⏸️ [CLASIFICARE] Părintele urmărește ({reason}) - NU trimit clasificare")
                                     elif current_time - last_crying_reason_time > CRYING_REASON_COOLDOWN:
                                         print(f"📤 [NOTIFICARE 2/2] Trimit motivul: {type_ro} (Confidence {confidence}%)")
                                         time.sleep(2)  # Delay pentru a nu trimite simultan cu prima
@@ -931,6 +979,8 @@ def system_status():
         
         return jsonify({
             "audio_streaming_active": audio_streaming_active,
+            "video_stream_active": video_stream_active,
+            "video_heartbeat_age": int(time.time() - last_video_heartbeat) if last_video_heartbeat > 0 else "never",
             "baby_status": current_baby_status,
             "last_crying_detection": time.time() - last_crying_detection_time if last_crying_detection_time > 0 else "never",
             "camera": {
@@ -984,13 +1034,14 @@ def audio_stream():
     SUSPENDĂ automat monitorizarea plânsului pentru a evita conflictul pe microfon
     """
     def generate_audio():
-        global audio_streaming_active
+        global audio_streaming_active, last_audio_stream_heartbeat
         process = None
         
         try:
             # SUSPENDĂM monitorizarea automată
             with streaming_lock:
                 audio_streaming_active = True
+                last_audio_stream_heartbeat = time.time()  # Inițializăm heartbeat-ul
             
             # RESETĂM TOATE COOLDOWN-URILE când părintele se conectează live
             # Dacă e conectat, înseamnă că e atent - vrem notificări imediate după deconectare
@@ -1009,7 +1060,12 @@ def audio_stream():
             
             # Așteptăm ca thread-ul de monitorizare să închidă procesul arecord și să elibereze microfonul
             print("🎤 [STREAM] Aștept ca monitorizarea să elibereze microfonul...")
-            time.sleep(1.5)  # Mărit pentru a da timp thread-ului să termine procesul
+            # Așteptare MĂRITĂ + verificare activă pentru eliberare completă
+            time.sleep(2.0)  # Mărit la 2 secunde pentru sincronizare sigură
+            
+            # Delay suplimentar pentru a fi ABSOLUT SIGURI că device-ul e liber
+            print("🎤 [STREAM] Delay suplimentar pentru eliberare completă...")
+            time.sleep(0.5)
             print("🎤 [STREAM] Microfon eliberat, încep streaming...")
             
             # Configurare arecord pentru streaming audio
@@ -1043,6 +1099,10 @@ def audio_stream():
                     break
                 
                 chunk_count += 1
+                
+                # Actualizăm heartbeat-ul la fiecare chunk pentru a semnala că streaming-ul e activ
+                last_audio_stream_heartbeat = time.time()
+                
                 if chunk_count % 50 == 0:  # La fiecare ~3 secunde
                     print(f"🎤 [STREAM] Streaming activ - {chunk_count} chunk-uri trimise")
                 
@@ -1070,7 +1130,12 @@ def audio_stream():
             
             # PASUL 2: Așteptăm să se elibereze complet microfonul (CRITIC!)
             print("🎤 [STREAM] Aștept eliberarea completă a microfonului...")
-            time.sleep(1.0)  # Delay pentru a fi SIGURI că device-ul e liber
+            time.sleep(1.5)  # Mărit la 1.5 secunde pentru eliberare garantată
+            
+            # PASUL 2.5: Omorâm FORȚAT toate procesele arecord rămase (cleanup agressiv)
+            print("🔧 [STREAM] Cleanup final - omor toate procesele arecord rămase")
+            os.system("sudo killall -9 arecord > /dev/null 2>&1")
+            time.sleep(0.5)  # Așteptăm după kill pentru eliberare finală
             
             # PASUL 3: Doar ACUM reactivăm monitorizarea
             with streaming_lock:
@@ -1176,6 +1241,27 @@ def get_baby():
     return jsonify({
         "babyId": current_baby_id,
         "isSet": current_baby_id is not None
+    }), 200
+
+@app.route('/video_heartbeat', methods=['POST'])
+def video_heartbeat():
+    """
+    Endpoint pentru heartbeat de la frontend când video stream este activ
+    Frontend-ul trimite acest heartbeat la fiecare 5 secunde când părintele se uită la stream
+    """
+    global video_stream_active, last_video_heartbeat
+    
+    last_video_heartbeat = time.time()
+    
+    if not video_stream_active:
+        print("📹 [VIDEO] Video streaming ACTIVAT - SUSPEND monitorizare audio")
+        video_stream_active = True
+    
+    return jsonify({
+        "success": True,
+        "video_stream_active": video_stream_active,
+        "audio_monitoring_suspended": True,
+        "message": "Video stream active - audio monitoring suspended"
     }), 200
 
 @app.route('/talkback', methods=['POST'])
