@@ -1,9 +1,9 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Modal, View, StyleSheet, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform, Animated } from 'react-native';
+import { Modal, View, StyleSheet, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform, Animated, ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemedText } from '../../components/ThemedText';
 import { ThemedView } from '../../components/ThemedView';
-import { sendChatMessage } from '../services/chatbotService';
+import { sendChatMessage, getChatHistory } from '../services/chatbotService';
 import { Colors } from '../../constants/Colors';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -83,8 +83,100 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({ visible, onClose }) 
   const [messages, setMessages] = useState<MessageItem[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [loadingHistory, setLoadingHistory] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const listRef = useRef<FlatList<MessageItem>>(null);
+  const hasLoadedHistory = useRef(false); // Track if we've loaded history for this session
+
+  // Load chat history when modal opens
+  useEffect(() => {
+    const loadHistory = async () => {
+      if (!visible || hasLoadedHistory.current) return;
+      
+      try {
+        setLoadingHistory(true);
+        const selectedBabyId = await AsyncStorage.getItem('selectedBabyId');
+        
+        console.log('[Chatbot] Loading history for baby:', selectedBabyId);
+        
+        const history = await getChatHistory(selectedBabyId || undefined, 50);
+        
+        if (history && history.length > 0) {
+          // Convert backend format to frontend format
+          const loadedMessages: MessageItem[] = [];
+          // Backend returns {conversations: [{question: {...}, answer: {...}}]}
+          for (const conv of history) {
+            if (conv.question) {
+              loadedMessages.push({
+                id: conv.question._id,
+                role: 'user',
+                text: conv.question.content,
+                ts: new Date(conv.question.createdAt).getTime(),
+              });
+            }
+            if (conv.answer) {
+              loadedMessages.push({
+                id: conv.answer._id,
+                role: 'bot',
+                text: conv.answer.content,
+                ts: new Date(conv.answer.createdAt).getTime(),
+              });
+            }
+          }
+          // Inversează ordinea pentru a avea cele mai vechi la început, cele mai noi la final
+          loadedMessages.sort((a, b) => a.ts - b.ts);
+          console.log('[Chatbot] Loaded', loadedMessages.length, 'messages from history');
+          if (loadedMessages.length > 0) {
+            setMessages(loadedMessages);
+            hasLoadedHistory.current = true;
+          } else {
+            // No history - show welcome message
+            setMessages([
+              {
+                id: 'welcome',
+                role: 'bot',
+                text: t('chat.welcome'),
+                ts: Date.now(),
+              },
+            ]);
+          }
+        } else {
+          // No history - show welcome message
+          console.log('[Chatbot] No history found - showing welcome');
+          setMessages([
+            {
+              id: 'welcome',
+              role: 'bot',
+              text: t('chat.welcome'),
+              ts: Date.now(),
+            },
+          ]);
+        }
+      } catch (error) {
+        console.error('[Chatbot] Error loading history:', error);
+        // Show welcome message on error
+        setMessages([
+          {
+            id: 'welcome',
+            role: 'bot',
+            text: t('chat.welcome'),
+            ts: Date.now(),
+          },
+        ]);
+      } finally {
+        setLoadingHistory(false);
+      }
+    };
+
+    loadHistory();
+  }, [visible, t]);
+
+  // Reset loaded flag when modal closes
+  useEffect(() => {
+    if (!visible) {
+      hasLoadedHistory.current = false;
+    }
+  }, [visible]);
 
   // Ensure a baby is selected when chatbot opens
   useEffect(() => {
@@ -104,7 +196,7 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({ visible, onClose }) 
         
         if (!token || !parentId) return;
 
-        const response = await fetch(`http://192.168.1.21:5000/api/baby/parent/${parentId}`, {
+        const response = await fetch(`http://192.168.1.56:5000/api/baby/parent/${parentId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -123,20 +215,6 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({ visible, onClose }) 
 
     ensureBabySelected();
   }, [visible]);
-
-  useEffect(() => {
-    if (visible && messages.length === 0) {
-      // Welcome message
-      setMessages([
-        {
-          id: 'welcome',
-          role: 'bot',
-          text: t('chat.welcome'),
-          ts: Date.now(),
-        },
-      ]);
-    }
-  }, [visible, t]);
 
   const scrollToEnd = () => {
     setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 50);
@@ -263,20 +341,27 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({ visible, onClose }) 
 };
 
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  container: { flex: 1, backgroundColor: '#FFF8F0' },
+  container: {
+    flex: 1,
+    backgroundColor: '#FFF8F0',
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 50,
-    paddingBottom: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     backgroundColor: '#FFF8F0',
     borderBottomWidth: 1,
     borderBottomColor: '#E8E0D5',
   },
-  headerTitle: { fontSize: 22 },
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+  },
+  flex: {
+    flex: 1,
+  },
   closeBtn: { padding: 8 },
   closeText: { fontSize: 28, fontWeight: '600' },
   list: { flex: 1 },
@@ -355,6 +440,13 @@ const styles = StyleSheet.create({
   suggestionsWrap: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 16, gap: 8, marginTop: 12 },
   suggestion: { backgroundColor: '#E8F5E0', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 16 },
   suggestionText: { fontSize: 12 },
+  loadingHistoryContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+  },
 });
 
 export default ChatbotModal;
+  

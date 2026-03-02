@@ -190,6 +190,15 @@ ESENȚIAL: Fii atent CU CINE vorbești:
   if (babyInfo) {
     finalPrompt += babyInfo;
   }
+  // Sleep summary context (dacă există)
+  if (babyContext && babyContext.sleepSummary) {
+    const s = babyContext.sleepSummary;
+    if (lang === 'ro') {
+      finalPrompt += `\n\nREZUMAT SOMN ULTIMA SĂPTĂMÂNĂ:\n- Total sesiuni: ${s.sessionCount}\n- Total somn: ${s.totalHours} ore și ${s.remainingMinutes} minute\n- Cea mai lungă sesiune: ${s.longest} minute\n- Cea mai scurtă sesiune: ${s.shortest} minute\n- Ultima sesiune: ${s.lastSession ? `${s.lastSession.duration} minute, începută la ${new Date(s.lastSession.start).toLocaleString('ro-RO')}` : 'N/A'}\n`;
+    } else {
+      finalPrompt += `\n\nSLEEP SUMMARY LAST 7 DAYS:\n- Total sessions: ${s.sessionCount}\n- Total sleep: ${s.totalHours} hours and ${s.remainingMinutes} minutes\n- Longest session: ${s.longest} minutes\n- Shortest session: ${s.shortest} minutes\n- Last session: ${s.lastSession ? `${s.lastSession.duration} minutes, started at ${new Date(s.lastSession.start).toLocaleString('en-US')}` : 'N/A'}\n`;
+    }
+  }
   
   if (knowledge) {
     finalPrompt += "\n\nAdditional Context (use if relevant):\n";
@@ -207,6 +216,51 @@ async function getChatbotReply(message, userLanguage, babyContext = null, userCo
   try {
     // Use explicit language preference if provided, otherwise detect from message
     const lang = userLanguage === 'ro' || userLanguage === 'en' ? userLanguage : detectLanguage(message);
+    // --- DETECȚIE FRAZE DE MULȚUMIRE/CONFIRMARE ---
+    const lowerQ = message.toLowerCase();
+    const thanksPhrases = [
+      // Română
+      "multumesc", "mulțumesc", "ms", "merci", "ok", "bine", "super", "perfect", "mersi", "apreciez", "foarte bine", "e bine", "e ok",
+      // Engleză
+      "thank you", "thanks", "ok", "okay", "great", "awesome", "perfect", "good", "cool", "appreciate it"
+    ];
+    if (thanksPhrases.some((phrase) => lowerQ === phrase || lowerQ.startsWith(phrase + ' ') || lowerQ.endsWith(' ' + phrase) || lowerQ.includes(phrase))) {
+      if (lang === 'ro') {
+        return "Cu drag! Dacă mai ai nevoie de ajutor sau ai alte întrebări despre copilul tău, sunt aici pentru tine!";
+      } else {
+        return "You're welcome! If you need anything else or have more questions about your baby, I'm here to help!";
+      }
+    }
+
+    // --- VALIDARE ÎNTREBARE ÎN DOMENIU ---
+    // Refacem mapping-ul aici pentru validare rapidă
+    const mapping = [
+      ["cry", "plâns", "plange", "plânge"],
+      ["sleep", "somn", "night"],
+      ["colic", "colici"],
+      ["tooth", "teeth", "dinte", "dinti", "dintișor", "dintisor"],
+      ["fever", "temperature", "febră", "febra", "temp"],
+      ["heart", "pulse", "puls", "vital"],
+      ["parent", "părinte", "parinte", "guilty", "bad mom", "bad dad"],
+      ["postpartum", "post partum", "recovery", "healing", "baby blues", "depression", "ppd", "after birth", "dupa nastere", "după naștere", "depresie postpartum"],
+      ["breastfeed", "breast feed", "breastfeeding", "nursing", "latch", "milk", "pump", "pumping", "weaning", "alăptare", "alaptare", "lapte matern", "sân"],
+    ];
+    let found = false;
+    for (const keywords of mapping) {
+      if (keywords.some((k) => lowerQ.includes(k))) {
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      // Întrebare în afara domeniului
+      if (lang === 'ro') {
+        return "Îmi pare rău, nu am fost antrenat să răspund la această întrebare (ex: vremea, știri, sport). Pot însă să te ajut cu detalii despre copilul tău, sănătate, somn, colici, alăptare, febră, etc.";
+      } else {
+        return "Sorry, I am not trained to answer this type of question (e.g., weather, news, sports). But I can help you with topics about your baby, health, sleep, colic, breastfeeding, fever, and more.";
+      }
+    }
+    // --- CONTINUĂ CU LOGICA NORMALĂ ---
     const knowledge = getKnowledge(message);
     const prompt = buildPrompt(message, lang, knowledge, babyContext, userContext);
 
@@ -216,12 +270,11 @@ async function getChatbotReply(message, userLanguage, babyContext = null, userCo
     } else {
       console.log(`[Chatbot] WARNING: No baby context provided`);
     }
-    
     // Log the complete prompt to debug
     console.log('\n========== COMPLETE PROMPT ==========');
     console.log(prompt);
     console.log('=====================================\n');
-    
+
     const startTime = Date.now();
 
     // apelăm Ollama HTTP API – ai nevoie de modelul 'babybuddy' creat

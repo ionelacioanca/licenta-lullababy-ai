@@ -21,6 +21,11 @@ const sleepEventSchema = new mongoose.Schema({
     device_id: {
         type: String,
         required: true
+    },
+    babyId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Baby",
+        required: false
     }
 }, { 
     timestamps: true,

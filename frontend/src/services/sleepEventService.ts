@@ -1,14 +1,15 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_URL = 'http://192.168.1.21:5000/api/sleep-events';
+const API_URL = 'http://192.168.1.56:5000/api/sleep-events';
 
 export interface SleepEvent {
   _id: string;
-  status: 'Somn Inceput' | 'Somn Incheiat';
+  status: 'Somn Inceput' | 'Somn Incheiat' | 'Finalizat';
   start_time: string;
   end_time: string;
   duration_minutes: number;
   device_id: string;
+  babyId?: string;
 }
 
 export interface SleepStats {
@@ -130,6 +131,95 @@ export const getSleepEventsByDateRange = async (
   } catch (error) {
     console.error('Error fetching sleep events by date range:', error);
     throw error;
+  }
+};
+
+/**
+ * Get sleep events by baby ID and date range
+ */
+export const getSleepEventsByBabyAndDateRange = async (
+  babyId: string, 
+  startDate: string, 
+  endDate: string
+): Promise<SleepEvent[]> => {
+  try {
+    const headers = await getAuthHeaders();
+    const response = await fetch(
+      `${API_URL}/baby/${babyId}/range?startDate=${startDate}&endDate=${endDate}`,
+      { headers }
+    );
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch sleep events by baby and date range');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching sleep events by baby and date range:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get current sleep session for a specific baby
+ */
+export const getCurrentSleepSessionByBaby = async (babyId: string): Promise<{ sleeping: boolean; session: SleepEvent | null }> => {
+  try {
+    console.log('LOG [Service] Fetching current sleep session for babyId:', babyId);
+    const headers = await getAuthHeaders();
+    const url = `${API_URL}/baby/${babyId}/current`;
+    console.log('LOG [Service] Request URL:', url);
+    
+    const response = await fetch(url, { headers });
+    console.log('LOG [Service] Response status:', response.status);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('LOG [Service] Response error:', errorText);
+      throw new Error(`Failed to fetch current sleep session by baby: ${response.status} ${errorText}`);
+    }
+    
+    const data = await response.json();
+    console.log('LOG [Service] Response data:', data);
+    return data;
+  } catch (error) {
+    console.error('Error fetching current sleep session by baby:', error);
+    // Return default value instead of throwing to prevent app crash
+    return { sleeping: false, session: null };
+  }
+};
+
+/**
+ * Get last sleep session for a specific baby
+ */
+export const getLastSleepSessionByBaby = async (babyId: string): Promise<SleepEvent | null> => {
+  try {
+    console.log('LOG [Service] Fetching last sleep session for babyId:', babyId);
+    const headers = await getAuthHeaders();
+    const url = `${API_URL}/baby/${babyId}/last`;
+    console.log('LOG [Service] Request URL:', url);
+    
+    const response = await fetch(url, { headers });
+    console.log('LOG [Service] Response status:', response.status);
+    
+    if (response.status === 404) {
+      console.log('LOG [Service] No last session found (404)');
+      return null;
+    }
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('LOG [Service] Response error:', errorText);
+      throw new Error(`Failed to fetch last sleep session by baby: ${response.status} ${errorText}`);
+    }
+    
+    const data = await response.json();
+    console.log('LOG [Service] Response data:', data);
+    return data;
+  } catch (error) {
+    console.error('Error fetching last sleep session by baby:', error);
+    // Return null instead of throwing to prevent app crash
+    return null;
   }
 };
 

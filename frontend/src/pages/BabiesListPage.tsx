@@ -7,6 +7,7 @@ import {
   ScrollView,
   ActivityIndicator,
   Image,
+  Alert,
 } from "react-native";
 import { useRouter, useFocusEffect } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -57,7 +58,7 @@ const BabiesListPage: React.FC = () => {
       }
 
       const response = await fetch(
-        `http://192.168.1.21:5000/api/baby/parent/${parentId}`,
+        `http://192.168.1.56:5000/api/baby/parent/${parentId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -80,7 +81,7 @@ const BabiesListPage: React.FC = () => {
         const babiesWithAvatars = data.map((baby: any) => ({
           ...baby,
           avatarColor: baby.avatarColor || "#00CFFF",
-          avatarImage: baby.avatarImage ? `http://192.168.1.21:5000${baby.avatarImage}` : null,
+          avatarImage: baby.avatarImage ? `http://192.168.1.56:5000${baby.avatarImage}` : null,
         }));
         setBabies(babiesWithAvatars);
         console.log("Babies loaded with avatars:", babiesWithAvatars);
@@ -112,9 +113,53 @@ const BabiesListPage: React.FC = () => {
   };
 
   const handleSelectBaby = async (baby: Baby) => {
-    // Store selected baby ID and navigate to dashboard
+    console.log('🔵 [Baby Selection] User clicked on baby:', baby.name, 'ID:', baby._id);
+    
+    // Store selected baby ID for viewing data
     await AsyncStorage.setItem("selectedBabyId", baby._id);
-    router.push("/dashboard");
+    console.log('💾 [Baby Selection] Saved selectedBabyId to AsyncStorage:', baby._id);
+    
+    // Check if this baby is already being monitored
+    const currentMonitoredBabyId = await AsyncStorage.getItem("monitoredBabyId");
+    console.log('🔍 [Baby Selection] Current monitoredBabyId:', currentMonitoredBabyId);
+    
+    if (currentMonitoredBabyId === baby._id) {
+      // This baby is already monitored - just navigate without asking
+      console.log('✅ [Baby Selection] Baby already monitored, navigating directly:', baby.name);
+      router.push("/dashboard");
+      return;
+    }
+    
+    console.log('❓ [Baby Selection] Baby not monitored yet - showing dialog');
+    
+    // Ask user if they want to enable LIVE sleep monitoring for this baby
+    Alert.alert(
+      t('baby.monitor.title') || '👁️ Monitorizare în Timp Real',
+      t('baby.monitor.message')?.replace('{name}', baby.name) || 
+        `Vrei să monitorizezi în timp real somnul bebelușului ${baby.name}?\n\nDacă selectezi DA, toate evenimentele de somn vor fi înregistrate pentru ${baby.name}.\n\nDacă selectezi NU, poți doar consulta datele și jurnalul.`,
+      [
+        {
+          text: t('baby.monitor.no') || '❌ Nu, doar consultă',
+          style: 'cancel',
+          onPress: () => {
+            // User only wants to view data - don't set monitored baby
+            console.log('📊 [Baby Selection] View-only mode for:', baby.name, 'ID:', baby._id);
+            console.log('📊 [Baby Selection] monitoredBabyId remains:', currentMonitoredBabyId);
+            router.push("/dashboard");
+          }
+        },
+        {
+          text: t('baby.monitor.yes') || '✅ Da, monitorizează',
+          onPress: async () => {
+            // User wants live monitoring - set monitored baby ID
+            await AsyncStorage.setItem("monitoredBabyId", baby._id);
+            console.log('👁️ [Baby Selection] Live monitoring enabled for:', baby.name, 'ID:', baby._id);
+            console.log('💾 [Baby Selection] Saved monitoredBabyId to AsyncStorage:', baby._id);
+            router.push("/dashboard");
+          }
+        }
+      ]
+    );
   };
 
   const handleEditProfile = (baby: Baby) => {

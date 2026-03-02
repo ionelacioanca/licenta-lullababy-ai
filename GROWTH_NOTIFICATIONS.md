@@ -97,34 +97,34 @@ Acest script va:
 #### Obține notificările utilizatorului
 ```bash
 curl -H "Authorization: Bearer YOUR_TOKEN" \
-  http://192.168.1.21:5000/api/growth-notifications
+  http://192.168.1.56:5000/api/growth-notifications
 ```
 
 #### Număr notificări necitite
 ```bash
 curl -H "Authorization: Bearer YOUR_TOKEN" \
-  http://192.168.1.21:5000/api/growth-notifications/unread-count
+  http://192.168.1.56:5000/api/growth-notifications/unread-count
 ```
 
 #### Marchează ca citită
 ```bash
 curl -X PUT \
   -H "Authorization: Bearer YOUR_TOKEN" \
-  http://192.168.1.21:5000/api/growth-notifications/NOTIFICATION_ID/read
+  http://192.168.1.56:5000/api/growth-notifications/NOTIFICATION_ID/read
 ```
 
 #### Marchează ca completată
 ```bash
 curl -X PUT \
   -H "Authorization: Bearer YOUR_TOKEN" \
-  http://192.168.1.21:5000/api/growth-notifications/NOTIFICATION_ID/complete
+  http://192.168.1.56:5000/api/growth-notifications/NOTIFICATION_ID/complete
 ```
 
 #### Trimite notificări pending (manual)
 ```bash
 curl -X POST \
   -H "Authorization: Bearer YOUR_TOKEN" \
-  http://192.168.1.21:5000/api/growth-notifications/send-pending
+  http://192.168.1.56:5000/api/growth-notifications/send-pending
 ```
 
 ### 4. Test Frontend

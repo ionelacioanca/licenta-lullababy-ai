@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Audio, Video, AVPlaybackStatus, ResizeMode } from "expo-av";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -26,6 +27,7 @@ const PI_IP = "192.168.1.44:5001";
 const SNAPSHOT_URL = `http://${PI_IP}/snapshot`;
 const TALKBACK_URL = `http://${PI_IP}/talkback`;
 const STOP_AUDIO_URL = `http://${PI_IP}/stop_audio`;
+const AUDIO_STREAM_URL = `http://${PI_IP}/audio_stream`;
 
 const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
   babyName = "Baby",
@@ -37,6 +39,8 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const [audioPermission, requestAudioPermission] = Audio.usePermissions();
+  const [isListening, setIsListening] = useState(false);
+  const [audioSound, setAudioSound] = useState<Audio.Sound | null>(null);
   
   // Ghost Buffer strategy - Main image + invisible buffer
   const [currentUrl, setCurrentUrl] = useState(`${SNAPSHOT_URL}?t=${Date.now()}`);
@@ -75,6 +79,82 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
     return () => clearInterval(clockInterval);
   }, []);
 
+  // Sync MONITORED baby ID with Raspberry Pi when component mounts
+  // IMPORTANT: Uses monitoredBabyId (not selectedBabyId) - only babies explicitly marked for monitoring
+  useEffect(() => {
+    const syncBabyIdWithPi = async () => {
+      try {
+        // Read the MONITORED baby ID (user explicitly confirmed they want live monitoring)
+        const monitoredBabyId = await AsyncStorage.getItem('monitoredBabyId');
+        
+        if (!monitoredBabyId) {
+          console.warn('⚠️ [Baby Monitor] No baby set for live monitoring');
+          console.log('ℹ️ [Baby Monitor] User needs to select a baby and confirm monitoring');
+          return;
+        }
+
+        // Step 1: Check what baby ID is currently set on Pi
+        console.log('🔍 [Baby Monitor] Checking baby ID on Pi...');
+        const getResponse = await fetch(`http://${PI_IP}/get_baby`);
+        
+        if (getResponse.ok) {
+          const currentPiBaby = await getResponse.json();
+          console.log('📥 [Baby Monitor] Pi current baby:', currentPiBaby);
+          
+          // Step 2: Only update if different or not set
+          if (currentPiBaby.babyId === monitoredBabyId) {
+            console.log('✅ [Baby Monitor] Monitored baby ID already correct on Pi:', monitoredBabyId);
+            return; // Baby ID is already correct, no need to update
+          }
+          
+          // Step 3: Baby ID is different or not set - update it
+          console.log(`🔄 [Baby Monitor] Updating Pi monitored baby ID: ${currentPiBaby.babyId || 'null'} → ${monitoredBabyId}`);
+          
+          const setResponse = await fetch(`http://${PI_IP}/set_baby`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ babyId: monitoredBabyId }),
+          });
+
+          if (setResponse.ok) {
+            const data = await setResponse.json();
+            console.log('✅ [Baby Monitor] Monitored baby ID updated on Pi:', data);
+          } else {
+            console.warn('⚠️ [Baby Monitor] Failed to update baby ID on Pi:', setResponse.status);
+          }
+        } else {
+          console.warn('⚠️ [Baby Monitor] Could not check Pi baby ID, setting anyway...');
+          // If we can't check, just set it to be safe
+          await fetch(`http://${PI_IP}/set_baby`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ babyId: monitoredBabyId }),
+          });
+        }
+      } catch (error) {
+        console.error('❌ [Baby Monitor] Error syncing baby ID with Pi:', error);
+      }
+    };
+
+    syncBabyIdWithPi();
+  }, []); // Run only once when component mounts
+
+  // Cleanup audio when component unmounts
+  useEffect(() => {
+    return () => {
+      if (audioSound) {
+        audioSound.stopAsync().then(() => audioSound.unloadAsync());
+      }
+      if (recording) {
+        recording.stopAndUnloadAsync();
+      }
+    };
+  }, []);
+
   // Toggle microphone: start/stop recording
   async function toggleMicrophone() {
     if (recording) {
@@ -83,6 +163,63 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
     } else {
       // Start recording
       await startRecording();
+    }
+  }
+
+  // Toggle audio listening: start/stop listening to baby monitor audio
+  async function toggleAudioListening() {
+    if (isListening) {
+      // Stop listening
+      await stopAudioListening();
+    } else {
+      // Start listening
+      await startAudioListening();
+    }
+  }
+
+  // Start listening to audio stream from Pi
+  async function startAudioListening() {
+    try {
+      // Stop any talkback recording first
+      if (recording) {
+        await stopRecording();
+      }
+
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: false,
+        playsInSilentModeIOS: true,
+        staysActiveInBackground: true,
+      });
+
+      console.log('🎧 Pornesc audio streaming de la Pi...');
+      const { sound } = await Audio.Sound.createAsync(
+        { uri: AUDIO_STREAM_URL },
+        { shouldPlay: true, volume: 1.0 },
+        null
+      );
+
+      setAudioSound(sound);
+      setIsListening(true);
+      console.log('🎧 Audio streaming pornit!');
+    } catch (err) {
+      console.error('Eroare la pornirea audio streaming:', err);
+      Alert.alert(t('common.error'), 'Nu pot porni audio streaming');
+    }
+  }
+
+  // Stop listening to audio stream
+  async function stopAudioListening() {
+    try {
+      if (audioSound) {
+        console.log('🎧 Opresc audio streaming...');
+        await audioSound.stopAsync();
+        await audioSound.unloadAsync();
+        setAudioSound(null);
+      }
+      setIsListening(false);
+      console.log('🎧 Audio streaming oprit');
+    } catch (err) {
+      console.error('Eroare la oprirea audio streaming:', err);
     }
   }
 
@@ -270,6 +407,14 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
             </View>
           </View>
         )}
+        {isListening && (
+          <View style={[styles.statusOverlay, { top: recording ? 90 : 50 }]}>
+            <View style={styles.statusRow}>
+              <Ionicons name="headset" size={16} color="#4CAF50" />
+              <Text style={styles.statusText}>Listening...</Text>
+            </View>
+          </View>
+        )}
 
         {/* Camera Controls */}
         <View style={styles.controlsContainer}>
@@ -290,6 +435,19 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
             <View style={isFullscreenMode ? { transform: [{ rotate: '90deg' }] } : undefined}>
               <Ionicons 
                 name="mic" 
+                size={24} 
+                color="#fff"
+              />
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            onPress={toggleAudioListening}
+            style={[styles.controlButton, isListening && { backgroundColor: "#4CAF50" }]}
+          >
+            <View style={isFullscreenMode ? { transform: [{ rotate: '90deg' }] } : undefined}>
+              <Ionicons 
+                name={isListening ? "headset" : "headset-outline"}
                 size={24} 
                 color="#fff"
               />

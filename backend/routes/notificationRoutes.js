@@ -270,6 +270,86 @@ router.post('/baby-crying', async (req, res) => {
     }
 });
 
+// POST /api/notifications/crying-reason-identified
+router.post('/crying-reason-identified', async (req, res) => {
+    try {
+        const { cryingType } = req.body;
+        console.log(`🔔 [NOTIFICATION] Crying reason identified: ${cryingType}`);
+        
+        const users = await User.find({ pushToken: { $exists: true, $ne: null } });
+        
+        if (users.length === 0) {
+            return res.status(200).json({ message: 'No users with push tokens found' });
+        }
+        
+        // Mapare tipuri plâns în română → engleză
+        const cryingMessages = {
+            'hunger': { emoji: '🍼', reason: 'hungry', message: 'might be hungry' },
+            'pain': { emoji: '😫', reason: 'in pain', message: 'might be in pain' },
+            'tiredness': { emoji: '😴', reason: 'tired', message: 'might be tired' },
+            'discomfort': { emoji: '😣', reason: 'uncomfortable', message: 'might be uncomfortable' }
+        };
+        
+        const cryInfo = cryingMessages[cryingType] || { emoji: '😢', reason: 'crying', message: 'needs attention' };
+        
+        const allAlertPromises = users.map(async (user) => {
+            const allBabies = await getAllUserBabies(user._id);
+            
+            if (allBabies.length === 0) {
+                return [];
+            }
+            
+            const babyAlerts = allBabies.map(async (userBaby) => {
+                const alert = await Alert.create({
+                    babyId: userBaby._id,
+                    type: 'system',
+                    title: `${cryInfo.emoji} Crying Pattern Detected`,
+                    message: `${userBaby.name} ${cryInfo.message}. Check on them.`,
+                    severity: 'high',
+                    isRead: false,
+                    timestamp: new Date()
+                });
+                return alert;
+            });
+            
+            return Promise.all(babyAlerts);
+        });
+        
+        await Promise.all(allAlertPromises);
+        
+        const pushPromises = users.map(async (user) => {
+            try {
+                console.log(`📤 [NOTIFICATION] Sending crying reason push to user ${user.email}`);
+                
+                if (!user.pushToken) {
+                    console.error(`❌ [NOTIFICATION] User ${user.email} has no pushToken!`);
+                    return { success: false, error: 'No push token' };
+                }
+                
+                const result = await sendPushNotification(
+                    user.pushToken,
+                    `${cryInfo.emoji} Crying Pattern Detected`,
+                    `Your baby ${cryInfo.message}. Please check on them.`,
+                    { type: 'crying-reason-identified', cryingType: cryingType, priority: 'high' }
+                );
+                
+                console.log(`✅ [NOTIFICATION] Push result for ${user.email}:`, result);
+                return result;
+            } catch (error) {
+                console.error(`Error sending push:`, error);
+                return null;
+            }
+        });
+        
+        await Promise.all(pushPromises);
+        
+        res.status(200).json({ message: 'Crying reason notifications sent successfully' });
+    } catch (error) {
+        console.error('❌ [NOTIFICATION] Error:', error);
+        res.status(500).json({ error: 'Failed to process crying reason notification' });
+    }
+});
+
 // POST /api/notifications/baby-might-be-sleeping
 router.post('/baby-might-be-sleeping', async (req, res) => {
     try {

@@ -9,7 +9,8 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { getSleepEventsByDateRange, SleepEvent } from "../services/sleepEventService";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { getSleepEventsByBabyAndDateRange, SleepEvent } from "../services/sleepEventService";
 
 type SleepHistoryModalProps = {
   visible: boolean;
@@ -32,8 +33,10 @@ const SleepHistoryModal: React.FC<SleepHistoryModalProps> = ({
   const [sleepHistory, setSleepHistory] = useState<SleepHistoryEntry[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // Reîncarcă ÎNTOTDEAUNA când modalul se deschide - fără cache
   useEffect(() => {
     if (visible) {
+      console.log('👁️ [Sleep History] Modal opened - loading fresh data');
       loadSleepHistory();
     }
   }, [visible]);
@@ -41,7 +44,17 @@ const SleepHistoryModal: React.FC<SleepHistoryModalProps> = ({
   const loadSleepHistory = async () => {
     setLoading(true);
     try {
-      const deviceId = "lullababypi_01";
+      // IMPORTANT: Citim selectedBabyId PROASPĂT la fiecare încărcare
+      const selectedBabyId = await AsyncStorage.getItem('selectedBabyId');
+      
+      console.log('📊 [Sleep History] Loading for baby ID:', selectedBabyId);
+      
+      if (!selectedBabyId) {
+        console.warn('⚠️ [Sleep History] No baby selected');
+        setSleepHistory([]);
+        setLoading(false);
+        return;
+      }
       
       // Get last 7 days - use UTC time to avoid timezone issues
       const now = Date.now(); // Current time in milliseconds since epoch
@@ -50,15 +63,25 @@ const SleepHistoryModal: React.FC<SleepHistoryModalProps> = ({
       const startISO = new Date(sevenDaysAgo).toISOString();
       const endISO = new Date(now + (24 * 60 * 60 * 1000)).toISOString(); // Add 1 day buffer to include today's events
       
-      console.log("Fetching sleep events from:", startISO, "to:", endISO);
+      console.log("📊 [Sleep History] Fetching sleep events for baby:", selectedBabyId, "from:", startISO, "to:", endISO);
       
-      const events = await getSleepEventsByDateRange(
-        deviceId,
+      // Use the new baby-specific endpoint
+      const events = await getSleepEventsByBabyAndDateRange(
+        selectedBabyId,
         startISO,
         endISO
       );
       
-      console.log("Sleep events fetched:", events.length, events);
+      console.log("📥 [Sleep History] Events received:", events.length);
+      console.log("📥 [Sleep History] First event sample:", events[0]);
+      
+      // Verify that events belong to the selected baby
+      const wrongBabyEvents = events.filter((e: any) => e.babyId !== selectedBabyId);
+      if (wrongBabyEvents.length > 0) {
+        console.error("❌ [Sleep History] ERROR: Received events for wrong baby!", wrongBabyEvents);
+      } else {
+        console.log("✅ [Sleep History] All events belong to baby:", selectedBabyId);
+      }
       
       // Filter only completed sleep sessions
       const completedSessions = events.filter(
