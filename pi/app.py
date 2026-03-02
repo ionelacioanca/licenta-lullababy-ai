@@ -58,6 +58,8 @@ CRYING_CONFIRMATION_SECONDS = 1  # Confirmă plâns după 1 secundă (redus pent
 # Control pentru audio streaming (suspendă monitorizarea când streamăm live)
 audio_streaming_active = False
 streaming_lock = threading.Lock()
+last_audio_stream_heartbeat = 0  # Timestamp pentru detectarea streaming-urilor blocate
+AUDIO_STREAM_HEARTBEAT_TIMEOUT = 10  # Considerăm streaming blocat după 10 secunde fără heartbeat
 
 # Control pentru video streaming (suspendă monitorizarea când părintele se uită la video)
 video_stream_active = False
@@ -438,6 +440,14 @@ def background_audio_monitor():
                         print("⏸️ [VIDEO] Video stream inactiv (timeout heartbeat) - REACTIVEZ monitorizare audio")
                         video_stream_active = False
                 
+                # Verificăm dacă audio streaming e blocat (fără heartbeat de mult timp)
+                if audio_streaming_active and last_audio_stream_heartbeat > 0:
+                    audio_heartbeat_age = time.time() - last_audio_stream_heartbeat
+                    if audio_heartbeat_age > AUDIO_STREAM_HEARTBEAT_TIMEOUT:
+                        print(f"⚠️ [AUDIO] Audio streaming blocat (heartbeat: {audio_heartbeat_age:.0f}s) - RESETEZ forțat flag-ul")
+                        with streaming_lock:
+                            audio_streaming_active = False
+                
                 if audio_streaming_active or video_stream_active:
                     reason = "audio streaming" if audio_streaming_active else "video streaming"
                     print(f"⏸️ [AUDIO] {reason} activ - OPRESC proces arecord (părinte urmărește bebelușul)")
@@ -449,15 +459,34 @@ def background_audio_monitor():
                     while audio_streaming_active or video_stream_active:
                         if time.time() - wait_start > 30:  # Timeout 30 secunde
                             print("⚠️ [AUDIO] TIMEOUT așteptare streaming! Repornesc oricum monitorizarea.")
+                            # RESETĂM FORȚAT flag-urile - streaming-ul probabil s-a blocat
+                            if audio_streaming_active:
+                                print("🔧 [FIX] Resetez forțat audio_streaming_active la False")
+                                with streaming_lock:
+                                    audio_streaming_active = False
+                            if video_stream_active:
+                                print("🔧 [FIX] Resetez forțat video_stream_active la False")
+                                video_stream_active = False
                             break
                         # Update video stream status
                         if time.time() - last_video_heartbeat > VIDEO_HEARTBEAT_TIMEOUT:
                             video_stream_active = False
+                        # Update audio stream status (verificare heartbeat)
+                        if audio_streaming_active and last_audio_stream_heartbeat > 0:
+                            if time.time() - last_audio_stream_heartbeat > AUDIO_STREAM_HEARTBEAT_TIMEOUT:
+                                print("⏸️ [AUDIO] Audio streaming blocat (timeout heartbeat) - REACTIVEZ monitorizare")
+                                with streaming_lock:
+                                    audio_streaming_active = False
                         time.sleep(0.5)
                     
                     # Streaming s-a terminat - așteptăm puțin pentru siguranță
                     print("🔄 [AUDIO] Streaming terminat - Aștept eliberarea finală a microfonului...")
-                    time.sleep(0.5)  # Delay suplimentar pentru sincronizare
+                    time.sleep(1.0)  # Delay suplimentar pentru sincronizare
+                    
+                    # Omorâm FORȚAT toate procesele arecord rămase pentru a elibera device-ul
+                    print("🔧 [AUDIO] Cleanup - omor FORȚAT toate procesele arecord vechi")
+                    os.system("sudo killall -9 arecord > /dev/null 2>&1")
+                    time.sleep(0.5)  # Așteptăm eliberarea device-ului
                     
                     # Repornim procesul când streaming s-a terminat COMPLET
                     print("🔄 [AUDIO] REPORNESC monitorizare audio")
@@ -1005,13 +1034,14 @@ def audio_stream():
     SUSPENDĂ automat monitorizarea plânsului pentru a evita conflictul pe microfon
     """
     def generate_audio():
-        global audio_streaming_active
+        global audio_streaming_active, last_audio_stream_heartbeat
         process = None
         
         try:
             # SUSPENDĂM monitorizarea automată
             with streaming_lock:
                 audio_streaming_active = True
+                last_audio_stream_heartbeat = time.time()  # Inițializăm heartbeat-ul
             
             # RESETĂM TOATE COOLDOWN-URILE când părintele se conectează live
             # Dacă e conectat, înseamnă că e atent - vrem notificări imediate după deconectare
@@ -1069,6 +1099,10 @@ def audio_stream():
                     break
                 
                 chunk_count += 1
+                
+                # Actualizăm heartbeat-ul la fiecare chunk pentru a semnala că streaming-ul e activ
+                last_audio_stream_heartbeat = time.time()
+                
                 if chunk_count % 50 == 0:  # La fiecare ~3 secunde
                     print(f"🎤 [STREAM] Streaming activ - {chunk_count} chunk-uri trimise")
                 
@@ -1096,7 +1130,12 @@ def audio_stream():
             
             # PASUL 2: Așteptăm să se elibereze complet microfonul (CRITIC!)
             print("🎤 [STREAM] Aștept eliberarea completă a microfonului...")
-            time.sleep(1.0)  # Delay pentru a fi SIGURI că device-ul e liber
+            time.sleep(1.5)  # Mărit la 1.5 secunde pentru eliberare garantată
+            
+            # PASUL 2.5: Omorâm FORȚAT toate procesele arecord rămase (cleanup agressiv)
+            print("🔧 [STREAM] Cleanup final - omor toate procesele arecord rămase")
+            os.system("sudo killall -9 arecord > /dev/null 2>&1")
+            time.sleep(0.5)  # Așteptăm după kill pentru eliberare finală
             
             # PASUL 3: Doar ACUM reactivăm monitorizarea
             with streaming_lock:
