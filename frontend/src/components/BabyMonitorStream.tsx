@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Audio, Video, AVPlaybackStatus, ResizeMode } from "expo-av";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -77,6 +78,70 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
 
     return () => clearInterval(clockInterval);
   }, []);
+
+  // Sync MONITORED baby ID with Raspberry Pi when component mounts
+  // IMPORTANT: Uses monitoredBabyId (not selectedBabyId) - only babies explicitly marked for monitoring
+  useEffect(() => {
+    const syncBabyIdWithPi = async () => {
+      try {
+        // Read the MONITORED baby ID (user explicitly confirmed they want live monitoring)
+        const monitoredBabyId = await AsyncStorage.getItem('monitoredBabyId');
+        
+        if (!monitoredBabyId) {
+          console.warn('⚠️ [Baby Monitor] No baby set for live monitoring');
+          console.log('ℹ️ [Baby Monitor] User needs to select a baby and confirm monitoring');
+          return;
+        }
+
+        // Step 1: Check what baby ID is currently set on Pi
+        console.log('🔍 [Baby Monitor] Checking baby ID on Pi...');
+        const getResponse = await fetch(`http://${PI_IP}/get_baby`);
+        
+        if (getResponse.ok) {
+          const currentPiBaby = await getResponse.json();
+          console.log('📥 [Baby Monitor] Pi current baby:', currentPiBaby);
+          
+          // Step 2: Only update if different or not set
+          if (currentPiBaby.babyId === monitoredBabyId) {
+            console.log('✅ [Baby Monitor] Monitored baby ID already correct on Pi:', monitoredBabyId);
+            return; // Baby ID is already correct, no need to update
+          }
+          
+          // Step 3: Baby ID is different or not set - update it
+          console.log(`🔄 [Baby Monitor] Updating Pi monitored baby ID: ${currentPiBaby.babyId || 'null'} → ${monitoredBabyId}`);
+          
+          const setResponse = await fetch(`http://${PI_IP}/set_baby`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ babyId: monitoredBabyId }),
+          });
+
+          if (setResponse.ok) {
+            const data = await setResponse.json();
+            console.log('✅ [Baby Monitor] Monitored baby ID updated on Pi:', data);
+          } else {
+            console.warn('⚠️ [Baby Monitor] Failed to update baby ID on Pi:', setResponse.status);
+          }
+        } else {
+          console.warn('⚠️ [Baby Monitor] Could not check Pi baby ID, setting anyway...');
+          // If we can't check, just set it to be safe
+          await fetch(`http://${PI_IP}/set_baby`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ babyId: monitoredBabyId }),
+          });
+        }
+      } catch (error) {
+        console.error('❌ [Baby Monitor] Error syncing baby ID with Pi:', error);
+      }
+    };
+
+    syncBabyIdWithPi();
+  }, []); // Run only once when component mounts
 
   // Cleanup audio when component unmounts
   useEffect(() => {

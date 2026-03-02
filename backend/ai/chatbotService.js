@@ -190,6 +190,15 @@ ESENȚIAL: Fii atent CU CINE vorbești:
   if (babyInfo) {
     finalPrompt += babyInfo;
   }
+  // Sleep summary context (dacă există)
+  if (babyContext && babyContext.sleepSummary) {
+    const s = babyContext.sleepSummary;
+    if (lang === 'ro') {
+      finalPrompt += `\n\nREZUMAT SOMN ULTIMA SĂPTĂMÂNĂ:\n- Total sesiuni: ${s.sessionCount}\n- Total somn: ${s.totalHours} ore și ${s.remainingMinutes} minute\n- Cea mai lungă sesiune: ${s.longest} minute\n- Cea mai scurtă sesiune: ${s.shortest} minute\n- Ultima sesiune: ${s.lastSession ? `${s.lastSession.duration} minute, începută la ${new Date(s.lastSession.start).toLocaleString('ro-RO')}` : 'N/A'}\n`;
+    } else {
+      finalPrompt += `\n\nSLEEP SUMMARY LAST 7 DAYS:\n- Total sessions: ${s.sessionCount}\n- Total sleep: ${s.totalHours} hours and ${s.remainingMinutes} minutes\n- Longest session: ${s.longest} minutes\n- Shortest session: ${s.shortest} minutes\n- Last session: ${s.lastSession ? `${s.lastSession.duration} minutes, started at ${new Date(s.lastSession.start).toLocaleString('en-US')}` : 'N/A'}\n`;
+    }
+  }
   
   if (knowledge) {
     finalPrompt += "\n\nAdditional Context (use if relevant):\n";

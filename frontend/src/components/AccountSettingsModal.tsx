@@ -60,7 +60,7 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const [deletePassword, setDeletePassword] = useState("");
 
-  const API_URL = "http://192.168.1.50:5000/api";
+  const API_URL = "http://192.168.1.56:5000/api";
 
   useEffect(() => {
     if (visible) {

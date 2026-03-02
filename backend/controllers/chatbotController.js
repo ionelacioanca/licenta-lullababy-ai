@@ -5,6 +5,7 @@ import Baby from '../models/Baby.js';
 import GrowthRecord from '../models/GrowthRecord.js';
 import User from '../models/User.js';
 import ChatHistory from '../models/ChatHistory.js';
+import SleepEvent from '../models/SleepEvent.js';
 
 export const chatWithBot = async (req, res, next) => {
   const requestStartTime = Date.now(); // Pentru tracking response time
@@ -77,6 +78,39 @@ export const chatWithBot = async (req, res, next) => {
             .sort({ recordDate: -1 })
             .limit(1);
 
+          // Sleep tracking: ultimele 7 zile
+          const oneWeekAgo = new Date();
+          oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+          // Caută toate evenimentele de somn pentru device_id asociat bebelușului
+          // Presupunem că baby.deviceId există (dacă nu, adaptează după structura ta)
+          let sleepSummary = null;
+          if (baby.deviceId) {
+            const sleepEvents = await SleepEvent.find({
+              device_id: baby.deviceId,
+              status: { $in: ["Somn Incheiat", "Finalizat"] },
+              start_time: { $gte: oneWeekAgo }
+            }).sort({ start_time: 1 });
+            // Sumar: total sesiuni, total minute, sesiunea cea mai lungă, cea mai scurtă, ultima sesiune
+            const totalMinutes = sleepEvents.reduce((sum, ev) => sum + (ev.duration_minutes || 0), 0);
+            const sessionCount = sleepEvents.length;
+            const longest = sleepEvents.reduce((max, ev) => ev.duration_minutes > max ? ev.duration_minutes : max, 0);
+            const shortest = sleepEvents.reduce((min, ev) => (ev.duration_minutes < min ? ev.duration_minutes : min), sleepEvents.length ? sleepEvents[0].duration_minutes : 0);
+            const lastSession = sleepEvents.length ? sleepEvents[sleepEvents.length - 1] : null;
+            sleepSummary = {
+              sessionCount,
+              totalMinutes,
+              totalHours: Math.floor(totalMinutes / 60),
+              remainingMinutes: Math.round(totalMinutes % 60),
+              longest,
+              shortest,
+              lastSession: lastSession ? {
+                start: lastSession.start_time,
+                end: lastSession.end_time,
+                duration: lastSession.duration_minutes
+              } : null
+            };
+          }
+
           babyContext = {
             name: baby.name,
             gender: baby.gender,
@@ -86,6 +120,7 @@ export const chatWithBot = async (req, res, next) => {
             weight: latestGrowth?.weight || null,
             length: latestGrowth?.length || null,
             headCircumference: latestGrowth?.headCircumference || null,
+            sleepSummary
           };
 
           console.log('[Chatbot] Baby context:', babyContext);

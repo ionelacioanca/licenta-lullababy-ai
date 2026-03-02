@@ -252,7 +252,7 @@ const history = await getChatHistory(selectedBabyId, 50); // ← Modifică aici
 ### **URL Backend:**
 ```typescript
 // În chatbotService.ts
-const API_BASE = 'http://192.168.1.50:5000/api'; // ← Schimbă IP-ul
+const API_BASE = 'http://192.168.1.56:5000/api'; // ← Schimbă IP-ul
 ```
 
 ---

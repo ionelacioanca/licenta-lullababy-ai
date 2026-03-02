@@ -14,7 +14,7 @@ app = Flask(__name__)
 # --- CONFIGURARE ---
 ALSA_DEVICE = "hw:0,0"  # Device pentru boxă (output)
 ALSA_MICROPHONE_DEVICE = "hw:1,0"  # Device pentru microfon (input)
-BACKEND_SERVER = "http://192.168.1.50:5000"  # Backend server pentru notificări
+BACKEND_SERVER = "http://192.168.1.56:5000"  # Backend server pentru notificări
 
 current_playback = {
     "status": "stopped",
@@ -73,6 +73,38 @@ AWAKE_CONFIRMATION_SECONDS = 5
 # Praguri (le poți ajusta ulterior)
 # Dacă nu e mișcare timp de 300 secunde (5 minute), considerăm că doarme
 SLEEP_THRESHOLD_SECONDS = 30
+
+# Baby ID pentru asocierea evenimentelor de somn
+current_baby_id = None
+BABY_ID_FILE = "/tmp/current_baby_id.txt"
+
+# Citim baby ID din fișier la pornirea aplicației (dacă există)
+def load_baby_id_from_file():
+    global current_baby_id
+    try:
+        if os.path.exists(BABY_ID_FILE):
+            with open(BABY_ID_FILE, 'r') as f:
+                baby_id = f.read().strip()
+                if baby_id:
+                    current_baby_id = baby_id
+                    print(f"✅ [BABY] Baby ID restaurat din fișier: {current_baby_id}")
+                    return True
+    except Exception as e:
+        print(f"⚠️ [BABY] Eroare la citirea baby ID din fișier: {e}")
+    print("ℹ️ [BABY] Nu există baby ID salvat - aștept setare din frontend")
+    return False
+
+def save_baby_id_to_file(baby_id):
+    """Salvează baby ID în fișier pentru persistență"""
+    try:
+        with open(BABY_ID_FILE, 'w') as f:
+            f.write(baby_id)
+        print(f"💾 [BABY] Baby ID salvat în fișier: {baby_id}")
+    except Exception as e:
+        print(f"⚠️ [BABY] Eroare la salvarea baby ID în fișier: {e}")
+
+# Încercăm să restaurăm baby ID-ul la pornirea aplicației
+load_baby_id_from_file()
 
 def background_frame_reader():
     global current_baby_status, last_activity_time, status_start_time, motion_detected, last_frame, motion_start_time
@@ -737,6 +769,7 @@ def send_notification(notification_type, user_id=None, baby_id=None, crying_type
         print(f"❌ [NOTIFICARE] Eroare neprevăzută: {e}")
 
 def save_status_to_atlas(status, duration_minutes):
+    global current_baby_id
     try:
         event = {
             "status": status,
@@ -745,13 +778,19 @@ def save_status_to_atlas(status, duration_minutes):
             "duration_minutes": round(duration_minutes, 2),
             "device_id": "lullababypi_01"
         }
+        if current_baby_id:
+            event["babyId"] = current_baby_id
+            print(f"--- [ATLAS] Salvez eveniment pentru baby ID: {current_baby_id} ---")
+        else:
+            print("⚠️ [ATLAS] Nu există baby ID setat - evenimentul va fi salvat fără baby ID")
+        
         sleep_collection.insert_one(event)
         print(f"--- [ATLAS] Stare salvată: {status} ({round(duration_minutes, 2)} min) ---")
     except Exception as e:
         print(f"Eroare la salvarea în Atlas: {e}")
 
 def start_sleep_in_atlas():
-    global current_sleep_session_id
+    global current_sleep_session_id, current_baby_id
     try:
         event = {
             "status": "In desfasurare",
@@ -760,6 +799,12 @@ def start_sleep_in_atlas():
             "duration_minutes": 0,
             "device_id": "lullababypi_01"
         }
+        if current_baby_id:
+            event["babyId"] = current_baby_id
+            print(f"--- [ATLAS] Pornesc sesiune de somn pentru baby ID: {current_baby_id} ---")
+        else:
+            print("⚠️ [ATLAS] Nu există baby ID setat - sesiunea va fi pornită fără baby ID")
+        
         result = sleep_collection.insert_one(event)
         current_sleep_session_id = result.inserted_id # Salvăm ID-ul documentului creat
         print(f"--- [ATLAS] Sesiune de somn inceputa (ID: {current_sleep_session_id}) ---")
@@ -767,18 +812,26 @@ def start_sleep_in_atlas():
         print(f"Eroare start_sleep: {e}")
 
 def finalize_sleep_in_atlas(duration_mins):
-    global current_sleep_session_id
+    global current_sleep_session_id, current_baby_id
     if current_sleep_session_id:
         try:
+            # Construim update-ul cu status, end_time și duration
+            update_data = {
+                "status": "Finalizat",
+                "end_time": datetime.datetime.now(),
+                "duration_minutes": round(duration_mins, 2)
+            }
+            
+            # Adăugăm babyId dacă există (pentru cazul în care sesiunea a fost creată fără babyId)
+            if current_baby_id:
+                update_data["babyId"] = current_baby_id
+                print(f"--- [ATLAS] Finalizez sesiune pentru baby ID: {current_baby_id} ---")
+            else:
+                print("⚠️ [ATLAS] Finalizez sesiune fără baby ID setat")
+            
             sleep_collection.update_one(
                 {"_id": current_sleep_session_id},
-                {
-                    "$set": {
-                        "status": "Finalizat",
-                        "end_time": datetime.datetime.now(),
-                        "duration_minutes": round(duration_mins, 2)
-                    }
-                }
+                {"$set": update_data}
             )
             print(f"--- [ATLAS] Sesiune finalizata. Durata: {round(duration_mins, 2)} min ---")
             current_sleep_session_id = None # Resetăm ID-ul pentru următorul somn
@@ -1087,6 +1140,39 @@ def stop_audio():
     current_playback["status"] = "stopped"
     current_playback["url"] = None
     return jsonify(current_playback), 200
+
+@app.route('/set_baby', methods=['POST'])
+def set_baby():
+    """Endpoint pentru a seta baby ID-ul activ din frontend"""
+    global current_baby_id
+    try:
+        data = request.get_json()
+        baby_id = data.get('babyId')
+        
+        if not baby_id:
+            return jsonify({"error": "babyId is required"}), 400
+        
+        current_baby_id = baby_id
+        save_baby_id_to_file(baby_id)  # Salvăm în fișier pentru persistență
+        print(f"✅ [BABY] Baby ID setat: {current_baby_id}")
+        
+        return jsonify({
+            "success": True,
+            "babyId": current_baby_id,
+            "message": "Baby ID set successfully and persisted"
+        }), 200
+    except Exception as e:
+        print(f"❌ [BABY] Eroare la setarea baby ID: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/get_baby', methods=['GET'])
+def get_baby():
+    """Endpoint pentru a obține baby ID-ul curent"""
+    global current_baby_id
+    return jsonify({
+        "babyId": current_baby_id,
+        "isSet": current_baby_id is not None
+    }), 200
 
 @app.route('/talkback', methods=['POST'])
 def talkback():

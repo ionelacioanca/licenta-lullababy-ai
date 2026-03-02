@@ -134,6 +134,12 @@ export const translations = {
       addPhoto: 'Add photo',
       changePhoto: 'Change photo',
       deleteProfile: 'Delete this child profile',
+      monitor: {
+        title: '👁️ Live Monitoring',
+        message: 'Do you want to enable real-time sleep monitoring for {name}?\n\nIf you select YES, all sleep events will be recorded for {name}.\n\nIf you select NO, you can only view data and journal.',
+        yes: '✅ Yes, Monitor',
+        no: '❌ No, Just View',
+      },
     },
     
     // Calendar
@@ -518,6 +524,12 @@ export const translations = {
       ageUnknown: 'Vârstă necunoscută',
       noChildrenFound: 'Nu există profiluri de copii',
       addChildProfile: 'Adaugă Profil Copil',
+      monitor: {
+        title: '👁️ Monitorizare în Timp Real',
+        message: 'Vrei să monitorizezi în timp real somnul bebelușului {name}?\n\nDacă selectezi DA, toate evenimentele de somn vor fi înregistrate pentru {name}.\n\nDacă selectezi NU, poți doar consulta datele și jurnalul.',
+        yes: '✅ Da, monitorizează',
+        no: '❌ Nu, doar consultă',
+      },
     },
     
     // Calendar
