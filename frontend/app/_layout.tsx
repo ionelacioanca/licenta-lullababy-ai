@@ -55,6 +55,7 @@ export default function RootLayout() {
             <Stack.Screen name="babiesList" options={{ headerShown: false }} />
             <Stack.Screen name="babyDetails" options={{ headerShown: false }} />
             <Stack.Screen name="dashboard" options={{ headerShown: false }} />
+            <Stack.Screen name="jurnal" options={{ headerShown: false }} />
             <Stack.Screen name="login" options={{ headerShown: false }} />
           </Stack>
           <StatusBar style="auto" />

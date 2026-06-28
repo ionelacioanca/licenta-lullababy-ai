@@ -329,15 +329,17 @@ const JournalPage: React.FC = () => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <Header
-        childInitial={childInitial}
-        babyName={babyName}
-        avatarColor={avatarColor}
-        avatarImage={avatarImage}
-        onEditProfile={() => router.push("/babiesList")}
-        onMessages={() => {}}
-        unreadMessages={3}
-      />
+      <View style={{ marginTop: Platform.OS === 'android' ? 6 : 8 }}>
+        <Header
+          childInitial={childInitial}
+          babyName={babyName}
+          avatarColor={avatarColor}
+          avatarImage={avatarImage}
+          onEditProfile={() => router.push("/babiesList")}
+          onMessages={() => {}}
+          unreadMessages={3}
+        />
+      </View>
 
       <View style={styles.content}>
         <View style={[styles.topBar, { backgroundColor: theme.surface }]}>
@@ -545,6 +547,7 @@ const JournalPage: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingTop: 12,
     backgroundColor: "#FFF8F0",
   },
   content: {

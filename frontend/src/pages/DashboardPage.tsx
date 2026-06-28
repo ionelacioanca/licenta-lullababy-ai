@@ -941,7 +941,7 @@ const DashboardPage: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 18,
+    paddingTop: 22,
     backgroundColor: "#FFF8F0",
   },
   content: {
