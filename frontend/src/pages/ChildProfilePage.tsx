@@ -747,6 +747,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 12,
+    marginTop: Platform.OS === 'android' ? 12 : 14,
     backgroundColor: "#FFF8F0",
     borderBottomWidth: 1,
     borderBottomColor: "#E0E0E0",

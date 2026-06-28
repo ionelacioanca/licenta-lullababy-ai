@@ -134,6 +134,18 @@ const RegisterPage: React.FC = () => {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
+      <View style={styles.topRow}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+          activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+        >
+          <Ionicons name="arrow-back" size={26} color="#6B6B6B" />
+        </TouchableOpacity>
+      </View>
+
       <Text style={styles.subheader}>{t('auth.letsGetStarted')}</Text>
       <Text style={styles.subtitle}>
         {t('auth.createAccountSubtitle')}
@@ -280,9 +292,18 @@ const RegisterPage: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     padding: 24,
-    paddingTop: 70,
+    paddingTop: 56,
+    paddingBottom: 36,
     backgroundColor: "#FFF8F0",
     flexGrow: 1,
+  },
+  topRow: {
+    width: "100%",
+    alignItems: "flex-start",
+    marginBottom: 10,
+  },
+  backButton: {
+    padding: 4,
   },
   header: {
     fontSize: 20,
