@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 24,
     paddingTop: 60,
-    paddingBottom: 40,
+    paddingBottom: 72,
   },
   languageContainer: {
     alignItems: "center",
@@ -138,6 +138,7 @@ const styles = StyleSheet.create({
   buttonContainer: {
     width: "100%",
     alignItems: "center",
+    marginBottom: 8,
   },
   signupButton: {
     backgroundColor: "#A2E884",
