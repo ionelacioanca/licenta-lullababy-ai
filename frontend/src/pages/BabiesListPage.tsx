@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Image,
   Alert,
+  Platform,
 } from "react-native";
 import { useRouter, useFocusEffect } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -194,7 +195,13 @@ const BabiesListPage: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.contentContainer,
+          { paddingBottom: Platform.OS === 'android' ? 96 : 56 },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
         {babies.length > 0 ? (
           babies.map((baby) => (
             <TouchableOpacity 
@@ -251,6 +258,7 @@ const BabiesListPage: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingTop: 16,
     backgroundColor: "#FFF8F0",
   },
   loadingContainer: {
@@ -286,6 +294,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#A2E884",
     fontWeight: "600",
+  },
+  contentContainer: {
+    padding: 16,
+    flexGrow: 1,
   },
   content: {
     flex: 1,
