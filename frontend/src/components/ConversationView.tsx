@@ -11,6 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   SafeAreaView,
+  Keyboard,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -43,9 +44,29 @@ export default function ConversationView({
   const [currentUserId, setCurrentUserId] = useState("");
   const flatListRef = useRef<FlatList>(null);
   const { theme } = useTheme();
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [inputHeight, setInputHeight] = useState(0);
+  const navBarOffset = Platform.OS === "android" ? 20 : 8;
+  const extraBottom = keyboardHeight === 0 ? navBarOffset : 0;
 
   useEffect(() => {
     loadCurrentUser();
+  }, []);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener("keyboardDidShow", (e) => {
+      const h = e.endCoordinates?.height || 0;
+      setKeyboardHeight(h);
+      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+    });
+    const hideSub = Keyboard.addListener("keyboardDidHide", () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
   }, []);
 
   useEffect(() => {
@@ -171,8 +192,8 @@ export default function ConversationView({
       <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.surface }]}>
         <KeyboardAvoidingView
           style={[styles.container, { backgroundColor: theme.background }]}
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
-          keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 12}
         >
           {/* Header */}
           <View style={[styles.header, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
@@ -209,7 +230,12 @@ export default function ConversationView({
             data={messages}
             renderItem={renderMessage}
             keyExtractor={(item) => item._id}
-            contentContainerStyle={styles.messagesList}
+            contentContainerStyle={[
+              styles.messagesList,
+              { paddingBottom: keyboardHeight + inputHeight + 24 + extraBottom },
+            ]}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
             onContentSizeChange={() =>
               flatListRef.current?.scrollToEnd({ animated: true })
             }
@@ -217,13 +243,20 @@ export default function ConversationView({
         )}
 
         {/* Input */}
-        <View style={[styles.inputContainer, { backgroundColor: theme.surface, borderTopColor: theme.border }]}>
+        <View
+          style={[
+            styles.inputContainer,
+            { backgroundColor: theme.surface, borderTopColor: theme.border, paddingBottom: 20 + extraBottom },
+          ]}
+          onLayout={(e) => setInputHeight(e.nativeEvent.layout.height)}
+        >
           <TextInput
             style={[styles.input, { backgroundColor: theme.card, color: theme.text }]}
             placeholder="Type a message..."
             placeholderTextColor={theme.textTertiary}
             value={newMessage}
             onChangeText={setNewMessage}
+            onFocus={() => setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 120)}
             multiline
             maxLength={1000}
           />
