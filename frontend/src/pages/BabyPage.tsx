@@ -164,6 +164,17 @@ const BabyDetailsPage: React.FC = () => {
       extraScrollHeight={20}
       enableOnAndroid={true}
     >
+      <View style={styles.topRow}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+          activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+        >
+          <Ionicons name="arrow-back" size={26} color={theme.textSecondary} />
+        </TouchableOpacity>
+      </View>
       <Text style={[styles.subheader, { color: theme.text }]}>Hello, {parentName}!</Text>
       <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Tell us more about your baby.</Text>
 
@@ -322,6 +333,8 @@ const BabyDetailsPage: React.FC = () => {
       <TouchableOpacity style={[styles.button, { backgroundColor: theme.primary }]} onPress={handleSave}>
         <Text style={styles.buttonText}>{t('baby.save')}</Text>
       </TouchableOpacity>
+          {/* Spacer so the save button isn't hidden behind phone action/navigation bars */}
+          <View style={{ height: Platform.OS === 'android' ? 96 : 56 }} />
     </KeyboardAwareScrollView>
   );
 };
@@ -329,9 +342,18 @@ const BabyDetailsPage: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     padding: 24,
-    paddingTop: 50,
+    paddingTop: 70,
+    paddingBottom: 36,
     backgroundColor: "#FFF8F0",
     flexGrow: 1,
+  },
+  topRow: {
+    width: "100%",
+    alignItems: "flex-start",
+    marginBottom: 10,
+  },
+  backButton: {
+    padding: 4,
   },
   subheader: {
     fontSize: 22,
