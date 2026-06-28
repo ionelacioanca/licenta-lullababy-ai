@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import { View, ScrollView, StyleSheet, TouchableOpacity, Text, Alert, Image } from "react-native";
+import { View, ScrollView, StyleSheet, TouchableOpacity, Text, Alert, Image, Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -539,7 +539,11 @@ const DashboardPage: React.FC = () => {
         unreadMessages={unreadMessagesCount}
       />
       
-      <ScrollView style={[styles.content, { backgroundColor: theme.background }]} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={[styles.content, { backgroundColor: theme.background }]}
+        contentContainerStyle={{ paddingBottom: Platform.OS === 'android' ? 180 : 160 }}
+        showsVerticalScrollIndicator={false}
+      >
         <BabyMonitorStream 
           babyName={babyName} 
           onStopMusic={() => soundPlayerRef.current?.stopPlayback()}
@@ -945,7 +949,7 @@ const styles = StyleSheet.create({
   },
   chatButton: {
     position: 'absolute',
-    bottom: 90,
+    bottom: Platform.OS === 'android' ? 160 : 150,
     right: 24,
     width: 68,
     height: 68,

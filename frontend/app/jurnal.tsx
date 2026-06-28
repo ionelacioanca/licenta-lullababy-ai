@@ -10,6 +10,7 @@ import {
   Modal,
   TextInput,
   Dimensions,
+  Platform,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
@@ -421,7 +422,11 @@ const JournalPage: React.FC = () => {
           </>
         )}
 
-        <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          style={styles.scrollContent}
+          contentContainerStyle={{ paddingBottom: Platform.OS === 'android' ? 180 : 160 }}
+          showsVerticalScrollIndicator={false}
+        >
           {viewMode === "timeline" ? (
             filteredEntries.length === 0 ? (
               <View style={styles.emptyState}>
@@ -799,7 +804,7 @@ const styles = StyleSheet.create({
   },
   addButton: {
     position: "absolute",
-    bottom: 90,
+    bottom: Platform.OS === 'android' ? 160 : 150,
     right: 24,
     width: 68,
     height: 68,
