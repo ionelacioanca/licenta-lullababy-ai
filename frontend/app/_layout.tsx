@@ -51,6 +51,7 @@ export default function RootLayout() {
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen name="+not-found" />
             <Stack.Screen name="open" options={{ headerShown: false }} />
+            <Stack.Screen name="childProfile" options={{ headerShown: false }} />
             <Stack.Screen name="register" options={{ headerShown: false }} />
             <Stack.Screen name="babiesList" options={{ headerShown: false }} />
             <Stack.Screen name="babyDetails" options={{ headerShown: false }} />
