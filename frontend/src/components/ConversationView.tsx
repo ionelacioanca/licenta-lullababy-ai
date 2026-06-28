@@ -264,6 +264,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 12,
+    marginTop: Platform.OS === 'android' ? 12 : 14,
     backgroundColor: "#FFF",
     borderBottomWidth: 1,
     borderBottomColor: "#E0E0E0",
