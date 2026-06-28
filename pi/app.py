@@ -15,7 +15,7 @@ app = Flask(__name__)
 # --- CONFIGURARE ---
 ALSA_DEVICE = "hw:0,0"  # Device pentru boxă (output)
 ALSA_MICROPHONE_DEVICE = "hw:1,0"  # Device pentru microfon (input)
-BACKEND_SERVER = "http://192.168.1.56:5000"  # Backend server pentru notificări
+BACKEND_SERVER = "http://192.168.1.8:5000"  # Backend server pentru notificări
 
 current_playback = {
     "status": "stopped",
