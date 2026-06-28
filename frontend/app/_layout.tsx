@@ -54,7 +54,7 @@ export default function RootLayout() {
             <Stack.Screen name="register" options={{ title: "Sign Up" }} />
             <Stack.Screen name="babyDetails" options={{ title: "Baby's details" }} />
             <Stack.Screen name="dashboard" options={{ title: "Dashboard" }} />
-            <Stack.Screen name="login" options={{ title: "Log In" }} />
+            <Stack.Screen name="login" options={{ headerShown: false }} />
           </Stack>
           <StatusBar style="auto" />
         </NavigationThemeProvider>
