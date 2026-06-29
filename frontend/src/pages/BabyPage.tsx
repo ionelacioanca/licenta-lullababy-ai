@@ -148,7 +148,7 @@ const BabyDetailsPage: React.FC = () => {
         }
         
         Alert.alert("Success", "Baby details saved!");
-        router.push("/dashboard");
+        router.push({ pathname: "/dashboard", params: newBabyId ? { babyId: newBabyId } : undefined });
       } else {
         const data = await response.json();
         throw new Error(data.message || "Something went wrong");

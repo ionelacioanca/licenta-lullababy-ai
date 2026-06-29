@@ -128,7 +128,7 @@ const BabiesListPage: React.FC = () => {
     if (currentMonitoredBabyId === baby._id) {
       // This baby is already monitored - just navigate without asking
       console.log('✅ [Baby Selection] Baby already monitored, navigating directly:', baby.name);
-      router.push("/dashboard");
+      router.push({ pathname: "/dashboard", params: { babyId: baby._id } });
       return;
     }
     
@@ -147,7 +147,7 @@ const BabiesListPage: React.FC = () => {
             // User only wants to view data - don't set monitored baby
             console.log('📊 [Baby Selection] View-only mode for:', baby.name, 'ID:', baby._id);
             console.log('📊 [Baby Selection] monitoredBabyId remains:', currentMonitoredBabyId);
-            router.push("/dashboard");
+            router.push({ pathname: "/dashboard", params: { babyId: baby._id } });
           }
         },
         {
@@ -157,7 +157,7 @@ const BabiesListPage: React.FC = () => {
             await AsyncStorage.setItem("monitoredBabyId", baby._id);
             console.log('👁️ [Baby Selection] Live monitoring enabled for:', baby.name, 'ID:', baby._id);
             console.log('💾 [Baby Selection] Saved monitoredBabyId to AsyncStorage:', baby._id);
-            router.push("/dashboard");
+            router.push({ pathname: "/dashboard", params: { babyId: baby._id } });
           }
         }
       ]

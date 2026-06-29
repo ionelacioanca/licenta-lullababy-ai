@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { View, ScrollView, StyleSheet, TouchableOpacity, Text, Alert, Image, Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRouter, useFocusEffect } from "expo-router";
+import { useRouter, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useLanguage } from "../contexts/LanguageContext";
 import Header from "./Header";
@@ -32,6 +32,7 @@ import { API_BASE_URL, BACKEND_BASE_URL } from "@/src/config/network";
 
 const DashboardPage: React.FC = () => {
   const router = useRouter();
+  const searchParams = useLocalSearchParams<{ babyId?: string | string[] }>();
   const { theme } = useTheme();
   const { t } = useLanguage();
   const soundPlayerRef = useRef<SoundPlayerRef>(null);
@@ -68,6 +69,7 @@ const DashboardPage: React.FC = () => {
   const [selectedUserId, setSelectedUserId] = useState("");
   const [selectedUserName, setSelectedUserName] = useState("");
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
+  const routeBabyId = Array.isArray(searchParams.babyId) ? searchParams.babyId[0] : searchParams.babyId;
   
   // Sleep tracking states
   const [lastSleepSession, setLastSleepSession] = useState<SleepEvent | null>(null);
@@ -137,11 +139,11 @@ const DashboardPage: React.FC = () => {
     loadUnreadMessagesCount();
   };
 
-  const loadSleepData = async () => {
+  const loadSleepData = async (overrideBabyId?: string) => {
     try {
-      // Get the currently selected baby ID
-      const selectedBabyId = await AsyncStorage.getItem('selectedBabyId');
-      console.log("LOG [Dashboard] Loading sleep data for babyId:", selectedBabyId);
+      // Prefer the baby currently loaded in state; fall back to storage only if needed.
+      const selectedBabyId = overrideBabyId || routeBabyId || babyId || await AsyncStorage.getItem('selectedBabyId');
+      console.log("LOG [Dashboard] Loading sleep data for babyId:", selectedBabyId, "routeBabyId:", routeBabyId, "stateBabyId:", babyId);
       
       if (!selectedBabyId) {
         console.warn("No selectedBabyId found, skipping sleep data load");
@@ -225,8 +227,8 @@ const DashboardPage: React.FC = () => {
       // API returns an array of babies
       if (data && Array.isArray(data) && data.length > 0) {
         // Check if there's a selected baby ID in AsyncStorage
-        const selectedBabyId = await AsyncStorage.getItem("selectedBabyId");
-        console.log("🔍 [Dashboard] selectedBabyId from AsyncStorage:", selectedBabyId);
+        const selectedBabyId = routeBabyId || await AsyncStorage.getItem("selectedBabyId");
+        console.log("🔍 [Dashboard] selectedBabyId from route/storage:", { routeBabyId, selectedBabyId });
         
         // Find the selected baby, or default to the first one
         let baby;
@@ -241,14 +243,14 @@ const DashboardPage: React.FC = () => {
         if (!baby) {
           baby = data[0]; // Fallback to first baby if selected not found
           console.log("📌 [Dashboard] Using first baby as fallback:", baby.name, baby._id);
-          // Store the first baby as selected if no baby was previously selected
-          if (baby && baby._id) {
-            await AsyncStorage.setItem("selectedBabyId", baby._id);
-            console.log("💾 [Dashboard] Set default selectedBabyId:", baby._id);
-          }
         }
         
         if (baby && baby.name) {
+          if (baby._id) {
+            await AsyncStorage.setItem("selectedBabyId", baby._id);
+            console.log("💾 [Dashboard] Synced selectedBabyId to AsyncStorage:", baby._id);
+          }
+
           setBabyName(baby.name);
           setChildInitial(baby.name.charAt(0).toUpperCase());
           setBabyId(baby._id);
@@ -274,7 +276,7 @@ const DashboardPage: React.FC = () => {
           loadRecentMemories(baby._id);
           
           // Load sleep data
-          loadSleepData();
+          loadSleepData(baby._id);
         }
       } else {
         console.warn("No baby found for this parent");
@@ -344,11 +346,13 @@ const DashboardPage: React.FC = () => {
   // Auto-refresh sleep data every 30 seconds
   useEffect(() => {
     const interval = setInterval(() => {
-      loadSleepData();
+      if (babyId) {
+        loadSleepData(babyId);
+      }
     }, 30000); // 30 seconds
     
     return () => clearInterval(interval);
-  }, []);
+  }, [babyId]);
 
   const loadUpcomingEvents = async (babyId: string) => {
     try {
@@ -547,6 +551,7 @@ const DashboardPage: React.FC = () => {
       >
         <BabyMonitorStream 
           babyName={babyName} 
+          babyId={babyId || undefined}
           onStopMusic={() => soundPlayerRef.current?.stopPlayback()}
         />
         
@@ -833,6 +838,7 @@ const DashboardPage: React.FC = () => {
       <SleepHistoryModal
         visible={sleepHistoryOpen}
         onClose={() => setSleepHistoryOpen(false)}
+        babyId={babyId || undefined}
       />
 
       <GrowthTrackingModal

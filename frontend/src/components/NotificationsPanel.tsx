@@ -283,7 +283,7 @@ export default function NotificationsPanel({
       await AsyncStorage.setItem('selectedBabyId', notification.babyId._id);
       await AsyncStorage.setItem('openGrowthTracking', 'true');
       onClose();
-      router.push('/dashboard');
+      router.push({ pathname: '/dashboard', params: { babyId: notification.babyId._id } });
     } catch (error) {
       console.error('Error handling growth notification:', error);
     }

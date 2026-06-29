@@ -21,6 +21,7 @@ import { PI_BASE_URL } from "@/src/config/network";
 
 type BabyMonitorStreamProps = {
   babyName?: string;
+  babyId?: string;
   onStopMusic?: () => void;
 };
 
@@ -32,6 +33,7 @@ const VIDEO_HEARTBEAT_URL = `${PI_BASE_URL}/video_heartbeat`;
 
 const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
   babyName = "Baby",
+  babyId,
   onStopMusic,
 }) => {
   const { t, language } = useLanguage();
@@ -80,17 +82,16 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
     return () => clearInterval(clockInterval);
   }, []);
 
-  // Sync MONITORED baby ID with Raspberry Pi when component mounts
-  // IMPORTANT: Uses monitoredBabyId (not selectedBabyId) - only babies explicitly marked for monitoring
+  // Sync the active baby ID with Raspberry Pi when the monitored/selected baby changes.
   useEffect(() => {
     const syncBabyIdWithPi = async () => {
       try {
-        // Read the MONITORED baby ID (user explicitly confirmed they want live monitoring)
-        const monitoredBabyId = await AsyncStorage.getItem('monitoredBabyId');
+        // Prefer the currently active baby from the dashboard, fall back to explicit monitoring selection.
+        const monitoredBabyId = babyId || await AsyncStorage.getItem('monitoredBabyId');
         
         if (!monitoredBabyId) {
           console.warn('⚠️ [Baby Monitor] No baby set for live monitoring');
-          console.log('ℹ️ [Baby Monitor] User needs to select a baby and confirm monitoring');
+          console.log('ℹ️ [Baby Monitor] User needs to select a baby or confirm monitoring');
           return;
         }
 
@@ -142,7 +143,7 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
     };
 
     syncBabyIdWithPi();
-  }, []); // Run only once when component mounts
+  }, [babyId]);
 
   // Cleanup audio when component unmounts
   useEffect(() => {

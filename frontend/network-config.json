@@ -1,5 +1,5 @@
 {
-  "IP_BACKEND": "172.20.10.2",
+  "IP_BACKEND": "172.18.71.187",
   "IP_PI": "192.168.1.44",
   "BACKEND_PORT": 5000,
   "PI_PORT": 5001
