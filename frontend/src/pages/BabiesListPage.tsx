@@ -15,6 +15,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../contexts/ThemeContext";
 import { useLanguage } from "../contexts/LanguageContext";
+import { API_BASE_URL, BACKEND_BASE_URL } from "@/src/config/network";
 
 interface Baby {
   _id: string;
@@ -59,7 +60,7 @@ const BabiesListPage: React.FC = () => {
       }
 
       const response = await fetch(
-        `http://192.168.1.8:5000/api/baby/parent/${parentId}`,
+        `${API_BASE_URL}/baby/parent/${parentId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -82,7 +83,7 @@ const BabiesListPage: React.FC = () => {
         const babiesWithAvatars = data.map((baby: any) => ({
           ...baby,
           avatarColor: baby.avatarColor || "#00CFFF",
-          avatarImage: baby.avatarImage ? `http://192.168.1.8:5000${baby.avatarImage}` : null,
+          avatarImage: baby.avatarImage ? `${BACKEND_BASE_URL}${baby.avatarImage}` : null,
         }));
         setBabies(babiesWithAvatars);
         console.log("Babies loaded with avatars:", babiesWithAvatars);

@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_BASE_URL } from "@/src/config/network";
 
-const API_BASE = 'http://192.168.1.8:5000/api'; // adjust if backend IP changes
+const API_BASE = API_BASE_URL; // adjust if backend IP changes
 
 export interface ChatMessage {
   role: 'user' | 'bot';

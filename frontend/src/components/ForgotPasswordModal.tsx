@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { API_BASE_URL } from "@/src/config/network";
 
 interface ForgotPasswordModalProps {
   visible: boolean;
@@ -27,7 +28,7 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const API_URL = "http://192.168.1.8:5000/api";
+  const API_URL = API_BASE_URL;
 
   // Custom fetch with timeout
   const fetchWithTimeout = async (url: string, options: RequestInit, timeout = 30000) => {

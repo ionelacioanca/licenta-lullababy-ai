@@ -19,6 +19,7 @@ import { useRouter } from "expo-router";
 import { useLanguage } from "../contexts/LanguageContext";
 import { useTheme } from "../contexts/ThemeContext";
 import * as ImagePicker from 'expo-image-picker';
+import { API_BASE_URL } from "@/src/config/network";
 
 interface AccountSettingsModalProps {
   visible: boolean;
@@ -60,7 +61,7 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const [deletePassword, setDeletePassword] = useState("");
 
-  const API_URL = "http://192.168.1.8:5000/api";
+  const API_URL = API_BASE_URL;
 
   useEffect(() => {
     if (visible) {

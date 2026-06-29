@@ -17,18 +17,18 @@ import { Audio, Video, AVPlaybackStatus, ResizeMode } from "expo-av";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { PI_BASE_URL } from "@/src/config/network";
 
 type BabyMonitorStreamProps = {
   babyName?: string;
   onStopMusic?: () => void;
 };
 
-const PI_IP = "192.168.1.44:5001";
-const SNAPSHOT_URL = `http://${PI_IP}/snapshot`;
-const TALKBACK_URL = `http://${PI_IP}/talkback`;
-const STOP_AUDIO_URL = `http://${PI_IP}/stop_audio`;
-const AUDIO_STREAM_URL = `http://${PI_IP}/audio_stream`;
-const VIDEO_HEARTBEAT_URL = `http://${PI_IP}/video_heartbeat`;
+const SNAPSHOT_URL = `${PI_BASE_URL}/snapshot`;
+const TALKBACK_URL = `${PI_BASE_URL}/talkback`;
+const STOP_AUDIO_URL = `${PI_BASE_URL}/stop_audio`;
+const AUDIO_STREAM_URL = `${PI_BASE_URL}/audio_stream`;
+const VIDEO_HEARTBEAT_URL = `${PI_BASE_URL}/video_heartbeat`;
 
 const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
   babyName = "Baby",
@@ -96,7 +96,7 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
 
         // Step 1: Check what baby ID is currently set on Pi
         console.log('🔍 [Baby Monitor] Checking baby ID on Pi...');
-        const getResponse = await fetch(`http://${PI_IP}/get_baby`);
+        const getResponse = await fetch(`${PI_BASE_URL}/get_baby`);
         
         if (getResponse.ok) {
           const currentPiBaby = await getResponse.json();
@@ -111,7 +111,7 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
           // Step 3: Baby ID is different or not set - update it
           console.log(`🔄 [Baby Monitor] Updating Pi monitored baby ID: ${currentPiBaby.babyId || 'null'} → ${monitoredBabyId}`);
           
-          const setResponse = await fetch(`http://${PI_IP}/set_baby`, {
+          const setResponse = await fetch(`${PI_BASE_URL}/set_baby`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -128,7 +128,7 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
         } else {
           console.warn('⚠️ [Baby Monitor] Could not check Pi baby ID, setting anyway...');
           // If we can't check, just set it to be safe
-          await fetch(`http://${PI_IP}/set_baby`, {
+          await fetch(`${PI_BASE_URL}/set_baby`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -296,7 +296,7 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
       } as any);
 
       try {
-        await fetch(`http://${PI_IP}/talkback`, {
+        await fetch(`${PI_BASE_URL}/talkback`, {
           method: 'POST',
           body: formData,
           headers: {
@@ -319,7 +319,7 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
 
   const fetchRecordings = async () => {
     try {
-      const response = await fetch(`http://${PI_IP}/list_recordings`);
+      const response = await fetch(`${PI_BASE_URL}/list_recordings`);
       const data = await response.json();
       setRecordings(data);
       setShowEvents(true);
@@ -330,7 +330,7 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
   };
 
   const playVideo = (filename: string) => {
-    const videoUrl = `http://${PI_IP}/get_video/${filename}`;
+    const videoUrl = `${PI_BASE_URL}/get_video/${filename}`;
     // Convertim .h264 în .mp4 pentru compatibilitate iOS
     const compatibleUrl = videoUrl.replace('.h264', '.mp4');
     setCurrentVideoUrl(compatibleUrl);
@@ -578,7 +578,7 @@ const BabyMonitorStream: React.FC<BabyMonitorStreamProps> = ({
                     <View style={styles.thumbnailContainer}>
                       {/* Placeholder pentru thumbnail - va fi înlocuit cu imagine reală de la server */}
                       <Image 
-                        source={{ uri: `http://${PI_IP}/get_thumbnail/${file.replace('.h264', '.jpg')}` }}
+                        source={{ uri: `${PI_BASE_URL}/get_thumbnail/${file.replace('.h264', '.jpg')}` }}
                         style={styles.thumbnail}
                         defaultSource={require('../../assets/images/partial-react-logo.png')}
                       />

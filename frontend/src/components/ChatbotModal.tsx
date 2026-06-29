@@ -7,6 +7,7 @@ import { sendChatMessage, getChatHistory } from '../services/chatbotService';
 import { Colors } from '../../constants/Colors';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { API_BASE_URL } from "@/src/config/network";
 
 const TypingDots: React.FC = () => {
   const dot1 = useRef(new Animated.Value(0)).current;
@@ -196,7 +197,7 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({ visible, onClose }) 
         
         if (!token || !parentId) return;
 
-        const response = await fetch(`http://192.168.1.8:5000/api/baby/parent/${parentId}`, {
+        const response = await fetch(`${API_BASE_URL}/baby/parent/${parentId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 

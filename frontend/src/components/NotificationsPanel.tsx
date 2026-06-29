@@ -16,6 +16,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { growthNotificationService, GrowthNotification } from '../services/growthNotificationService';
 import { useRouter } from 'expo-router';
+import { API_BASE_URL } from "@/src/config/network";
 
 type Alert = {
   _id: string;
@@ -67,7 +68,7 @@ export default function NotificationsPanel({
       const token = await AsyncStorage.getItem('token');
       
       const response = await fetch(
-        `http://192.168.1.8:5000/api/alerts/baby/${babyId}`,
+        `${API_BASE_URL}/alerts/baby/${babyId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -122,7 +123,7 @@ export default function NotificationsPanel({
       const token = await AsyncStorage.getItem('token');
       
       const response = await fetch(
-        `http://192.168.1.8:5000/api/alerts/${alertId}/read`,
+        `${API_BASE_URL}/alerts/${alertId}/read`,
         {
           method: 'PUT',
           headers: {
@@ -159,7 +160,7 @@ export default function NotificationsPanel({
       const token = await AsyncStorage.getItem('token');
       
       const response = await fetch(
-        `http://192.168.1.8:5000/api/alerts/baby/${babyId}/read-all`,
+        `${API_BASE_URL}/alerts/baby/${babyId}/read-all`,
         {
           method: 'PUT',
           headers: {
@@ -188,7 +189,7 @@ export default function NotificationsPanel({
       const token = await AsyncStorage.getItem('token');
       
       const response = await fetch(
-        `http://192.168.1.8:5000/api/alerts/${alertId}`,
+        `${API_BASE_URL}/alerts/${alertId}`,
         {
           method: 'DELETE',
           headers: {

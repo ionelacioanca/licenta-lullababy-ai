@@ -2,6 +2,7 @@ import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
 import { makeRedirectUri } from 'expo-auth-session';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { BACKEND_BASE_URL } from "@/src/config/network";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -50,7 +51,7 @@ export const checkGoogleUser = async (accessToken: string) => {
     };
     console.log('Sending to backend:', requestBody);
     
-    const response = await fetch('http://192.168.1.8:5000/api/users/auth/google/check', {
+    const response = await fetch(`${BACKEND_BASE_URL}/api/users/auth/google/check`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -83,7 +84,7 @@ export const checkGoogleUser = async (accessToken: string) => {
 // Register new user with Google
 export const registerWithGoogle = async (accessToken: string, googleData: any, role: string, customRole?: string) => {
   try {
-    const response = await fetch('http://192.168.1.8:5000/api/users/auth/google/register', {
+    const response = await fetch(`${BACKEND_BASE_URL}/api/users/auth/google/register`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

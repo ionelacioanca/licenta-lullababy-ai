@@ -1,6 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const API_URL = "http://192.168.1.8:5000/api/messages";
+import { API_BASE_URL } from "@/src/config/network";
+
+const API_URL = `${API_BASE_URL}/messages`;
 
 export interface Message {
   _id: string;

@@ -16,16 +16,16 @@ import { Sound, getDefaultSounds } from "../services/soundService";
 import { useTheme } from "../contexts/ThemeContext";
 import { useLanguage } from "../contexts/LanguageContext";
 import { mediaNotificationService } from "../services/mediaNotificationService";
+import { PI_BASE_URL, BACKEND_BASE_URL, IP_PI } from "@/src/config/network";
 
 // Raspberry Pi Configuration
-const PI_IP = "192.168.1.44:5001";
-const PLAY_LULLABY_URL = `http://${PI_IP}/play_lullaby`;
-const STOP_AUDIO_URL = `http://${PI_IP}/stop_audio`;
-const SET_VOLUME_URL = `http://${PI_IP}/set_volume`;
-const STATUS_URL = `http://${PI_IP}/status`;
+const PLAY_LULLABY_URL = `${PI_BASE_URL}/play_lullaby`;
+const STOP_AUDIO_URL = `${PI_BASE_URL}/stop_audio`;
+const SET_VOLUME_URL = `${PI_BASE_URL}/set_volume`;
+const STATUS_URL = `${PI_BASE_URL}/status`;
 
 // Backend server configuration
-const BACKEND_SERVER = "http://192.168.1.8:5000";
+const BACKEND_SERVER = BACKEND_BASE_URL;
 
 // Helper function to get full audio URL
 const getFullAudioUrl = (audioUrl: string): string => {
@@ -639,7 +639,7 @@ ref
       if (errorMessage.includes('timeout') || errorMessage.includes('Network request failed')) {
         Alert.alert(
           "Connection Error", 
-          "Cannot connect to baby monitor.\n\nPlease check:\n• Raspberry Pi is powered on\n• Both devices are on same WiFi\n• IP address is correct (192.168.1.44)"
+          `Cannot connect to baby monitor.\n\nPlease check:\n• Raspberry Pi is powered on\n• Both devices are on same WiFi\n• IP address is correct (${IP_PI})`
         );
       } else {
         Alert.alert("Error", `Could not play sound: ${errorMessage}`);
