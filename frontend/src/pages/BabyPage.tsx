@@ -16,6 +16,7 @@ import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { useRouter } from "expo-router";
 import { useLanguage } from "../contexts/LanguageContext";
 import { useTheme } from "../contexts/ThemeContext";
+import { API_BASE_URL } from "@/src/config/network";
 
 const BabyDetailsPage: React.FC = () => {
   const { theme } = useTheme();
@@ -117,7 +118,7 @@ const BabyDetailsPage: React.FC = () => {
 
     try {
       console.log("👉 Trimitem parentId:", parentId);
-  const response = await fetch("http://192.168.1.56:5000/api/babyDetails", {
+  const response = await fetch(`${API_BASE_URL}/babyDetails`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -147,7 +148,7 @@ const BabyDetailsPage: React.FC = () => {
         }
         
         Alert.alert("Success", "Baby details saved!");
-        router.push("/dashboard");
+        router.push({ pathname: "/dashboard", params: newBabyId ? { babyId: newBabyId } : undefined });
       } else {
         const data = await response.json();
         throw new Error(data.message || "Something went wrong");
@@ -164,6 +165,17 @@ const BabyDetailsPage: React.FC = () => {
       extraScrollHeight={20}
       enableOnAndroid={true}
     >
+      <View style={styles.topRow}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+          activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+        >
+          <Ionicons name="arrow-back" size={26} color={theme.textSecondary} />
+        </TouchableOpacity>
+      </View>
       <Text style={[styles.subheader, { color: theme.text }]}>Hello, {parentName}!</Text>
       <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Tell us more about your baby.</Text>
 
@@ -322,6 +334,8 @@ const BabyDetailsPage: React.FC = () => {
       <TouchableOpacity style={[styles.button, { backgroundColor: theme.primary }]} onPress={handleSave}>
         <Text style={styles.buttonText}>{t('baby.save')}</Text>
       </TouchableOpacity>
+          {/* Spacer so the save button isn't hidden behind phone action/navigation bars */}
+          <View style={{ height: Platform.OS === 'android' ? 96 : 56 }} />
     </KeyboardAwareScrollView>
   );
 };
@@ -329,9 +343,18 @@ const BabyDetailsPage: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     padding: 24,
-    paddingTop: 50,
+    paddingTop: 70,
+    paddingBottom: 36,
     backgroundColor: "#FFF8F0",
     flexGrow: 1,
+  },
+  topRow: {
+    width: "100%",
+    alignItems: "flex-start",
+    marginBottom: 10,
+  },
+  backButton: {
+    padding: 4,
   },
   subheader: {
     fontSize: 22,

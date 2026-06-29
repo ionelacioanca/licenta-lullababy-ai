@@ -7,7 +7,6 @@ import {
   StyleSheet,
   Alert,
   ScrollView,
-  Linking,
   ActivityIndicator,
 } from "react-native";
 import Ionicons from "react-native-vector-icons/Ionicons";
@@ -16,6 +15,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import ForgotPasswordModal from "../components/ForgotPasswordModal";
 import { useLanguage } from "../contexts/LanguageContext";
 import { pushNotificationService } from "../services/pushNotificationService";
+import { API_BASE_URL } from "@/src/config/network";
 
 const LoginPage: React.FC = () => {
   const router = useRouter();
@@ -33,7 +33,7 @@ const LoginPage: React.FC = () => {
       const token = await AsyncStorage.getItem("token");
       if (token) {
         try {
-          const res = await fetch("http://192.168.1.56:5000/api/verify-token", {
+          const res = await fetch(`${API_BASE_URL}/verify-token`, {
             headers: { Authorization: `Bearer ${token}` },
           });
           if (res.ok) {
@@ -114,7 +114,7 @@ const LoginPage: React.FC = () => {
     try {
       console.log("Attempting login with email:", email);
       
-  const response = await fetch("http://192.168.1.56:5000/api/login", {
+  const response = await fetch(`${API_BASE_URL}/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -182,6 +182,18 @@ const LoginPage: React.FC = () => {
       contentContainerStyle={styles.container}
       keyboardShouldPersistTaps="handled"
     >
+      <View style={styles.topRow}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+          activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+        >
+          <Ionicons name="arrow-back" size={26} color="#6B6B6B" />
+        </TouchableOpacity>
+      </View>
+
       <Text style={styles.subheader}>{t('auth.login')}</Text>
       <Text style={styles.subtitle}>{t('auth.signIn')}</Text>
 
@@ -260,9 +272,18 @@ const LoginPage: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     padding: 24,
-    paddingTop: 70,
+    paddingTop: 56,
+    paddingBottom: 36,
     backgroundColor: "#FFF8F0",
     flexGrow: 1,
+  },
+  topRow: {
+    width: "100%",
+    alignItems: "flex-start",
+    marginBottom: 10,
+  },
+  backButton: {
+    padding: 4,
   },
   loadingContainer: {
     flex: 1,

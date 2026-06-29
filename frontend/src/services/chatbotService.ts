@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_BASE_URL } from "@/src/config/network";
 
-const API_BASE = 'http://192.168.1.56:5000/api'; // adjust if backend IP changes
+const API_BASE = API_BASE_URL; // adjust if backend IP changes
 
 export interface ChatMessage {
   role: 'user' | 'bot';
@@ -15,7 +16,37 @@ export async function sendChatMessage(message: string, language?: string, babyId
   try {
     const token = await AsyncStorage.getItem('token');
     // Get language preference from AsyncStorage if not provided
-    const lang = language || await AsyncStorage.getItem('app_language') || 'en';
+    let storedLang = await AsyncStorage.getItem('app_language');
+    // Helper: lightweight language detection to prefer reply language matching user input
+    const detectLanguageFromMessage = (text: string): string | null => {
+      if (!text) return null;
+      const lower = text.toLowerCase();
+      // Romanian diacritics are a strong indicator
+      if (/[ăâîșțţ]/i.test(lower)) return 'ro';
+
+      // Common small word lists to heuristically detect language
+      const engWords = [' the ', ' and ', ' you ', ' please ', ' is ', ' are ', ' I ', ' me ', ' do ', 'does', 'what', 'when'];
+      const roWords = [' si ', ' și ', ' ce ', ' cum ', ' este ', ' sunt ', ' te ', ' rog ', ' nu ', ' da ', ' când '];
+
+      let engScore = 0;
+      let roScore = 0;
+      for (const w of engWords) if (lower.includes(w)) engScore++;
+      for (const w of roWords) if (lower.includes(w)) roScore++;
+
+      if (engScore > roScore) return 'en';
+      if (roScore > engScore) return 'ro';
+      return null;
+    };
+
+    const prefLang = language;
+    let lang = prefLang || storedLang || 'en';
+    // If language wasn't explicitly passed, try to detect from message and override stored preference
+    if (!prefLang) {
+      const detected = detectLanguageFromMessage(message);
+      if (detected) {
+        lang = detected;
+      }
+    }
     // Get selected babyId from AsyncStorage if not provided
     const selectedBabyId = babyId || await AsyncStorage.getItem('selectedBabyId');
     

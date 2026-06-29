@@ -3,6 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import https from 'https';
 import http from 'http';
+import { BACKEND_BASE_URL } from '../config/network.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -84,7 +85,7 @@ export const downloadSound = (url, soundId) => {
  * @returns {Promise<string>} - The full local URL
  */
 export const getLocalSoundUrl = async (sound) => {
-  const baseUrl = process.env.BASE_URL || 'http://192.168.1.56:5000';
+  const baseUrl = process.env.BASE_URL || BACKEND_BASE_URL;
   
   // If already a local URL, return as is
   if (sound.audioUrl.startsWith('/uploads/')) {

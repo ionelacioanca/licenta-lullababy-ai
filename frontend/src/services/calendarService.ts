@@ -1,6 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-const API_BASE_URL = 'http://192.168.1.56:5000/api';
+import { API_BASE_URL } from "@/src/config/network";
 
 export interface CalendarEvent {
   _id: string;

@@ -8,6 +8,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   SafeAreaView,
+  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { getConversations, Conversation } from "../services/messageService";
@@ -170,6 +171,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 12,
+    marginTop: Platform.OS === 'android' ? 10 : 12,
     backgroundColor: "#FFF",
     borderBottomWidth: 1,
     borderBottomColor: "#E0E0E0",

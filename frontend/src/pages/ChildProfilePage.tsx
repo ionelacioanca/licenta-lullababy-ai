@@ -18,6 +18,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useLanguage } from "../contexts/LanguageContext";
+import { API_BASE_URL, BACKEND_BASE_URL } from "@/src/config/network";
 
 interface Baby {
   _id: string;
@@ -84,7 +85,7 @@ const ChildProfilePage: React.FC = () => {
       
       // Handle avatar image URL construction
       const newAvatarImage = baby.avatarImage 
-        ? (baby.avatarImage.startsWith('http') ? baby.avatarImage : `http://192.168.1.56:5000${baby.avatarImage}`)
+        ? (baby.avatarImage.startsWith('http') ? baby.avatarImage : `${BACKEND_BASE_URL}${baby.avatarImage}`)
         : null;
       
       console.log("Setting avatar image in useEffect:", newAvatarImage);
@@ -105,7 +106,7 @@ const ChildProfilePage: React.FC = () => {
       }
 
       const response = await fetch(
-        `http://192.168.1.56:5000/api/baby/parent/${parentId}`,
+        `${API_BASE_URL}/baby/parent/${parentId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -128,7 +129,7 @@ const ChildProfilePage: React.FC = () => {
           
           // Load avatar data from backend
           setSelectedColor(selectedBaby.avatarColor || "#00CFFF");
-          setAvatarImage(selectedBaby.avatarImage ? `http://192.168.1.56:5000${selectedBaby.avatarImage}` : null);
+          setAvatarImage(selectedBaby.avatarImage ? `${BACKEND_BASE_URL}${selectedBaby.avatarImage}` : null);
         } else {
           console.warn("Selected baby not found in data");
         }
@@ -183,7 +184,7 @@ const ChildProfilePage: React.FC = () => {
       formData.append('avatarColor', selectedColor);
 
       const response = await fetch(
-        `http://192.168.1.56:5000/api/baby/${selectedBabyId}/avatar`,
+        `${API_BASE_URL}/baby/${selectedBabyId}/avatar`,
         {
           method: "POST",
           headers: {
@@ -201,7 +202,7 @@ const ChildProfilePage: React.FC = () => {
       console.log("Updated baby from server:", updatedBaby);
       console.log("Avatar image path:", updatedBaby.avatarImage);
       
-      const fullImageUrl = updatedBaby.avatarImage ? `http://192.168.1.56:5000${updatedBaby.avatarImage}` : null;
+      const fullImageUrl = updatedBaby.avatarImage ? `${BACKEND_BASE_URL}${updatedBaby.avatarImage}` : null;
       console.log("Full image URL:", fullImageUrl);
       
       setBaby(updatedBaby);
@@ -281,7 +282,7 @@ const ChildProfilePage: React.FC = () => {
       formData.append('removeImage', 'true');
       
       const response = await fetch(
-        `http://192.168.1.56:5000/api/baby/${selectedBabyId}/avatar`,
+        `${API_BASE_URL}/baby/${selectedBabyId}/avatar`,
         {
           method: "POST",
           headers: {
@@ -324,7 +325,7 @@ const ChildProfilePage: React.FC = () => {
       formData.append('removeImage', 'true'); // Remove image when selecting color
       
       const response = await fetch(
-        `http://192.168.1.56:5000/api/baby/${selectedBabyId}/avatar`,
+        `${API_BASE_URL}/baby/${selectedBabyId}/avatar`,
         {
           method: "POST",
           headers: {
@@ -384,7 +385,7 @@ const ChildProfilePage: React.FC = () => {
       };
 
       const response = await fetch(
-        `http://192.168.1.56:5000/api/baby/${selectedBabyId}`,
+        `${API_BASE_URL}/baby/${selectedBabyId}`,
         {
           method: "PUT",
           headers: {
@@ -399,11 +400,16 @@ const ChildProfilePage: React.FC = () => {
         throw new Error("Failed to update baby profile");
       }
 
+      const updatedBaby = await response.json();
+      const updatedBabyName = updatedBaby?.name || editedName;
+
+      await AsyncStorage.setItem("babyName", updatedBabyName);
+
       // Update local baby state immediately (keep avatar settings)
       if (baby) {
         setBaby({
           ...baby,
-          name: editedName,
+          name: updatedBabyName,
           sex: editedSex,
           birthDate: editedBirthDate,
           birthWeight: editedBirthWeight ? (baby && baby.birthWeight && baby.birthWeight < 5 ? parseFloat(editedBirthWeight) / 1000 : parseFloat(editedBirthWeight)) : undefined,
@@ -415,6 +421,8 @@ const ChildProfilePage: React.FC = () => {
           avatarImage: avatarImage,
         });
       }
+
+      setEditedName(updatedBabyName);
 
       Alert.alert("Success", "Profile updated successfully");
       
@@ -453,7 +461,7 @@ const ChildProfilePage: React.FC = () => {
               await AsyncStorage.removeItem(`baby_image_${selectedBabyId}`);
 
               const response = await fetch(
-                `http://192.168.1.56:5000/api/baby/${selectedBabyId}`,
+                `${API_BASE_URL}/baby/${selectedBabyId}`,
                 {
                   method: "DELETE",
                   headers: {
@@ -747,6 +755,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 12,
+    marginTop: Platform.OS === 'android' ? 12 : 14,
     backgroundColor: "#FFF8F0",
     borderBottomWidth: 1,
     borderBottomColor: "#E0E0E0",

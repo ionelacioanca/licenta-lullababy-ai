@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Image, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { BACKEND_BASE_URL } from "@/src/config/network";
 
 interface UserAvatarProps {
   profilePicture?: string | null;
@@ -25,7 +26,7 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
     return name.substring(0, 2).toUpperCase();
   };
 
-  const API_URL = "http://192.168.1.56:5000";
+  const API_URL = BACKEND_BASE_URL;
 
   if (profilePicture) {
     const imageUri = profilePicture.startsWith('http') 

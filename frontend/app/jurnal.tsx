@@ -10,6 +10,7 @@ import {
   Modal,
   TextInput,
   Dimensions,
+  Platform,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
@@ -28,6 +29,7 @@ import {
 import AddEntryModal from "@/src/components/AddEntryModal";
 import { useTheme } from "../src/contexts/ThemeContext";
 import { useLanguage } from "../src/contexts/LanguageContext";
+import { BACKEND_BASE_URL } from "@/src/config/network";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -88,7 +90,7 @@ const JournalPage: React.FC = () => {
 
       if (!parentId) return;
 
-      const response = await fetch(`http://192.168.1.56:5000/api/baby/parent/${parentId}`, {
+      const response = await fetch(`${BACKEND_BASE_URL}/api/baby/parent/${parentId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -105,7 +107,7 @@ const JournalPage: React.FC = () => {
         setChildInitial(baby.name.charAt(0).toUpperCase());
         setBabyId(baby._id);
         setAvatarColor(baby.avatarColor || "#00CFFF");
-        setAvatarImage(baby.avatarImage ? `http://192.168.1.56:5000${baby.avatarImage}` : null);
+        setAvatarImage(baby.avatarImage ? `${BACKEND_BASE_URL}${baby.avatarImage}` : null);
         
         loadEntries(baby._id);
         loadGallery(baby._id);
@@ -260,7 +262,7 @@ const JournalPage: React.FC = () => {
                     onPress={() => openLightbox(entry.photos, index)}
                   >
                     <Image
-                      source={{ uri: `http://192.168.1.56:5000${photo}` }}
+                      source={{ uri: `${BACKEND_BASE_URL}${photo}` }}
                       style={styles.carouselPhoto}
                     />
                   </TouchableOpacity>
@@ -308,7 +310,7 @@ const JournalPage: React.FC = () => {
                 onPress={() => openLightbox([item.photoUrl], 0)}
               >
                 <Image
-                  source={{ uri: `http://192.168.1.56:5000${item.photoUrl}` }}
+                  source={{ uri: `${BACKEND_BASE_URL}${item.photoUrl}` }}
                   style={styles.galleryPhoto}
                 />
                 {item.caption && (
@@ -328,15 +330,17 @@ const JournalPage: React.FC = () => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <Header
-        childInitial={childInitial}
-        babyName={babyName}
-        avatarColor={avatarColor}
-        avatarImage={avatarImage}
-        onEditProfile={() => router.push("/babiesList")}
-        onMessages={() => {}}
-        unreadMessages={3}
-      />
+      <View style={{ marginTop: Platform.OS === 'android' ? 6 : 8 }}>
+        <Header
+          childInitial={childInitial}
+          babyName={babyName}
+          avatarColor={avatarColor}
+          avatarImage={avatarImage}
+          onEditProfile={() => router.push("/babiesList")}
+          onMessages={() => {}}
+          unreadMessages={3}
+        />
+      </View>
 
       <View style={styles.content}>
         <View style={[styles.topBar, { backgroundColor: theme.surface }]}>
@@ -421,7 +425,11 @@ const JournalPage: React.FC = () => {
           </>
         )}
 
-        <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          style={styles.scrollContent}
+          contentContainerStyle={{ paddingBottom: Platform.OS === 'android' ? 180 : 160 }}
+          showsVerticalScrollIndicator={false}
+        >
           {viewMode === "timeline" ? (
             filteredEntries.length === 0 ? (
               <View style={styles.emptyState}>
@@ -469,7 +477,7 @@ const JournalPage: React.FC = () => {
           </TouchableOpacity>
           {lightboxPhotos.length > 0 && (
             <Image
-              source={{ uri: `http://192.168.1.56:5000${lightboxPhotos[lightboxIndex]}` }}
+              source={{ uri: `${BACKEND_BASE_URL}${lightboxPhotos[lightboxIndex]}` }}
               style={styles.lightboxImage}
               resizeMode="contain"
             />
@@ -540,6 +548,7 @@ const JournalPage: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingTop: 12,
     backgroundColor: "#FFF8F0",
   },
   content: {
@@ -799,7 +808,7 @@ const styles = StyleSheet.create({
   },
   addButton: {
     position: "absolute",
-    bottom: 90,
+    bottom: Platform.OS === 'android' ? 160 : 150,
     right: 24,
     width: 68,
     height: 68,

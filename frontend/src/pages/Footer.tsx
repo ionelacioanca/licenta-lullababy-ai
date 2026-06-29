@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, Platform } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useTheme } from "../contexts/ThemeContext";
 
@@ -36,7 +36,14 @@ const tabs: { name: keyof typeof routeMap; icon: IconName }[] = [
   const { theme } = useTheme();
   
   return (
-    <View style={[styles.container, { backgroundColor: theme.surface, borderTopColor: theme.border }]}>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: theme.surface, borderTopColor: theme.border },
+        // raise footer a bit more above system bars
+        Platform.select({ android: { bottom: 28 }, ios: { bottom: 36 } }),
+      ]}
+    >
       {tabs.map((tab) => (
         <TouchableOpacity
           key={tab.name}
@@ -73,13 +80,17 @@ export default Footer;
 
 const styles = StyleSheet.create({
   container: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
     flexDirection: "row",
     justifyContent: "space-around",
     paddingVertical: 10,
-    paddingBottom: 20,
+    paddingBottom: Platform.OS === 'android' ? 22 : 28,
     borderTopWidth: 1,
     borderTopColor: "#E5E5E5",
     backgroundColor: "#FFF8F0",
+    elevation: 10,
   },
   tab: {
     alignItems: "center",

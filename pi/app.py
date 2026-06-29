@@ -9,13 +9,14 @@ import requests
 from pymongo import MongoClient
 from bson import ObjectId
 from flask import Flask, Response, request, jsonify, send_from_directory, send_file
+from config import BACKEND_BASE_URL
 
 app = Flask(__name__)
 
 # --- CONFIGURARE ---
 ALSA_DEVICE = "hw:0,0"  # Device pentru boxă (output)
 ALSA_MICROPHONE_DEVICE = "hw:1,0"  # Device pentru microfon (input)
-BACKEND_SERVER = "http://192.168.1.56:5000"  # Backend server pentru notificări
+BACKEND_SERVER = BACKEND_BASE_URL  # Backend server pentru notificări
 
 current_playback = {
     "status": "stopped",

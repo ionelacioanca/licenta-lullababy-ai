@@ -1,5 +1,7 @@
+import { API_BASE_URL } from "@/src/config/network";
+
 // Sound Service - API calls for sound library
-const BASE_URL = "http://192.168.1.56:5000/api/sounds";
+const BASE_URL = `${API_BASE_URL}/sounds`;
 
 export interface Sound {
   _id: string;

@@ -2,6 +2,18 @@ import SleepEvent from '../models/SleepEvent.js';
 import mongoose from 'mongoose';
 
 class SleepEventService {
+    static buildBabyIdQuery(babyId) {
+        const babyIdClauses = [];
+
+        if (mongoose.isValidObjectId(babyId)) {
+            babyIdClauses.push({ babyId: new mongoose.Types.ObjectId(babyId) });
+        }
+
+        babyIdClauses.push({ babyId: String(babyId) });
+
+        return babyIdClauses.length === 1 ? babyIdClauses[0] : { $or: babyIdClauses };
+    }
+
     /**
      * Get all sleep events for a specific device
      */
@@ -77,19 +89,23 @@ class SleepEventService {
      */
     static async getSleepEventsByBabyAndDateRange(babyId, startDate, endDate) {
         return SleepEvent.find({
-            babyId: new mongoose.Types.ObjectId(babyId),
-            $or: [
+            $and: [
+                SleepEventService.buildBabyIdQuery(babyId),
                 {
-                    start_time: {
-                        $gte: new Date(startDate),
-                        $lte: new Date(endDate)
-                    }
-                },
-                {
-                    end_time: {
-                        $gte: new Date(startDate),
-                        $lte: new Date(endDate)
-                    }
+                    $or: [
+                        {
+                            start_time: {
+                                $gte: new Date(startDate),
+                                $lte: new Date(endDate)
+                            }
+                        },
+                        {
+                            end_time: {
+                                $gte: new Date(startDate),
+                                $lte: new Date(endDate)
+                            }
+                        }
+                    ]
                 }
             ]
         })
@@ -131,8 +147,10 @@ class SleepEventService {
      * Get current sleep session for a specific baby
      */
     static async getCurrentSleepSessionByBaby(babyId) {
+        const babyQuery = SleepEventService.buildBabyIdQuery(babyId);
+        console.log('[SleepEventService] getCurrentSleepSessionByBaby query:', { babyId, babyQuery });
         return SleepEvent.findOne({ 
-            babyId: new mongoose.Types.ObjectId(babyId),
+            ...babyQuery,
             status: "Somn Inceput"
         })
             .sort({ start_time: -1 });
@@ -142,8 +160,10 @@ class SleepEventService {
      * Get last completed sleep session for a specific baby
      */
     static async getLastSleepSessionByBaby(babyId) {
+        const babyQuery = SleepEventService.buildBabyIdQuery(babyId);
+        console.log('[SleepEventService] getLastSleepSessionByBaby query:', { babyId, babyQuery });
         return SleepEvent.findOne({ 
-            babyId: new mongoose.Types.ObjectId(babyId),
+            ...babyQuery,
             status: { $in: ["Somn Incheiat", "Finalizat"] },
             duration_minutes: { $gt: 0 }
         })

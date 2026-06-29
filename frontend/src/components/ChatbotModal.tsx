@@ -7,6 +7,7 @@ import { sendChatMessage, getChatHistory } from '../services/chatbotService';
 import { Colors } from '../../constants/Colors';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { API_BASE_URL } from "@/src/config/network";
 
 const TypingDots: React.FC = () => {
   const dot1 = useRef(new Animated.Value(0)).current;
@@ -196,7 +197,7 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({ visible, onClose }) 
         
         if (!token || !parentId) return;
 
-        const response = await fetch(`http://192.168.1.56:5000/api/baby/parent/${parentId}`, {
+        const response = await fetch(`${API_BASE_URL}/baby/parent/${parentId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -351,6 +352,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 14,
+    marginTop: Platform.OS === 'android' ? 10 : 12,
     backgroundColor: '#FFF8F0',
     borderBottomWidth: 1,
     borderBottomColor: '#E8E0D5',
@@ -412,6 +414,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     padding: 12,
     paddingBottom: Platform.OS === 'ios' ? 34 : 24,
+    marginBottom: Platform.OS === 'android' ? 28 : 32,
     backgroundColor: '#FFF8F0',
     gap: 8,
     borderTopWidth: 1,

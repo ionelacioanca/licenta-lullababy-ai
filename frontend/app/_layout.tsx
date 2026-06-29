@@ -51,10 +51,13 @@ export default function RootLayout() {
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen name="+not-found" />
             <Stack.Screen name="open" options={{ headerShown: false }} />
-            <Stack.Screen name="register" options={{ title: "Sign Up" }} />
-            <Stack.Screen name="babyDetails" options={{ title: "Baby's details" }} />
-            <Stack.Screen name="dashboard" options={{ title: "Dashboard" }} />
-            <Stack.Screen name="login" options={{ title: "Log In" }} />
+            <Stack.Screen name="childProfile" options={{ headerShown: false }} />
+            <Stack.Screen name="register" options={{ headerShown: false }} />
+            <Stack.Screen name="babiesList" options={{ headerShown: false }} />
+            <Stack.Screen name="babyDetails" options={{ headerShown: false }} />
+            <Stack.Screen name="dashboard" options={{ headerShown: false }} />
+            <Stack.Screen name="jurnal" options={{ headerShown: false }} />
+            <Stack.Screen name="login" options={{ headerShown: false }} />
           </Stack>
           <StatusBar style="auto" />
         </NavigationThemeProvider>

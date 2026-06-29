@@ -86,6 +86,7 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ message: 'Email and password are required' });
     }
 
+    console.log("JWT_SECRET =", process.env.JWT_SECRET);
     // Check if JWT_SECRET is configured
     if (!process.env.JWT_SECRET) {
       console.error('JWT_SECRET is not defined in environment variables!');
