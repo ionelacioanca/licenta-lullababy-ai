@@ -15,6 +15,7 @@ import { getSleepEventsByBabyAndDateRange, SleepEvent } from "../services/sleepE
 type SleepHistoryModalProps = {
   visible: boolean;
   onClose: () => void;
+  babyId?: string;
 };
 
 interface SleepHistoryEntry {
@@ -29,6 +30,7 @@ interface SleepHistoryEntry {
 const SleepHistoryModal: React.FC<SleepHistoryModalProps> = ({
   visible,
   onClose,
+  babyId,
 }) => {
   const [sleepHistory, setSleepHistory] = useState<SleepHistoryEntry[]>([]);
   const [loading, setLoading] = useState(false);
@@ -39,13 +41,13 @@ const SleepHistoryModal: React.FC<SleepHistoryModalProps> = ({
       console.log('👁️ [Sleep History] Modal opened - loading fresh data');
       loadSleepHistory();
     }
-  }, [visible]);
+  }, [visible, babyId]);
 
   const loadSleepHistory = async () => {
     setLoading(true);
     try {
-      // IMPORTANT: Citim selectedBabyId PROASPĂT la fiecare încărcare
-      const selectedBabyId = await AsyncStorage.getItem('selectedBabyId');
+      // Prefer the active baby from the dashboard; fallback to AsyncStorage for older flows.
+      const selectedBabyId = babyId || await AsyncStorage.getItem('selectedBabyId');
       
       console.log('📊 [Sleep History] Loading for baby ID:', selectedBabyId);
       

@@ -128,7 +128,9 @@ class SleepEventController {
     static async getCurrentSleepSessionByBaby(req, res) {
         try {
             const { babyId } = req.params;
+            console.log('[SleepEventController] GET /baby/:babyId/current', { babyId });
             const session = await SleepEventService.getCurrentSleepSessionByBaby(babyId);
+            console.log('[SleepEventController] Current session result:', session ? { babyId: session.babyId, status: session.status, start_time: session.start_time, end_time: session.end_time, duration_minutes: session.duration_minutes } : null);
             
             if (!session) {
                 return res.status(200).json({ sleeping: false, session: null });
@@ -147,7 +149,9 @@ class SleepEventController {
     static async getLastSleepSessionByBaby(req, res) {
         try {
             const { babyId } = req.params;
+            console.log('[SleepEventController] GET /baby/:babyId/last', { babyId });
             const session = await SleepEventService.getLastSleepSessionByBaby(babyId);
+            console.log('[SleepEventController] Last session result:', session ? { babyId: session.babyId, status: session.status, start_time: session.start_time, end_time: session.end_time, duration_minutes: session.duration_minutes } : null);
             
             if (!session) {
                 return res.status(404).json({ message: 'No sleep session found for this baby' });

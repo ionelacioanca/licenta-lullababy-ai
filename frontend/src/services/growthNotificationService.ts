@@ -1,7 +1,9 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const BASE_URL = 'http://192.168.1.8:5000/api/growth-notifications';
+import { API_BASE_URL } from "@/src/config/network";
+
+const BASE_URL = `${API_BASE_URL}/growth-notifications`;
 
 export interface GrowthNotification {
   _id: string;

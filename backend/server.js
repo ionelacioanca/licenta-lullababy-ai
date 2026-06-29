@@ -21,6 +21,7 @@ import cors from 'cors';
 import emailService from './services/emailService.js';
 import { startEventCheckScheduler } from './services/calendarNotificationService.js';
 import growthNotificationService from './services/growthNotificationService.js';
+import { BACKEND_BASE_URL } from './config/network.js';
 
 dotenv.config(); 
 const app = express();
@@ -95,7 +96,7 @@ async function main() {
             console.log(`Server running on port ${PORT}`);
             console.log(`Server accessible at:`);
             console.log(`  - http://localhost:$1PORT}`);
-            console.log(`  - http://192.168.1.56:${PORT} (WiFi)`);
+            console.log(`  - ${BACKEND_BASE_URL} (WiFi)`);
         });
 
         server.on('error', (err) => {

@@ -16,6 +16,7 @@ import Ionicons from "react-native-vector-icons/Ionicons";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLanguage } from "../contexts/LanguageContext";
+import { API_BASE_URL } from "@/src/config/network";
 
 const RegisterPage: React.FC = () => {
   const router = useRouter();
@@ -71,7 +72,7 @@ const RegisterPage: React.FC = () => {
         registrationData.relatedParentEmail = relatedParentEmail.trim();
       }
 
-      const response = await fetch("http://192.168.1.8:5000/api/register", {
+      const response = await fetch(`${API_BASE_URL}/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(registrationData),

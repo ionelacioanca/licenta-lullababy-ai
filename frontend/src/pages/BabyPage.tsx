@@ -16,6 +16,7 @@ import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { useRouter } from "expo-router";
 import { useLanguage } from "../contexts/LanguageContext";
 import { useTheme } from "../contexts/ThemeContext";
+import { API_BASE_URL } from "@/src/config/network";
 
 const BabyDetailsPage: React.FC = () => {
   const { theme } = useTheme();
@@ -117,7 +118,7 @@ const BabyDetailsPage: React.FC = () => {
 
     try {
       console.log("👉 Trimitem parentId:", parentId);
-  const response = await fetch("http://192.168.1.8:5000/api/babyDetails", {
+  const response = await fetch(`${API_BASE_URL}/babyDetails`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -147,7 +148,7 @@ const BabyDetailsPage: React.FC = () => {
         }
         
         Alert.alert("Success", "Baby details saved!");
-        router.push("/dashboard");
+        router.push({ pathname: "/dashboard", params: newBabyId ? { babyId: newBabyId } : undefined });
       } else {
         const data = await response.json();
         throw new Error(data.message || "Something went wrong");

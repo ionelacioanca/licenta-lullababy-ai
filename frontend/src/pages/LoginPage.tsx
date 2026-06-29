@@ -15,6 +15,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import ForgotPasswordModal from "../components/ForgotPasswordModal";
 import { useLanguage } from "../contexts/LanguageContext";
 import { pushNotificationService } from "../services/pushNotificationService";
+import { API_BASE_URL } from "@/src/config/network";
 
 const LoginPage: React.FC = () => {
   const router = useRouter();
@@ -32,7 +33,7 @@ const LoginPage: React.FC = () => {
       const token = await AsyncStorage.getItem("token");
       if (token) {
         try {
-          const res = await fetch("http://192.168.1.8:5000/api/verify-token", {
+          const res = await fetch(`${API_BASE_URL}/verify-token`, {
             headers: { Authorization: `Bearer ${token}` },
           });
           if (res.ok) {
@@ -113,7 +114,7 @@ const LoginPage: React.FC = () => {
     try {
       console.log("Attempting login with email:", email);
       
-  const response = await fetch("http://192.168.1.8:5000/api/login", {
+  const response = await fetch(`${API_BASE_URL}/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),

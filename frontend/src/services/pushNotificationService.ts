@@ -3,8 +3,9 @@ import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
+import { API_BASE_URL } from "@/src/config/network";
 
-const API_URL = 'http://192.168.1.8:5000/api';
+const API_URL = API_BASE_URL;
 
 // Configure notification behavior
 Notifications.setNotificationHandler({

@@ -15,6 +15,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../contexts/ThemeContext";
 import { useLanguage } from "../contexts/LanguageContext";
+import { API_BASE_URL, BACKEND_BASE_URL } from "@/src/config/network";
 
 interface Baby {
   _id: string;
@@ -59,7 +60,7 @@ const BabiesListPage: React.FC = () => {
       }
 
       const response = await fetch(
-        `http://192.168.1.8:5000/api/baby/parent/${parentId}`,
+        `${API_BASE_URL}/baby/parent/${parentId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -82,7 +83,7 @@ const BabiesListPage: React.FC = () => {
         const babiesWithAvatars = data.map((baby: any) => ({
           ...baby,
           avatarColor: baby.avatarColor || "#00CFFF",
-          avatarImage: baby.avatarImage ? `http://192.168.1.8:5000${baby.avatarImage}` : null,
+          avatarImage: baby.avatarImage ? `${BACKEND_BASE_URL}${baby.avatarImage}` : null,
         }));
         setBabies(babiesWithAvatars);
         console.log("Babies loaded with avatars:", babiesWithAvatars);
@@ -127,7 +128,7 @@ const BabiesListPage: React.FC = () => {
     if (currentMonitoredBabyId === baby._id) {
       // This baby is already monitored - just navigate without asking
       console.log('✅ [Baby Selection] Baby already monitored, navigating directly:', baby.name);
-      router.push("/dashboard");
+      router.push({ pathname: "/dashboard", params: { babyId: baby._id } });
       return;
     }
     
@@ -146,7 +147,7 @@ const BabiesListPage: React.FC = () => {
             // User only wants to view data - don't set monitored baby
             console.log('📊 [Baby Selection] View-only mode for:', baby.name, 'ID:', baby._id);
             console.log('📊 [Baby Selection] monitoredBabyId remains:', currentMonitoredBabyId);
-            router.push("/dashboard");
+            router.push({ pathname: "/dashboard", params: { babyId: baby._id } });
           }
         },
         {
@@ -156,7 +157,7 @@ const BabiesListPage: React.FC = () => {
             await AsyncStorage.setItem("monitoredBabyId", baby._id);
             console.log('👁️ [Baby Selection] Live monitoring enabled for:', baby.name, 'ID:', baby._id);
             console.log('💾 [Baby Selection] Saved monitoredBabyId to AsyncStorage:', baby._id);
-            router.push("/dashboard");
+            router.push({ pathname: "/dashboard", params: { babyId: baby._id } });
           }
         }
       ]

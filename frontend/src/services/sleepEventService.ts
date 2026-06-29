@@ -1,6 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_URL = 'http://192.168.1.8:5000/api/sleep-events';
+import { API_BASE_URL } from "@/src/config/network";
+
+const API_URL = `${API_BASE_URL}/sleep-events`;
 
 export interface SleepEvent {
   _id: string;
@@ -143,17 +145,29 @@ export const getSleepEventsByBabyAndDateRange = async (
   endDate: string
 ): Promise<SleepEvent[]> => {
   try {
+    console.log('LOG [Service] Fetching sleep events by baby and date range:', {
+      babyId,
+      startDate,
+      endDate,
+    });
+
     const headers = await getAuthHeaders();
-    const response = await fetch(
-      `${API_URL}/baby/${babyId}/range?startDate=${startDate}&endDate=${endDate}`,
-      { headers }
-    );
+    const requestUrl = `${API_URL}/baby/${babyId}/range?startDate=${startDate}&endDate=${endDate}`;
+    console.log('LOG [Service] Request URL:', requestUrl);
+
+    const response = await fetch(requestUrl, { headers });
+    console.log('LOG [Service] Response status:', response.status);
     
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('LOG [Service] Response error:', errorText);
       throw new Error('Failed to fetch sleep events by baby and date range');
     }
     
-    return await response.json();
+    const data = await response.json();
+    console.log('LOG [Service] Sleep events received:', data.length);
+    console.log('LOG [Service] First sleep event:', data[0]);
+    return data;
   } catch (error) {
     console.error('Error fetching sleep events by baby and date range:', error);
     throw error;

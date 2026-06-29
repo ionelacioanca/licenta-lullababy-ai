@@ -1,3 +1,5 @@
+import { API_BASE_URL } from "@/src/config/network";
+
 const babyService = {
   saveBabyDetails: async (
     babyData: {
@@ -13,7 +15,7 @@ const babyService = {
       parentId?: string; // dacă îl trimiți din frontend
     }
   ): Promise<void> => {
-  const response = await fetch("http://192.168.1.8:5000/api/babies/babyDetails", {
+  const response = await fetch(`${API_BASE_URL}/babies/babyDetails`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(babyData),
