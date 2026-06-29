@@ -400,11 +400,16 @@ const ChildProfilePage: React.FC = () => {
         throw new Error("Failed to update baby profile");
       }
 
+      const updatedBaby = await response.json();
+      const updatedBabyName = updatedBaby?.name || editedName;
+
+      await AsyncStorage.setItem("babyName", updatedBabyName);
+
       // Update local baby state immediately (keep avatar settings)
       if (baby) {
         setBaby({
           ...baby,
-          name: editedName,
+          name: updatedBabyName,
           sex: editedSex,
           birthDate: editedBirthDate,
           birthWeight: editedBirthWeight ? (baby && baby.birthWeight && baby.birthWeight < 5 ? parseFloat(editedBirthWeight) / 1000 : parseFloat(editedBirthWeight)) : undefined,
@@ -416,6 +421,8 @@ const ChildProfilePage: React.FC = () => {
           avatarImage: avatarImage,
         });
       }
+
+      setEditedName(updatedBabyName);
 
       Alert.alert("Success", "Profile updated successfully");
       
